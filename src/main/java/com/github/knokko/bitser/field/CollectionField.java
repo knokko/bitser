@@ -4,9 +4,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface FloatField {
+public @interface CollectionField {
 
-    double expectMultipleOf() default 0.0;
+	IntegerField size() default @IntegerField(expectUniform = false);
 
-    double errorTolerance() default 0.001;
+	String valueAnnotations();
 }

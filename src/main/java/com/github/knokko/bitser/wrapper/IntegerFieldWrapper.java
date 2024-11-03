@@ -23,28 +23,30 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
     }
 
     @Override
-    void writeField(Object object, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
-        long value = classField.getLong(object);
+    void writeValue(Object fatValue, BitOutputStream output, BitserCache cache) throws IOException {
+        long value = ((Number) fatValue).longValue();
         if (intField.expectUniform()) encodeUniformInteger(value, getMinValue(), getMaxValue(), output);
         else encodeVariableInteger(value, getMinValue(), getMaxValue(), output);
     }
 
     @Override
-    void readField(Object object, BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
-        long value;
-        if (intField.expectUniform()) value = decodeUniformInteger(getMinValue(), getMaxValue(), input);
-        else value = decodeVariableInteger(getMinValue(), getMaxValue(), input);
+    Object readValue(BitInputStream input, BitserCache cache) throws IOException {
+        long longValue;
+        if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), input);
+        else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), input);
 
-        if (classField.getType() == byte.class) classField.setByte(object, (byte) value);
-        else if (classField.getType() == short.class) classField.setShort(object, (short) value);
-        else if (classField.getType() == int.class) classField.setInt(object, (int) value);
-        else classField.setLong(object, value);
+        Class<?> type = classField.getType();
+        if (type == byte.class || type == Byte.class) return (byte) longValue;
+        if (type == short.class || type == Short.class) return (short) longValue;
+        if (type == int.class || type == Integer.class) return (int) longValue;
+        return longValue;
     }
 
     private long getMinValue() {
         long minValue = intField.minValue();
 
         long classMinValue = Long.MIN_VALUE;
+        // TODO Make this fail
         if (classField.getType() == byte.class) classMinValue = Byte.MIN_VALUE;
         if (classField.getType() == short.class) classMinValue = Short.MIN_VALUE;
         if (classField.getType() == int.class) classMinValue = Integer.MIN_VALUE;

@@ -17,10 +17,12 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
     BitFieldWrapper(BitField bitField, Field classField) {
         this.bitField = bitField;
         this.classField = classField;
-        if (Modifier.isStatic(classField.getModifiers())) {
+        if (Modifier.isStatic(classField.getModifiers()) && bitField != null) {
             throw new Error("Static fields should not have BitField annotation: " + classField);
         }
-        if (!Modifier.isPublic(classField.getModifiers())) classField.setAccessible(true);
+        if (!Modifier.isPublic(classField.getModifiers()) || Modifier.isFinal(classField.getModifiers())) {
+            classField.setAccessible(true);
+        }
     }
 
     @Override
@@ -36,7 +38,11 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
         }
     }
 
-    abstract void writeField(Object object, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException;
+    void writeField(Object object, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
+        writeValue(classField.get(object), output, cache);
+    }
+
+    abstract void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException;
 
     void read(Object object, BitInputStream input, BitserCache cache) throws IOException {
         try {
@@ -46,5 +52,9 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
         }
     }
 
-    abstract void readField(Object object, BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException;
+    void readField(Object object, BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
+        classField.set(object, readValue(input, cache));
+    }
+
+    abstract Object readValue(BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException;
 }

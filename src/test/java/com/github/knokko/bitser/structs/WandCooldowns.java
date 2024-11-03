@@ -18,7 +18,7 @@ public class WandCooldowns {
 
     @BitField(ordering = 2)
     @IntegerField(minValue = 0, expectUniform = true)
-    public int rechargeTime;
+    public Integer rechargeTime;
 
 //    @BitField(ordering = 3)
 //    @FloatField(expectMultipleOf = 0.5)

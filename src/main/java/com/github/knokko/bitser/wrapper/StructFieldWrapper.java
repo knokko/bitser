@@ -19,8 +19,7 @@ class StructFieldWrapper extends BitFieldWrapper {
     }
 
     @Override
-    void writeField(Object object, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
-        Object value = classField.get(object);
+    void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
         if (structField.nullable()) output.write(value != null);
         else if (value == null) throw new Error("value can't be null"); // TODO Create proper exception for this
 
@@ -28,11 +27,8 @@ class StructFieldWrapper extends BitFieldWrapper {
     }
 
     @Override
-    void readField(Object object, BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
-        Object value;
-        if (structField.nullable() && !input.read()) value = null;
-        else value = cache.getWrapper(classField.getType()).read(input, cache);
-
-        classField.set(object, value);
+    Object readValue(BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
+        if (structField.nullable() && !input.read()) return null;
+        else return cache.getWrapper(classField.getType()).read(input, cache);
     }
 }
