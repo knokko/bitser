@@ -11,7 +11,7 @@ import java.util.LinkedList;
 public class RainbowCollection {
 
 	@SuppressWarnings("unused")
-	@StringField(optional = false)
+	@StringField
 	private static final String STRINGS_VALUES = null;
 
 	@SuppressWarnings("unused")

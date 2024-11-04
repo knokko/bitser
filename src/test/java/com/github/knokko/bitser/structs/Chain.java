@@ -8,12 +8,12 @@ import com.github.knokko.bitser.field.StructField;
 @BitStruct(backwardCompatible = false)
 public class Chain {
 
-    @BitField(ordering = 0)
-    @StructField(nullable = true)
+    @BitField(ordering = 0, optional = true)
+    @StructField
     public Chain next;
 
     @BitField(ordering = 1)
-    @StructField(nullable = false)
+    @StructField
     public Properties properties;
 
     @BitStruct(backwardCompatible = false)

@@ -17,8 +17,8 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
     private final IntegerField intField;
 
-    IntegerFieldWrapper(BitField bitField, IntegerField intField, Field classField) {
-        super(bitField, classField);
+    IntegerFieldWrapper(BitField.Properties properties, IntegerField intField, Field classField) {
+        super(properties, classField);
         this.intField = intField;
     }
 

@@ -20,24 +20,18 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 	private final FloatField floatField;
 
-	FloatFieldWrapper(BitField bitField, FloatField floatField, Field classField) {
-		super(bitField, classField);
+	FloatFieldWrapper(BitField.Properties properties, FloatField floatField, Field classField) {
+		super(properties, classField);
 		this.floatField = floatField;
 
 		Class<?> type = classField.getType();
 		if (type != float.class && type != double.class && type != Float.class && type != Double.class) {
 			throw new InvalidBitFieldException("FloatField only supports floats and doubles, but got " + type);
 		}
-		if (floatField.optional() && (type == float.class || type == double.class)) {
-			throw new InvalidBitFieldException("Primitive class " + type + " can't be optional");
-		}
 	}
 
 	@Override
 	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
-		if (floatField.optional()) output.write(value != null);
-		if (value == null) return;
-
 		if (floatField.expectMultipleOf() != 0.0) {
 			double doubleValue = ((Number) value).doubleValue();
 			long count = Math.round(doubleValue / floatField.expectMultipleOf());
@@ -66,7 +60,6 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
-		if (floatField.optional() && !input.read()) return null;
 		if (floatField.expectMultipleOf() != 0.0 && input.read()) {
 			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, input);
 			double result = count * floatField.expectMultipleOf();

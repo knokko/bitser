@@ -14,8 +14,8 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInte
 
 public class UUIDFieldWrapper extends BitFieldWrapper {
 
-	UUIDFieldWrapper(BitField bitField, Field classField) {
-		super(bitField, classField);
+	UUIDFieldWrapper(BitField.Properties properties, Field classField) {
+		super(properties, classField);
 	}
 
 	@Override
@@ -26,7 +26,7 @@ public class UUIDFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object readValue(BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
+	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
 		return new UUID(
 				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input),
 				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input)

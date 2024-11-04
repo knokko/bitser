@@ -18,17 +18,13 @@ public class StringFieldWrapper extends BitFieldWrapper {
 
 	private final StringField stringField;
 
-	StringFieldWrapper(BitField bitField, StringField stringField, Field classField) {
-		super(bitField, classField);
+	StringFieldWrapper(BitField.Properties properties, StringField stringField, Field classField) {
+		super(properties, classField);
 		this.stringField = stringField;
 	}
 
 	@Override
 	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
-		if (stringField.optional()) output.write(value != null);
-		if (stringField.optional() && value == null) return;
-		if (value == null) throw new NullPointerException(classField + " must not be null");
-
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
 		if (stringField.length().expectUniform()) encodeUniformInteger(bytes.length, minLength(), maxLength(), output);
@@ -39,8 +35,6 @@ public class StringFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
-		if (stringField.optional() && !input.read()) return null;
-
 		int length;
 		if (stringField.length().expectUniform()) length = (int) decodeUniformInteger(minLength(), maxLength(), input);
 		else length = (int) decodeVariableInteger(minLength(), maxLength(), input);

@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -11,23 +12,26 @@ import java.lang.reflect.Modifier;
 
 abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
-    protected final BitField bitField;
+    protected final BitField.Properties properties;
     protected final Field classField;
 
-    BitFieldWrapper(BitField bitField, Field classField) {
-        this.bitField = bitField;
+    BitFieldWrapper(BitField.Properties properties, Field classField) {
+        this.properties = properties;
         this.classField = classField;
-        if (Modifier.isStatic(classField.getModifiers()) && bitField != null) {
+        if (Modifier.isStatic(classField.getModifiers()) && properties.ordering != -1) {
             throw new Error("Static fields should not have BitField annotation: " + classField);
         }
         if (!Modifier.isPublic(classField.getModifiers()) || Modifier.isFinal(classField.getModifiers())) {
             classField.setAccessible(true);
         }
+        if (properties.optional && classField.getType().isPrimitive()) {
+            throw new InvalidBitFieldException("Primitive field " + classField + " can't be optional");
+        }
     }
 
     @Override
     public int compareTo(BitFieldWrapper other) {
-        return Integer.compare(this.bitField.ordering(), other.bitField.ordering());
+        return Integer.compare(this.properties.ordering, other.properties.ordering);
     }
 
     void write(Object object, BitOutputStream output, BitserCache cache) throws IOException {
@@ -39,7 +43,13 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
     }
 
     void writeField(Object object, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
-        writeValue(classField.get(object), output, cache);
+        Object value = classField.get(object);
+        if (properties.optional) output.write(value != null);
+        if (value == null) {
+            if (!properties.optional) {
+                throw new NullPointerException("Field " + classField + " of " + object + " must not be null");
+            }
+        } else writeValue(value, output, cache);
     }
 
     abstract void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException;
@@ -53,7 +63,8 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
     }
 
     void readField(Object object, BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
-        classField.set(object, readValue(input, cache));
+        if (properties.optional && !input.read()) classField.set(object, null);
+        else classField.set(object, readValue(input, cache));
     }
 
     abstract Object readValue(BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException;

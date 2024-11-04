@@ -18,8 +18,8 @@ public class KimImage {
 	@BitField(ordering = 0)
 	public final UUID id = UUID.randomUUID();
 
-	@BitField(ordering = 2)
-	@StringField(optional = true)
+	@BitField(ordering = 2, optional = true)
+	@StringField
 	public String name;
 
 	@BitField(ordering = 1)

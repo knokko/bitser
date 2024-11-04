@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @BitStruct(backwardCompatible = false)
 public class TestFloatField {
 
-    @BitField(ordering = 0)
-    @FloatField(optional = true)
+    @BitField(ordering = 0, optional = true)
+    @FloatField
     public Float optional;
 
     @BitField(ordering = 1)
@@ -79,8 +79,8 @@ public class TestFloatField {
     @BitStruct(backwardCompatible = false)
     private static class Invalid1 {
 
-        @BitField(ordering = 0)
-        @FloatField(optional = true)
+        @BitField(ordering = 0, optional = true)
+        @FloatField
         @SuppressWarnings("unused")
         public float invalid;
     }
@@ -89,7 +89,7 @@ public class TestFloatField {
     private static class Invalid2 {
 
         @BitField(ordering = 0)
-        @FloatField()
+        @FloatField
         @SuppressWarnings("unused")
         public int invalid;
     }

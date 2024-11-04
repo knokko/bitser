@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -14,22 +15,22 @@ import java.util.UUID;
 
 class BitStructWrapper<T> extends BitserWrapper<T> {
 
-    static BitFieldWrapper createWrapper(BitField bitField, Field classField, Class<?> objectClass) {
+    static BitFieldWrapper createWrapper(BitField.Properties properties, Field classField, Class<?> objectClass) {
         List<BitFieldWrapper> result = new ArrayList<>(1);
 
         IntegerField intField = classField.getAnnotation(IntegerField.class);
-        if (intField != null) result.add(new IntegerFieldWrapper(bitField, intField, classField));
+        if (intField != null) result.add(new IntegerFieldWrapper(properties, intField, classField));
 
         FloatField floatField = classField.getAnnotation(FloatField.class);
-        if (floatField != null) result.add(new FloatFieldWrapper(bitField, floatField, classField));
+        if (floatField != null) result.add(new FloatFieldWrapper(properties, floatField, classField));
 
         StringField stringField = classField.getAnnotation(StringField.class);
-        if (stringField != null) result.add(new StringFieldWrapper(bitField, stringField, classField));
+        if (stringField != null) result.add(new StringFieldWrapper(properties, stringField, classField));
 
         StructField structField = classField.getAnnotation(StructField.class);
-        if (structField != null) result.add(new StructFieldWrapper(bitField, structField, classField));
+        if (structField != null) result.add(new StructFieldWrapper(properties, structField, classField));
 
-        if (classField.getType() == UUID.class) result.add(new UUIDFieldWrapper(bitField, classField));
+        if (classField.getType() == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
 
         CollectionField collectionField = classField.getAnnotation(CollectionField.class);
         if (collectionField != null) {
@@ -53,8 +54,10 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
                         }
                     }
                 }
-                BitFieldWrapper valueWrapper = createWrapper(null, valueField, objectClass);
-                return new CollectionFieldWrapper(bitField, classField, collectionField.size(), valueWrapper);
+                BitFieldWrapper valueWrapper = createWrapper(
+                        new BitField.Properties(-1, collectionField.optionalValues()), valueField, objectClass
+                );
+                return new CollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(
                         "valueAnnotations of " + classField + " is " + collectionField.valueAnnotations() +
@@ -89,13 +92,16 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
         Field[] classFields = objectClass.getDeclaredFields();
         for (Field classField : classFields) {
             BitField bitField = classField.getAnnotation(BitField.class);
-            if (bitField != null) fields.add(createWrapper(bitField, classField, objectClass));
+            if (bitField != null) {
+                if (bitField.ordering() < 0) throw new InvalidBitFieldException("ordering must be non-negative");
+                fields.add(createWrapper(new BitField.Properties(bitField), classField, objectClass));
+            }
         }
 
         fields.sort(null);
 
         for (int index = 0; index < fields.size(); index++) {
-            if (fields.get(index).bitField.ordering() != index) throw new Error("Orderings of " + objectClass + " has gaps");
+            if (fields.get(index).properties.ordering != index) throw new Error("Orderings of " + objectClass + " has gaps");
         }
     }
 

@@ -20,8 +20,8 @@ public class CollectionFieldWrapper extends BitFieldWrapper {
 	private final IntegerField sizeField;
 	private final BitFieldWrapper valuesWrapper;
 
-	CollectionFieldWrapper(BitField bitField, Field classField, IntegerField sizeField, BitFieldWrapper valuesWrapper) {
-		super(bitField, classField);
+	CollectionFieldWrapper(BitField.Properties properties, Field classField, IntegerField sizeField, BitFieldWrapper valuesWrapper) {
+		super(properties, classField);
 		if (sizeField.minValue() > Integer.MAX_VALUE) throw new IllegalArgumentException();
 		if (sizeField.maxValue() < 0) throw new IllegalArgumentException();
 		this.sizeField = sizeField;

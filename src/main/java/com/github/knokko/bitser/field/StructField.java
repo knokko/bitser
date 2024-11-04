@@ -5,6 +5,5 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface StructField {
-
-    boolean nullable();
+    // TODO Maybe delete this?
 }

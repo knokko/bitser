@@ -17,12 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @BitStruct(backwardCompatible = false)
 public class TestStringField {
 
-    @BitField(ordering = 1)
-    @StringField(optional = true)
+    @BitField(ordering = 1, optional = true)
+    @StringField
     public String a;
 
     @BitField(ordering = 0)
-    @StringField(optional = false, length = @IntegerField(minValue = 5, maxValue = 10, expectUniform = true))
+    @StringField(length = @IntegerField(minValue = 5, maxValue = 10, expectUniform = true))
     public String b;
 
     @Test
