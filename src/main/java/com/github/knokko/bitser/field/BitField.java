@@ -16,14 +16,16 @@ public @interface BitField {
 
 		public final int ordering;
 		public final boolean optional;
+		public final Class<?> type;
 
-		public Properties(int ordering, boolean optional) {
+		public Properties(int ordering, boolean optional, Class<?> type) {
 			this.ordering = ordering;
 			this.optional = optional;
+			this.type = type;
 		}
 
-		public Properties(BitField bitField) {
-			this(bitField.ordering(), bitField.optional());
+		public Properties(BitField bitField, Class<?> type) {
+			this(bitField.ordering(), bitField.optional(), type);
 		}
 	}
 }

@@ -16,11 +16,11 @@ class StructFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
-		if (value != null) cache.getWrapper(classField.getType()).write(value, output, cache);
+		if (value != null) cache.getWrapper(properties.type).write(value, output, cache);
 	}
 
 	@Override
 	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
-		return cache.getWrapper(classField.getType()).read(input, cache);
+		return cache.getWrapper(properties.type).read(input, cache);
 	}
 }

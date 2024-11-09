@@ -5,7 +5,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.CollectionField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.field.StringField;
+import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -24,16 +25,12 @@ public class TestBitCollectionFieldWrapper {
 	@BitStruct(backwardCompatible = false)
 	private static class Strings {
 
-		@StringField
-		@SuppressWarnings("unused")
-		private static final String STRINGS_VALUES = null;
-
 		@BitField(ordering = 0)
-		@CollectionField(optionalValues = true, valueAnnotations = "STRINGS_VALUES")
+		@CollectionField(optionalValues = true)
 		private String[] array;
 
 		@BitField(ordering = 1, optional = true)
-		@CollectionField(valueAnnotations = "STRINGS_VALUES")
+		@CollectionField
 		private ArrayList<String> list;
 	}
 
@@ -63,23 +60,14 @@ public class TestBitCollectionFieldWrapper {
 	@BitStruct(backwardCompatible = false)
 	private static class Bytes {
 
-		@SuppressWarnings("unused")
-		@IntegerField(expectUniform = true)
-		private static final byte PRIMITIVE_BYTES = 0;
-
-		@SuppressWarnings("unused")
-		@IntegerField(expectUniform = false)
-		private static final Byte WRAPPED_BYTES = null;
-
 		@BitField(ordering = 0)
-		@CollectionField(
-				valueAnnotations = "PRIMITIVE_BYTES",
-				size = @IntegerField(minValue = 2, maxValue = 2, expectUniform = true)
-		)
+		@IntegerField(expectUniform = true)
+		@CollectionField(size = @IntegerField(minValue = 2, maxValue = 2, expectUniform = true))
 		private final byte[] array = new byte[2];
 
 		@BitField(ordering = 1)
-		@CollectionField(valueAnnotations = "WRAPPED_BYTES", optionalValues = true)
+		@IntegerField(expectUniform = false)
+		@CollectionField(optionalValues = true)
 		private final LinkedList<Byte> list = new LinkedList<>();
 	}
 
@@ -114,13 +102,10 @@ public class TestBitCollectionFieldWrapper {
 	@BitStruct(backwardCompatible = false)
 	private static class InvalidShortArray {
 
-		@SuppressWarnings("unused")
-		@IntegerField(expectUniform = false)
-		private static final short PRIMITIVE_SHORT = 0;
-
 		@BitField(ordering = 0)
 		@SuppressWarnings("unused")
-		@CollectionField(optionalValues = true, valueAnnotations = "PRIMITIVE_SHORT")
+		@IntegerField(expectUniform = false)
+		@CollectionField(optionalValues = true)
 		private short[] values;
 	}
 
@@ -140,16 +125,14 @@ public class TestBitCollectionFieldWrapper {
 	@BitStruct(backwardCompatible = false)
 	private static class Longs {
 
-		@SuppressWarnings("unused")
-		@IntegerField(expectUniform = false)
-		private static final Long VALUES = null;
-
 		@BitField(ordering = 1, optional = true)
-		@CollectionField(optionalValues = true, valueAnnotations = "VALUES")
+		@IntegerField(expectUniform = false)
+		@CollectionField(optionalValues = true)
 		public Long[] array;
 
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "VALUES")
+		@IntegerField(expectUniform = false)
+		@CollectionField
 		public HashSet<Long> set = new HashSet<>();
 	}
 
@@ -210,5 +193,85 @@ public class TestBitCollectionFieldWrapper {
 		assertArrayEquals(new Long[]{-1L, 2L}, loaded.array);
 		assertEquals(1, loaded.set.size());
 		assertEquals(-1234L, loaded.set.iterator().next());
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class MissingGenerics {
+
+		@BitField(ordering = 0)
+		@CollectionField
+		@SuppressWarnings({"rawtypes", "unused"})
+		ArrayList list = new ArrayList();
+	}
+
+	@Test
+	public void testMissingGenerics() {
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).serialize(new MissingGenerics(), new BitCountStream())
+		);
+		assertTrue(
+				invalid.getMessage().contains("Unexpected generic type"),
+				"Expected " + invalid.getMessage() + " to contain \"Unexpected generic type\""
+		);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class UnknownGenerics {
+
+		@BitField(ordering = 0)
+		@CollectionField
+		@SuppressWarnings({"rawtypes", "unused"})
+		ArrayList<?> list = new ArrayList();
+	}
+
+	@Test
+	public void testUnknownGenerics() {
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).serialize(new UnknownGenerics(), new BitCountStream())
+		);
+		assertTrue(
+				invalid.getMessage().contains("Unexpected generic type"),
+				"Expected " + invalid.getMessage() + " to contain \"Unexpected generic type\""
+		);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class MapGenerics {
+
+		@BitField(ordering = 0)
+		@CollectionField
+		@SuppressWarnings("unused")
+		HashMap<String, Object> map = new HashMap<>();
+	}
+
+	@Test
+	public void testMapGenerics() {
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).serialize(new MapGenerics(), new BitCountStream())
+		);
+		assertTrue(
+				invalid.getMessage().contains("Too many generic types"),
+				"Expected " + invalid.getMessage() + " to contain \"Too many generic types\""
+		);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class NoGenerics {
+
+		@BitField(ordering = 0)
+		@CollectionField
+		@SuppressWarnings("unused")
+		int nope;
+	}
+
+	@Test
+	public void testNoGenerics() {
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).serialize(new NoGenerics(), new BitCountStream())
+		);
+		assertTrue(
+				invalid.getMessage().contains("Unexpected generic type for"),
+				"Expected " + invalid.getMessage() + " to contain \"Unexpected generic type for\""
+		);
 	}
 }

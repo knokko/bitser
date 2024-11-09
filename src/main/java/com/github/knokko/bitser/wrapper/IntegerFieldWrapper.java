@@ -35,7 +35,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), input);
 		else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), input);
 
-		Class<?> type = classField.getType();
+		Class<?> type = properties.type;
 		if (type == byte.class || type == Byte.class) return (byte) longValue;
 		if (type == short.class || type == Short.class) return (short) longValue;
 		if (type == int.class || type == Integer.class) return (int) longValue;
@@ -47,7 +47,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
 		long classMinValue = Long.MIN_VALUE;
 
-		Class<?> type = classField.getType();
+		Class<?> type = properties.type;
 		if (type == byte.class || type == Byte.class) classMinValue = Byte.MIN_VALUE;
 		if (type == short.class || type == Short.class) classMinValue = Short.MIN_VALUE;
 		if (type == int.class || type == Integer.class) classMinValue = Integer.MIN_VALUE;
@@ -60,7 +60,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
 		long classMaxValue = Long.MAX_VALUE;
 
-		Class<?> type = classField.getType();
+		Class<?> type = properties.type;
 		if (type == byte.class || type == Byte.class) classMaxValue = Byte.MAX_VALUE;
 		if (type == short.class || type == Short.class) classMaxValue = Short.MAX_VALUE;
 		if (type == int.class || type == Integer.class) classMaxValue = Integer.MAX_VALUE;

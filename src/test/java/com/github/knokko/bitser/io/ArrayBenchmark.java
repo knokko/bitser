@@ -26,12 +26,14 @@ public class ArrayBenchmark {
 		measure("fast bytes", output -> new Bitser(false).serialize(fastBytes, output));
 		measure("output stream bytes", output -> output.write(slowBytes.data));
 
-		DataOutputStream intOutput = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(new File("ints.bin").toPath())));
+		File intsFile = new File("ints.bin");
+		DataOutputStream intOutput = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(intsFile.toPath())));
 		long startTime = System.nanoTime();
 		for (int value : slowInts.data) intOutput.writeInt(value);
 		intOutput.flush();
 		intOutput.close();
 		long endTime = System.nanoTime();
+		intsFile.deleteOnExit();
 
 		System.out.println("Took " + (endTime - startTime) / 1000_000 + " ms for data output ints");
 
@@ -63,11 +65,8 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class SlowBooleanArray {
 
-		@SuppressWarnings("unused")
-		private static final boolean DATA = false;
-
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "DATA")
+		@CollectionField
 		final boolean[] data = new boolean[80_000_000];
 
 		@SuppressWarnings("unused")
@@ -83,7 +82,7 @@ public class ArrayBenchmark {
 	private static class FastBooleanArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		@CollectionField(writeAsBytes = true)
 		final boolean[] data = new boolean[80_000_000];
 
 		@SuppressWarnings("unused")
@@ -98,12 +97,9 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class SlowByteArray {
 
-		@SuppressWarnings("unused")
-		@IntegerField(expectUniform = true)
-		private static final byte DATA = 0;
-
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "DATA", size = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
+		@IntegerField(expectUniform = true)
+		@CollectionField(size = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
 		final byte[] data = new byte[10_000_000];
 
 		@SuppressWarnings("unused")
@@ -118,7 +114,7 @@ public class ArrayBenchmark {
 	private static class FastByteArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		@CollectionField(writeAsBytes = true)
 		final byte[] data = new byte[10_000_000];
 
 		@SuppressWarnings("unused")
@@ -132,12 +128,9 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class SlowIntArray {
 
-		@SuppressWarnings("unused")
-		@IntegerField(expectUniform = true)
-		private static final int DATA = 0;
-
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "DATA", size = @IntegerField(minValue = 2_500_000, maxValue = 2_500_000, expectUniform = true))
+		@IntegerField(expectUniform = true)
+		@CollectionField(size = @IntegerField(minValue = 2_500_000, maxValue = 2_500_000, expectUniform = true))
 		final int[] data = new int[2_500_000];
 
 		@SuppressWarnings("unused")
@@ -153,7 +146,7 @@ public class ArrayBenchmark {
 	private static class FastIntArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		@CollectionField(writeAsBytes = true)
 		final int[] data = new int[2_500_000];
 
 		@SuppressWarnings("unused")

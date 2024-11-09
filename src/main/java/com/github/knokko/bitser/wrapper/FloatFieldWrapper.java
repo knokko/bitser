@@ -24,7 +24,7 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 		super(properties, classField);
 		this.floatField = floatField;
 
-		Class<?> type = classField.getType();
+		Class<?> type = properties.type;
 		if (type != float.class && type != double.class && type != Float.class && type != Double.class) {
 			throw new InvalidBitFieldException("FloatField only supports floats and doubles, but got " + type);
 		}
@@ -63,11 +63,11 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 		if (floatField.expectMultipleOf() != 0.0 && input.read()) {
 			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, input);
 			double result = count * floatField.expectMultipleOf();
-			if (classField.getType() == float.class || classField.getType() == Float.class) return (float) result;
+			if (properties.type == float.class || properties.type == Float.class) return (float) result;
 			return result;
 		}
 
-		if (classField.getType() == float.class || classField.getType() == Float.class) {
+		if (properties.type == float.class || properties.type == Float.class) {
 			return Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, input));
 		} else {
 			return Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input));

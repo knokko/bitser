@@ -25,7 +25,7 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		if (!Modifier.isPublic(classField.getModifiers()) || Modifier.isFinal(classField.getModifiers())) {
 			classField.setAccessible(true);
 		}
-		if (properties.optional && classField.getType().isPrimitive()) {
+		if (properties.optional && properties.type.isPrimitive()) {
 			throw new InvalidBitFieldException("Primitive field " + classField + " can't be optional");
 		}
 	}

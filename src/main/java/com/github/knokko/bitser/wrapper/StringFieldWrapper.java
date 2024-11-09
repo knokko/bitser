@@ -27,8 +27,9 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
-		if (stringField.length().expectUniform()) encodeUniformInteger(bytes.length, minLength(), maxLength(), output);
-		else encodeVariableInteger(bytes.length, minLength(), maxLength(), output);
+		if (stringField != null && stringField.length().expectUniform()) {
+			encodeUniformInteger(bytes.length, minLength(), maxLength(), output);
+		} else encodeVariableInteger(bytes.length, minLength(), maxLength(), output);
 
 		for (byte b : bytes) encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, output);
 	}
@@ -36,8 +37,9 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
 		int length;
-		if (stringField.length().expectUniform()) length = (int) decodeUniformInteger(minLength(), maxLength(), input);
-		else length = (int) decodeVariableInteger(minLength(), maxLength(), input);
+		if (stringField != null && stringField.length().expectUniform()) {
+			length = (int) decodeUniformInteger(minLength(), maxLength(), input);
+		} else length = (int) decodeVariableInteger(minLength(), maxLength(), input);
 
 		byte[] bytes = new byte[length];
 		for (int index = 0; index < length; index++) {
@@ -47,10 +49,12 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	private int minLength() {
+		if (stringField == null) return 0;
 		return (int) max(0, stringField.length().minValue());
 	}
 
 	private int maxLength() {
+		if (stringField == null) return Integer.MAX_VALUE;
 		return (int) min(Integer.MAX_VALUE, stringField.length().maxValue());
 	}
 }

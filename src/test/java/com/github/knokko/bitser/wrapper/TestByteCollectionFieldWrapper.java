@@ -4,6 +4,7 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.CollectionField;
+import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ public class TestByteCollectionFieldWrapper {
 	private static class BooleanArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		@CollectionField(writeAsBytes = true)
 		boolean[] data;
 	}
 
@@ -44,7 +45,7 @@ public class TestByteCollectionFieldWrapper {
 	private static class ByteArray {
 
 		@BitField(ordering = 0, optional = true)
-		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		@CollectionField(writeAsBytes = true)
 		byte[] data;
 	}
 
@@ -67,7 +68,7 @@ public class TestByteCollectionFieldWrapper {
 	private static class IntArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		@CollectionField(writeAsBytes = true)
 		final int[] data;
 
 		@SuppressWarnings("unused")
@@ -108,7 +109,7 @@ public class TestByteCollectionFieldWrapper {
 
 		@BitField(ordering = 0)
 		@SuppressWarnings("unused")
-		@CollectionField(valueAnnotations = "", optionalValues = true, writeAsBytes = true)
+		@CollectionField(optionalValues = true, writeAsBytes = true)
 		byte[] data = new byte[10];
 	}
 
@@ -128,7 +129,8 @@ public class TestByteCollectionFieldWrapper {
 
 		@BitField(ordering = 0)
 		@SuppressWarnings("unused")
-		@CollectionField(valueAnnotations = "hi", writeAsBytes = true)
+		@IntegerField(expectUniform = false)
+		@CollectionField(writeAsBytes = true)
 		byte[] data = new byte[10];
 	}
 
@@ -138,8 +140,8 @@ public class TestByteCollectionFieldWrapper {
 				() -> BitserHelper.serializeAndDeserialize(new Bitser(true), new InvalidAnnotations())
 		);
 		assertTrue(
-				failed.getMessage().contains("valueAnnotations must be empty when writeAsBytes is true"),
-				"Expected " + failed.getMessage() + " to contain \"valueAnnotations must be empty when writeAsBytes is true\""
+				failed.getMessage().contains("Value annotations are forbidden when writeAsBytes is true"),
+				"Expected " + failed.getMessage() + " to contain \"Value annotations are forbidden when writeAsBytes is true\""
 		);
 	}
 }

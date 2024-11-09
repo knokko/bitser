@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestStringFieldWrapper {
 
 	@BitField(ordering = 1, optional = true)
-	@StringField
 	public String a;
 
 	@BitField(ordering = 0)

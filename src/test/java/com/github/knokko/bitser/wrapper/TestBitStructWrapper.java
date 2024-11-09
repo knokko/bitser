@@ -1,17 +1,19 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.serialize.BitserCache;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBitStructWrapper {
 
@@ -101,5 +103,24 @@ public class TestBitStructWrapper {
 		assertEquals(10, loaded.properties.strength);
 		assertEquals(2, loaded.next.properties.strength);
 		assertNull(loaded.next.next);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class NoAnnotations {
+
+		@BitField(ordering = 0)
+		@SuppressWarnings("unused")
+		int nope;
+	}
+
+	@Test
+	public void testNoAnnotationsError() {
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(false).serialize(new NoAnnotations(), new BitCountStream())
+		);
+		assertTrue(
+				invalid.getMessage().contains("Missing annotations for"),
+				"Expected " + invalid.getMessage() + " to contain \"Missing annotations for\""
+		);
 	}
 }

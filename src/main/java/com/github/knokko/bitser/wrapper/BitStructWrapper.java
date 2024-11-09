@@ -15,7 +15,48 @@ import java.util.UUID;
 
 class BitStructWrapper<T> extends BitserWrapper<T> {
 
-	static BitFieldWrapper createWrapper(BitField.Properties properties, Field classField, Class<?> objectClass) {
+	static BitFieldWrapper createWrapper(
+			BitField.Properties properties, Field classField, Class<?> objectClass,
+			int depth, boolean expectNothing
+	) {
+		CollectionField collectionField = classField.getAnnotation(CollectionField.class);
+		if (collectionField != null && depth == 0) { // TODO Nested collection fields
+			Class<?> innerFieldType;
+			if (classField.getType().isArray()) {
+				innerFieldType = classField.getType().getComponentType();
+			} else {
+				if (classField.getGenericType() instanceof ParameterizedType) {
+					ParameterizedType genericType = (ParameterizedType) classField.getGenericType();
+					if (genericType.getActualTypeArguments().length == 0) {
+						throw new Error("Missing type argument for " + classField);
+					}
+					if (genericType.getActualTypeArguments().length > 1) {
+						throw new InvalidBitFieldException("Too many generic types for " + classField);
+					}
+					if (genericType.getActualTypeArguments()[0].getClass() != Class.class) {
+						throw new InvalidBitFieldException("Unexpected generic type for " + classField);
+					}
+					innerFieldType = (Class<?>) genericType.getActualTypeArguments()[0];
+				} else throw new InvalidBitFieldException("Unexpected generic type for " + classField);
+			}
+			BitFieldWrapper valueWrapper = createWrapper(
+					new BitField.Properties(-1, collectionField.optionalValues(), innerFieldType),
+					classField, objectClass, depth + 1, collectionField.writeAsBytes()
+			);
+
+			if (collectionField.writeAsBytes()) {
+				if (collectionField.optionalValues()) {
+					throw new InvalidBitFieldException("optionalValues must be false when writeAsBytes is true: " + classField);
+				}
+				if (valueWrapper != null) {
+					throw new InvalidBitFieldException("Value annotations are forbidden when writeAsBytes is true: " + classField);
+				}
+				return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
+			} else {
+				return new BitCollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
+			}
+		}
+
 		List<BitFieldWrapper> result = new ArrayList<>(1);
 
 		IntegerField intField = classField.getAnnotation(IntegerField.class);
@@ -27,60 +68,21 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		StringField stringField = classField.getAnnotation(StringField.class);
 		if (stringField != null) result.add(new StringFieldWrapper(properties, stringField, classField));
 
-		if (classField.getType().getAnnotation(BitStruct.class) != null) {
+		if (properties.type.getAnnotation(BitStruct.class) != null) {
 			result.add(new StructFieldWrapper(properties, classField));
 		}
 
-		if (classField.getType() == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
-		if (classField.getType() == boolean.class || classField.getType() == Boolean.class) {
+		if (expectNothing && result.isEmpty()) return null;
+
+		if (properties.type == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
+		if (properties.type == boolean.class || properties.type == Boolean.class) {
 			result.add(new BooleanFieldWrapper(properties, classField));
 		}
-
-		CollectionField collectionField = classField.getAnnotation(CollectionField.class);
-		if (collectionField != null) {
-			if (collectionField.writeAsBytes()) {
-				if (!collectionField.valueAnnotations().isEmpty()) {
-					throw new InvalidBitFieldException("valueAnnotations must be empty when writeAsBytes is true: " + classField);
-				}
-				if (collectionField.optionalValues()) {
-					throw new InvalidBitFieldException("optionalValues must be false when writeAsBytes is true: " + classField);
-				}
-				return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
-			} else {
-				try {
-					Field valueField = objectClass.getDeclaredField(collectionField.valueAnnotations());
-					if (classField.getType().isArray()) {
-						if (classField.getType().getComponentType() != valueField.getType()) {
-							throw new IllegalArgumentException(valueField + " doesn't have the array type of " + classField);
-						}
-					} else {
-						if (classField.getGenericType() instanceof ParameterizedType) {
-							ParameterizedType genericType = (ParameterizedType) classField.getGenericType();
-							if (genericType.getActualTypeArguments().length == 0) {
-								throw new IllegalArgumentException("Missing type argument for " + classField);
-							}
-							if (genericType.getActualTypeArguments().length > 1) {
-								throw new IllegalArgumentException("Too many type arguments for " + classField);
-							}
-							if (genericType.getActualTypeArguments()[0] != valueField.getType()) {
-								throw new IllegalArgumentException(valueField + " doesn't have the generic type of " + classField);
-							}
-						}
-					}
-					BitFieldWrapper valueWrapper = createWrapper(
-							new BitField.Properties(-1, collectionField.optionalValues()), valueField, objectClass
-					);
-					return new BitCollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
-				} catch (NoSuchFieldException e) {
-					throw new RuntimeException(
-							"valueAnnotations of " + classField + " is " + collectionField.valueAnnotations() +
-									", but can't find " + objectClass + "." + collectionField.valueAnnotations()
-					);
-				}
-			}
+		if (properties.type == String.class && stringField == null) {
+			result.add(new StringFieldWrapper(properties, null, classField));
 		}
 
-		if (result.isEmpty()) throw new Error("Can't handle field " + objectClass + "." + classField.getName());
+		if (result.isEmpty()) throw new InvalidBitFieldException("Missing annotations for " + classField);
 		if (result.size() > 1) throw new Error("Too many annotations on " + objectClass + "." + classField.getName());
 		return result.get(0);
 	}
@@ -111,7 +113,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			BitField bitField = classField.getAnnotation(BitField.class);
 			if (bitField != null) {
 				if (bitField.ordering() < 0) throw new InvalidBitFieldException("ordering must be non-negative");
-				fields.add(createWrapper(new BitField.Properties(bitField), classField, objectClass));
+				fields.add(createWrapper(
+						new BitField.Properties(bitField, classField.getType()
+				), classField, objectClass, 0, false));
 			}
 		}
 

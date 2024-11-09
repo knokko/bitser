@@ -22,7 +22,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void writeValue(Object value, int size, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
-		if (classField.getType().isArray()) {
+		if (properties.type.isArray()) {
 			for (int index = 0; index < size; index++) writeElement(Array.get(value, index), output, cache);
 		} else {
 			for (Object element : (Collection<?>) value) writeElement(element, output, cache);
