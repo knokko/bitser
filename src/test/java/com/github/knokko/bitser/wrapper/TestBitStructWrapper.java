@@ -3,7 +3,6 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.field.StructField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -60,11 +59,9 @@ public class TestBitStructWrapper {
 	private static class Chain {
 
 		@BitField(ordering = 0, optional = true)
-		@StructField
 		public Chain next;
 
 		@BitField(ordering = 1)
-		@StructField
 		public Properties properties;
 
 		@BitStruct(backwardCompatible = false)

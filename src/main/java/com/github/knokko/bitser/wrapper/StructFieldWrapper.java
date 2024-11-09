@@ -1,7 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.field.StructField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -11,11 +10,8 @@ import java.lang.reflect.Field;
 
 class StructFieldWrapper extends BitFieldWrapper {
 
-	private final StructField structField;
-
-	StructFieldWrapper(BitField.Properties properties, StructField structField, Field classField) {
+	StructFieldWrapper(BitField.Properties properties, Field classField) {
 		super(properties, classField);
-		this.structField = structField;
 	}
 
 	@Override

@@ -27,8 +27,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		StringField stringField = classField.getAnnotation(StringField.class);
 		if (stringField != null) result.add(new StringFieldWrapper(properties, stringField, classField));
 
-		StructField structField = classField.getAnnotation(StructField.class);
-		if (structField != null) result.add(new StructFieldWrapper(properties, structField, classField));
+		if (classField.getType().getAnnotation(BitStruct.class) != null) {
+			result.add(new StructFieldWrapper(properties, classField));
+		}
 
 		if (classField.getType() == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
 		if (classField.getType() == boolean.class || classField.getType() == Boolean.class) {
