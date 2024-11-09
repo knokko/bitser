@@ -39,6 +39,12 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		CollectionField collectionField = classField.getAnnotation(CollectionField.class);
 		if (collectionField != null) {
 			if (collectionField.writeAsBytes()) {
+				if (!collectionField.valueAnnotations().isEmpty()) {
+					throw new InvalidBitFieldException("valueAnnotations must be empty when writeAsBytes is true: " + classField);
+				}
+				if (collectionField.optionalValues()) {
+					throw new InvalidBitFieldException("optionalValues must be false when writeAsBytes is true: " + classField);
+				}
 				return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
 			} else {
 				try {

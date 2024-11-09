@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.CollectionField;
 import com.github.knokko.bitser.io.BitserHelper;
@@ -100,5 +101,45 @@ public class TestByteCollectionFieldWrapper {
 		loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), filled);
 		assert loaded.data != null;
 		assertArrayEquals(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE}, loaded.data);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class InvalidOptional {
+
+		@BitField(ordering = 0)
+		@SuppressWarnings("unused")
+		@CollectionField(valueAnnotations = "", optionalValues = true, writeAsBytes = true)
+		byte[] data = new byte[10];
+	}
+
+	@Test
+	public void testInvalidOptional() {
+		InvalidBitFieldException failed = assertThrows(InvalidBitFieldException.class,
+				() -> BitserHelper.serializeAndDeserialize(new Bitser(true), new InvalidOptional())
+		);
+		assertTrue(
+				failed.getMessage().contains("optionalValues must be false when writeAsBytes is true"),
+				"Expected " + failed.getMessage() + " to contain \"optionalValues must be false when writeAsBytes is true\""
+		);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class InvalidAnnotations {
+
+		@BitField(ordering = 0)
+		@SuppressWarnings("unused")
+		@CollectionField(valueAnnotations = "hi", writeAsBytes = true)
+		byte[] data = new byte[10];
+	}
+
+	@Test
+	public void testInvalidAnnotations() {
+		InvalidBitFieldException failed = assertThrows(InvalidBitFieldException.class,
+				() -> BitserHelper.serializeAndDeserialize(new Bitser(true), new InvalidAnnotations())
+		);
+		assertTrue(
+				failed.getMessage().contains("valueAnnotations must be empty when writeAsBytes is true"),
+				"Expected " + failed.getMessage() + " to contain \"valueAnnotations must be empty when writeAsBytes is true\""
+		);
 	}
 }
