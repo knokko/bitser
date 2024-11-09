@@ -35,14 +35,20 @@ public class CollectionFieldWrapper extends BitFieldWrapper {
 		else encodeVariableInteger(size, getMinSize(), getMaxSize(), output);
 
 		if (classField.getType().isArray()) {
-			for (int index = 0; index < size; index++) {
-				valuesWrapper.writeValue(Array.get(value, index), output, cache);
-			}
+			for (int index = 0; index < size; index++) writeElement(Array.get(value, index), output, cache);
 		} else {
-			for (Object element : (Collection<?>) value) {
-				valuesWrapper.writeValue(element, output, cache);
-			}
+			for (Object element : (Collection<?>) value) writeElement(element, output, cache);
 		}
+	}
+
+	private void writeElement(
+			Object element, BitOutputStream output, BitserCache cache
+	) throws IOException, IllegalAccessException {
+		if (valuesWrapper.properties.optional) output.write(element != null);
+		else if (element == null) {
+			throw new NullPointerException("Field " + classField + " must not have null values");
+		}
+		if (element != null) valuesWrapper.writeValue(element, output, cache);
 	}
 
 	@Override
@@ -55,7 +61,8 @@ public class CollectionFieldWrapper extends BitFieldWrapper {
 		Object value = constructCollectionWithSize(size);
 
 		for (int index = 0; index < size; index++) {
-			Object element = valuesWrapper.readValue(input, cache);
+			Object element = null;
+			if (!valuesWrapper.properties.optional || input.read()) element = valuesWrapper.readValue(input, cache);
 			if (value instanceof Collection<?>) {
 				((Collection<Object>) value).add(element);
 			} else {
