@@ -19,7 +19,7 @@ import java.util.LinkedList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestCollectionFieldWrapper {
+public class TestBitCollectionFieldWrapper {
 
 	@BitStruct(backwardCompatible = false)
 	private static class Strings {

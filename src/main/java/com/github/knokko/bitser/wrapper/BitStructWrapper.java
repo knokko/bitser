@@ -34,35 +34,39 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
         CollectionField collectionField = classField.getAnnotation(CollectionField.class);
         if (collectionField != null) {
-            try {
-                Field valueField = objectClass.getDeclaredField(collectionField.valueAnnotations());
-                if (classField.getType().isArray()) {
-                    if (classField.getType().getComponentType() != valueField.getType()) {
-                        throw new IllegalArgumentException(valueField + " doesn't have the array type of " + classField);
+            if (collectionField.writeAsBytes()) {
+                return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
+            } else {
+                try {
+                    Field valueField = objectClass.getDeclaredField(collectionField.valueAnnotations());
+                    if (classField.getType().isArray()) {
+                        if (classField.getType().getComponentType() != valueField.getType()) {
+                            throw new IllegalArgumentException(valueField + " doesn't have the array type of " + classField);
+                        }
+                    } else {
+                        if (classField.getGenericType() instanceof ParameterizedType) {
+                            ParameterizedType genericType = (ParameterizedType) classField.getGenericType();
+                            if (genericType.getActualTypeArguments().length == 0) {
+                                throw new IllegalArgumentException("Missing type argument for " + classField);
+                            }
+                            if (genericType.getActualTypeArguments().length > 1) {
+                                throw new IllegalArgumentException("Too many type arguments for " + classField);
+                            }
+                            if (genericType.getActualTypeArguments()[0] != valueField.getType()) {
+                                throw new IllegalArgumentException(valueField + " doesn't have the generic type of " + classField);
+                            }
+                        }
                     }
-                } else {
-                    if (classField.getGenericType() instanceof ParameterizedType) {
-                        ParameterizedType genericType = (ParameterizedType) classField.getGenericType();
-                        if (genericType.getActualTypeArguments().length == 0) {
-                            throw new IllegalArgumentException("Missing type argument for " + classField);
-                        }
-                        if (genericType.getActualTypeArguments().length > 1) {
-                            throw new IllegalArgumentException("Too many type arguments for " + classField);
-                        }
-                        if (genericType.getActualTypeArguments()[0] != valueField.getType()) {
-                            throw new IllegalArgumentException(valueField + " doesn't have the generic type of " + classField);
-                        }
-                    }
+                    BitFieldWrapper valueWrapper = createWrapper(
+                            new BitField.Properties(-1, collectionField.optionalValues()), valueField, objectClass
+                    );
+                    return new BitCollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
+                } catch (NoSuchFieldException e) {
+                    throw new RuntimeException(
+                            "valueAnnotations of " + classField + " is " + collectionField.valueAnnotations() +
+                                    ", but can't find " + objectClass + "." + collectionField.valueAnnotations()
+                    );
                 }
-                BitFieldWrapper valueWrapper = createWrapper(
-                        new BitField.Properties(-1, collectionField.optionalValues()), valueField, objectClass
-                );
-                return new CollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException(
-                        "valueAnnotations of " + classField + " is " + collectionField.valueAnnotations() +
-                                ", but can't find " + objectClass + "." + collectionField.valueAnnotations()
-                );
             }
         }
 

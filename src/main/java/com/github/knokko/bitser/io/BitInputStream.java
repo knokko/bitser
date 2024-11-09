@@ -23,6 +23,18 @@ public class BitInputStream {
         return (currentByte & (1 << boolIndex++)) != 0;
     }
 
+    public void read(byte[] destination) throws IOException {
+        boolIndex = 8;
+
+        int numReadBytes = 0;
+        while (numReadBytes < destination.length) {
+            int justReadBytes = byteStream.read(destination, numReadBytes, destination.length - numReadBytes);
+            if (justReadBytes == -1) throw new IOException("End of stream reached");
+            numReadBytes += justReadBytes;
+            if (numReadBytes > destination.length) throw new Error("Too many bytes read?");
+        }
+    }
+
     public void close() throws IOException {
         byteStream.close();
     }
