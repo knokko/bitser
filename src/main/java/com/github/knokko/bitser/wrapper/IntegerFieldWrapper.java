@@ -46,10 +46,11 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		long minValue = intField.minValue();
 
 		long classMinValue = Long.MIN_VALUE;
-		// TODO Make this fail
-		if (classField.getType() == byte.class) classMinValue = Byte.MIN_VALUE;
-		if (classField.getType() == short.class) classMinValue = Short.MIN_VALUE;
-		if (classField.getType() == int.class) classMinValue = Integer.MIN_VALUE;
+
+		Class<?> type = classField.getType();
+		if (type == byte.class || type == Byte.class) classMinValue = Byte.MIN_VALUE;
+		if (type == short.class || type == Short.class) classMinValue = Short.MIN_VALUE;
+		if (type == int.class || type == Integer.class) classMinValue = Integer.MIN_VALUE;
 
 		return max(minValue, classMinValue);
 	}
@@ -58,9 +59,11 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		long maxValue = intField.maxValue();
 
 		long classMaxValue = Long.MAX_VALUE;
-		if (classField.getType() == byte.class) classMaxValue = Byte.MAX_VALUE;
-		if (classField.getType() == short.class) classMaxValue = Short.MAX_VALUE;
-		if (classField.getType() == int.class) classMaxValue = Integer.MAX_VALUE;
+
+		Class<?> type = classField.getType();
+		if (type == byte.class || type == Byte.class) classMaxValue = Byte.MAX_VALUE;
+		if (type == short.class || type == Short.class) classMaxValue = Short.MAX_VALUE;
+		if (type == int.class || type == Integer.class) classMaxValue = Integer.MAX_VALUE;
 
 		return min(maxValue, classMaxValue);
 	}

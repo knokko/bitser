@@ -5,6 +5,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -52,5 +53,25 @@ public class TestIntegerFieldWrapper {
 		);
 		assertEquals("9 is out of range [10, 100000] for " +
 				"private int com.github.knokko.bitser.wrapper.TestIntegerFieldWrapper.varInt", failed.getMessage());
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class SingleShort {
+
+		@BitField(ordering = 0)
+		@IntegerField(expectUniform = true)
+		Short value;
+	}
+
+	@Test
+	public void testNumberOfShortBits() throws IOException {
+		SingleShort instance = new SingleShort();
+		instance.value = 123;
+
+		Bitser bitser = new Bitser(true);
+		BitCountStream counter = new BitCountStream();
+		bitser.serialize(instance, counter);
+
+		assertEquals(16, counter.getCounter());
 	}
 }
