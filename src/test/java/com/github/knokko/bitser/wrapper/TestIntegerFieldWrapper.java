@@ -1,15 +1,20 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @BitStruct(backwardCompatible = false)
 public class TestIntegerFieldWrapper {
@@ -37,5 +42,15 @@ public class TestIntegerFieldWrapper {
 		TestIntegerFieldWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
 		assertEquals(12345, loaded.varInt);
 		assertEquals(-123456, loaded.uniformInt);
+	}
+
+	@Test
+	public void testOutOfRange() {
+		this.varInt = 9;
+		InvalidBitValueException failed = assertThrows(InvalidBitValueException.class,
+				() -> new Bitser(true).serialize(this, new BitOutputStream(new ByteArrayOutputStream()))
+		);
+		assertEquals("9 is out of range [10, 100000] for " +
+				"private int com.github.knokko.bitser.wrapper.TestIntegerFieldWrapper.varInt", failed.getMessage());
 	}
 }

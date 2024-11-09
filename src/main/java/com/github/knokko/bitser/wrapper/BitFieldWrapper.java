@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -39,6 +40,8 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 			writeField(object, output, cache);
 		} catch (IllegalAccessException shouldNotHappen) {
 			throw new Error(shouldNotHappen);
+		} catch (InvalidBitValueException invalidValue) {
+			throw new InvalidBitValueException(invalidValue.getMessage() + " for " + classField);
 		}
 	}
 

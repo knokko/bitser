@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.serialize;
 
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 
@@ -21,8 +22,7 @@ public class IntegerBitser {
 
 	private static void check(long value, long minValue, long maxValue) {
 		if (value < minValue || value > maxValue) {
-			// TODO Create proper exception for this
-			throw new Error(value + " is out of range [" + minValue + ", " + maxValue + "]");
+			throw new InvalidBitValueException(value + " is out of range [" + minValue + ", " + maxValue + "]");
 		}
 	}
 
