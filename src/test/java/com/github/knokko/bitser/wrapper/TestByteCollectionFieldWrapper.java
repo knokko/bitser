@@ -14,6 +14,32 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestByteCollectionFieldWrapper {
 
 	@BitStruct(backwardCompatible = false)
+	private static class BooleanArray {
+
+		@BitField(ordering = 0)
+		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		boolean[] data;
+	}
+
+	@Test
+	public void testBooleanArrayMultipleOf8() throws IOException {
+		BooleanArray array = new BooleanArray();
+		array.data = new boolean[] {true, false, true, true, true, false, true, false};
+
+		BooleanArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), array);
+		assertArrayEquals(new boolean[] {true, false, true, true, true, false, true, false}, loaded.data);
+	}
+
+	@Test
+	public void testBooleanArrayNoMultipleOf8() throws IOException {
+		BooleanArray array = new BooleanArray();
+		array.data = new boolean[] {true, false, true, true};
+
+		BooleanArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
+		assertArrayEquals(new boolean[] {true, false, true, true}, loaded.data);
+	}
+
+	@BitStruct(backwardCompatible = false)
 	private static class ByteArray {
 
 		@BitField(ordering = 0, optional = true)

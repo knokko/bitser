@@ -13,11 +13,15 @@ import java.util.Random;
 public class ArrayBenchmark {
 
 	public static void main(String[] args) throws IOException {
+		SlowBooleanArray slowBooleans = new SlowBooleanArray(1234);
+		FastBooleanArray fastBooleans = new FastBooleanArray(1234);
 		SlowByteArray slowBytes = new SlowByteArray(1234);
 		FastByteArray fastBytes = new FastByteArray(1234);
 		SlowIntArray slowInts = new SlowIntArray(1234);
 		FastIntArray fastInts = new FastIntArray(1234);
 
+		measure("slow booleans", output -> new Bitser(false).serialize(slowBooleans, output));
+		measure("fast booleans", output -> new Bitser(false).serialize(fastBooleans, output));
 		measure("slow bytes", output -> new Bitser(false).serialize(slowBytes, output));
 		measure("fast bytes", output -> new Bitser(false).serialize(fastBytes, output));
 		measure("output stream bytes", output -> output.write(slowBytes.data));
@@ -54,6 +58,41 @@ public class ArrayBenchmark {
 
 		System.out.println("Took " + (endTime - startTime) / 1000_000 + " ms for " + description);
 		target.deleteOnExit();
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class SlowBooleanArray {
+
+		@SuppressWarnings("unused")
+		private static final boolean DATA = false;
+
+		@BitField(ordering = 0)
+		@CollectionField(valueAnnotations = "DATA")
+		final boolean[] data = new boolean[80_000_000];
+
+		@SuppressWarnings("unused")
+		SlowBooleanArray() {}
+
+		SlowBooleanArray(long seed) {
+			Random rng = new Random(seed);
+			for (int index = 0; index < data.length; index++) data[index] = rng.nextBoolean();
+		}
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class FastBooleanArray {
+
+		@BitField(ordering = 0)
+		@CollectionField(valueAnnotations = "", writeAsBytes = true)
+		final boolean[] data = new boolean[80_000_000];
+
+		@SuppressWarnings("unused")
+		FastBooleanArray() {}
+
+		FastBooleanArray(long seed) {
+			Random rng = new Random(seed);
+			for (int index = 0; index < data.length; index++) data[index] = rng.nextBoolean();
+		}
 	}
 
 	@BitStruct(backwardCompatible = false)

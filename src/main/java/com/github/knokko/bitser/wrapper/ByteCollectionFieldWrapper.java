@@ -19,9 +19,21 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void writeValue(Object value, int size, BitOutputStream output, BitserCache cache) throws IOException {
-		if (value instanceof byte[]) output.write((byte[]) value);
+		if (value instanceof boolean[]) output.write(toByteArray((boolean[]) value));
+		else if (value instanceof byte[]) output.write((byte[]) value);
 		else if (value instanceof int[]) output.write(toByteArray((int[]) value));
 		else throw new UnsupportedOperationException("Can't encode " + value.getClass() + " as bytes");
+	}
+
+	private byte[] toByteArray(boolean[] booleans) {
+		int numBytes = booleans.length / 8;
+		if (booleans.length % 8 != 0) numBytes += 1;
+
+		byte[] bytes = new byte[numBytes];
+		for (int boolIndex = 0; boolIndex < booleans.length; boolIndex++) {
+			if (booleans[boolIndex]) bytes[boolIndex >> 3] |= (byte) (1 << (boolIndex & 7));
+		}
+		return bytes;
 	}
 
 	private byte[] toByteArray(int[] ints) {
@@ -39,9 +51,21 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void readValue(Object value, int size, BitInputStream input, BitserCache cache) throws IOException {
-		if (value instanceof byte[]) input.read((byte[]) value);
+		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, input);
+		else if (value instanceof byte[]) input.read((byte[]) value);
 		else if (value instanceof int[]) backToIntArray((int[]) value, input);
 		else throw new UnsupportedOperationException("Can't decode " + value.getClass() + " from bytes");
+	}
+
+	void backToBooleanArray(boolean[] booleans, BitInputStream input) throws IOException {
+		int numBytes = booleans.length / 8;
+		if (booleans.length % 8 != 0) numBytes += 1;
+		byte[] bytes = new byte[numBytes];
+		input.read(bytes);
+
+		for (int boolIndex = 0; boolIndex < booleans.length; boolIndex++) {
+			booleans[boolIndex] = (bytes[boolIndex >> 3] & (1 << (boolIndex & 7))) != 0;
+		}
 	}
 
 	void backToIntArray(int[] ints, BitInputStream input) throws IOException {
