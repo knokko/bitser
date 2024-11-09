@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FloatField {
 
-    double expectMultipleOf() default 0.0;
+	double expectMultipleOf() default 0.0;
 
-    double errorTolerance() default 0.001;
+	double errorTolerance() default 0.001;
 }

@@ -15,120 +15,124 @@ import java.util.UUID;
 
 class BitStructWrapper<T> extends BitserWrapper<T> {
 
-    static BitFieldWrapper createWrapper(BitField.Properties properties, Field classField, Class<?> objectClass) {
-        List<BitFieldWrapper> result = new ArrayList<>(1);
+	static BitFieldWrapper createWrapper(BitField.Properties properties, Field classField, Class<?> objectClass) {
+		List<BitFieldWrapper> result = new ArrayList<>(1);
 
-        IntegerField intField = classField.getAnnotation(IntegerField.class);
-        if (intField != null) result.add(new IntegerFieldWrapper(properties, intField, classField));
+		IntegerField intField = classField.getAnnotation(IntegerField.class);
+		if (intField != null) result.add(new IntegerFieldWrapper(properties, intField, classField));
 
-        FloatField floatField = classField.getAnnotation(FloatField.class);
-        if (floatField != null) result.add(new FloatFieldWrapper(properties, floatField, classField));
+		FloatField floatField = classField.getAnnotation(FloatField.class);
+		if (floatField != null) result.add(new FloatFieldWrapper(properties, floatField, classField));
 
-        StringField stringField = classField.getAnnotation(StringField.class);
-        if (stringField != null) result.add(new StringFieldWrapper(properties, stringField, classField));
+		StringField stringField = classField.getAnnotation(StringField.class);
+		if (stringField != null) result.add(new StringFieldWrapper(properties, stringField, classField));
 
-        StructField structField = classField.getAnnotation(StructField.class);
-        if (structField != null) result.add(new StructFieldWrapper(properties, structField, classField));
+		StructField structField = classField.getAnnotation(StructField.class);
+		if (structField != null) result.add(new StructFieldWrapper(properties, structField, classField));
 
-        if (classField.getType() == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
+		if (classField.getType() == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
 
-        CollectionField collectionField = classField.getAnnotation(CollectionField.class);
-        if (collectionField != null) {
-            if (collectionField.writeAsBytes()) {
-                return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
-            } else {
-                try {
-                    Field valueField = objectClass.getDeclaredField(collectionField.valueAnnotations());
-                    if (classField.getType().isArray()) {
-                        if (classField.getType().getComponentType() != valueField.getType()) {
-                            throw new IllegalArgumentException(valueField + " doesn't have the array type of " + classField);
-                        }
-                    } else {
-                        if (classField.getGenericType() instanceof ParameterizedType) {
-                            ParameterizedType genericType = (ParameterizedType) classField.getGenericType();
-                            if (genericType.getActualTypeArguments().length == 0) {
-                                throw new IllegalArgumentException("Missing type argument for " + classField);
-                            }
-                            if (genericType.getActualTypeArguments().length > 1) {
-                                throw new IllegalArgumentException("Too many type arguments for " + classField);
-                            }
-                            if (genericType.getActualTypeArguments()[0] != valueField.getType()) {
-                                throw new IllegalArgumentException(valueField + " doesn't have the generic type of " + classField);
-                            }
-                        }
-                    }
-                    BitFieldWrapper valueWrapper = createWrapper(
-                            new BitField.Properties(-1, collectionField.optionalValues()), valueField, objectClass
-                    );
-                    return new BitCollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
-                } catch (NoSuchFieldException e) {
-                    throw new RuntimeException(
-                            "valueAnnotations of " + classField + " is " + collectionField.valueAnnotations() +
-                                    ", but can't find " + objectClass + "." + collectionField.valueAnnotations()
-                    );
-                }
-            }
-        }
+		CollectionField collectionField = classField.getAnnotation(CollectionField.class);
+		if (collectionField != null) {
+			if (collectionField.writeAsBytes()) {
+				return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
+			} else {
+				try {
+					Field valueField = objectClass.getDeclaredField(collectionField.valueAnnotations());
+					if (classField.getType().isArray()) {
+						if (classField.getType().getComponentType() != valueField.getType()) {
+							throw new IllegalArgumentException(valueField + " doesn't have the array type of " + classField);
+						}
+					} else {
+						if (classField.getGenericType() instanceof ParameterizedType) {
+							ParameterizedType genericType = (ParameterizedType) classField.getGenericType();
+							if (genericType.getActualTypeArguments().length == 0) {
+								throw new IllegalArgumentException("Missing type argument for " + classField);
+							}
+							if (genericType.getActualTypeArguments().length > 1) {
+								throw new IllegalArgumentException("Too many type arguments for " + classField);
+							}
+							if (genericType.getActualTypeArguments()[0] != valueField.getType()) {
+								throw new IllegalArgumentException(valueField + " doesn't have the generic type of " + classField);
+							}
+						}
+					}
+					BitFieldWrapper valueWrapper = createWrapper(
+							new BitField.Properties(-1, collectionField.optionalValues()), valueField, objectClass
+					);
+					return new BitCollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
+				} catch (NoSuchFieldException e) {
+					throw new RuntimeException(
+							"valueAnnotations of " + classField + " is " + collectionField.valueAnnotations() +
+									", but can't find " + objectClass + "." + collectionField.valueAnnotations()
+					);
+				}
+			}
+		}
 
-        if (result.isEmpty()) throw new Error("Can't handle field " + objectClass + "." + classField.getName());
-        if (result.size() > 1) throw new Error("Too many annotations on " + objectClass + "." + classField.getName());
-        return result.get(0);
-    }
+		if (result.isEmpty()) throw new Error("Can't handle field " + objectClass + "." + classField.getName());
+		if (result.size() > 1) throw new Error("Too many annotations on " + objectClass + "." + classField.getName());
+		return result.get(0);
+	}
 
-    private final BitStruct bitStruct;
-    private final List<BitFieldWrapper> fields = new ArrayList<>();
-    private final Constructor<T> constructor;
+	private final BitStruct bitStruct;
+	private final List<BitFieldWrapper> fields = new ArrayList<>();
+	private final Constructor<T> constructor;
 
-    BitStructWrapper(Class<T> objectClass, BitStruct bitStruct) {
-        if (bitStruct == null) throw new IllegalArgumentException("Class must have a BitStruct annotation: " + objectClass);
-        this.bitStruct = bitStruct;
+	BitStructWrapper(Class<T> objectClass, BitStruct bitStruct) {
+		if (bitStruct == null)
+			throw new IllegalArgumentException("Class must have a BitStruct annotation: " + objectClass);
+		this.bitStruct = bitStruct;
 
-        if (Modifier.isAbstract(objectClass.getModifiers())) throw new IllegalArgumentException(objectClass + " is abstract");
-        if (Modifier.isInterface(objectClass.getModifiers())) throw new IllegalArgumentException(objectClass + " is an interface");
+		if (Modifier.isAbstract(objectClass.getModifiers()))
+			throw new IllegalArgumentException(objectClass + " is abstract");
+		if (Modifier.isInterface(objectClass.getModifiers()))
+			throw new IllegalArgumentException(objectClass + " is an interface");
 
-        try {
-            this.constructor = objectClass.getDeclaredConstructor();
-            if (!Modifier.isPublic(constructor.getModifiers())) constructor.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            throw new Error(objectClass + " must have a constructor without parameters");
-        }
+		try {
+			this.constructor = objectClass.getDeclaredConstructor();
+			if (!Modifier.isPublic(constructor.getModifiers())) constructor.setAccessible(true);
+		} catch (NoSuchMethodException e) {
+			throw new Error(objectClass + " must have a constructor without parameters");
+		}
 
-        Field[] classFields = objectClass.getDeclaredFields();
-        for (Field classField : classFields) {
-            BitField bitField = classField.getAnnotation(BitField.class);
-            if (bitField != null) {
-                if (bitField.ordering() < 0) throw new InvalidBitFieldException("ordering must be non-negative");
-                fields.add(createWrapper(new BitField.Properties(bitField), classField, objectClass));
-            }
-        }
+		Field[] classFields = objectClass.getDeclaredFields();
+		for (Field classField : classFields) {
+			BitField bitField = classField.getAnnotation(BitField.class);
+			if (bitField != null) {
+				if (bitField.ordering() < 0) throw new InvalidBitFieldException("ordering must be non-negative");
+				fields.add(createWrapper(new BitField.Properties(bitField), classField, objectClass));
+			}
+		}
 
-        fields.sort(null);
+		fields.sort(null);
 
-        for (int index = 0; index < fields.size(); index++) {
-            if (fields.get(index).properties.ordering != index) throw new Error("Orderings of " + objectClass + " has gaps");
-        }
-    }
+		for (int index = 0; index < fields.size(); index++) {
+			if (fields.get(index).properties.ordering != index)
+				throw new Error("Orderings of " + objectClass + " has gaps");
+		}
+	}
 
-    @Override
-    public void write(Object object, BitOutputStream output, BitserCache cache) throws IOException {
-        if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
-        for (BitFieldWrapper field : fields) field.write(object, output, cache);
-    }
+	@Override
+	public void write(Object object, BitOutputStream output, BitserCache cache) throws IOException {
+		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+		for (BitFieldWrapper field : fields) field.write(object, output, cache);
+	}
 
-    @Override
-    public T read(BitInputStream input, BitserCache cache) throws IOException {
-        if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+	@Override
+	public T read(BitInputStream input, BitserCache cache) throws IOException {
+		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
 
-        try {
-            T object = constructor.newInstance();
-            for (BitFieldWrapper field : fields) field.read(object, input, cache);
-            return object;
-        } catch (InstantiationException e) {
-            throw new Error("Failed to instantiate " + constructor, e);
-        } catch (IllegalAccessException shouldNotHappen) {
-            throw new Error(shouldNotHappen);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
+		try {
+			T object = constructor.newInstance();
+			for (BitFieldWrapper field : fields) field.read(object, input, cache);
+			return object;
+		} catch (InstantiationException e) {
+			throw new Error("Failed to instantiate " + constructor, e);
+		} catch (IllegalAccessException shouldNotHappen) {
+			throw new Error(shouldNotHappen);
+		} catch (InvocationTargetException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

@@ -31,9 +31,9 @@ public class TestByteCollectionFieldWrapper {
 		loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
 		assertEquals(0, loaded.data.length);
 
-		array.data = new byte[] { -128, -1, 0, 1, 127 };
+		array.data = new byte[]{-128, -1, 0, 1, 127};
 		loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
-		assertArrayEquals(new byte[] { -128, -1, 0, 1, 127 }, loaded.data);
+		assertArrayEquals(new byte[]{-128, -1, 0, 1, 127}, loaded.data);
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -70,9 +70,9 @@ public class TestByteCollectionFieldWrapper {
 		assert loaded.data != null;
 		assertEquals(0, loaded.data.length);
 
-		IntArray filled = new IntArray(new int[] { Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE });
+		IntArray filled = new IntArray(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE});
 		loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), filled);
 		assert loaded.data != null;
-		assertArrayEquals(new int[] { Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE }, loaded.data);
+		assertArrayEquals(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE}, loaded.data);
 	}
 }

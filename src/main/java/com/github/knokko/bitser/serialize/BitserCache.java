@@ -8,15 +8,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BitserCache {
 
-    private final Map<Class<?>, BitserWrapper<?>> wrappers;
+	private final Map<Class<?>, BitserWrapper<?>> wrappers;
 
-    public BitserCache(boolean threadSafe) {
-        if (threadSafe) wrappers = new ConcurrentHashMap<>();
-        else wrappers = new HashMap<>();
-    }
+	public BitserCache(boolean threadSafe) {
+		if (threadSafe) wrappers = new ConcurrentHashMap<>();
+		else wrappers = new HashMap<>();
+	}
 
-    public <T> BitserWrapper<T> getWrapper(Class<T> objectClass) {
-        //noinspection unchecked
-        return (BitserWrapper<T>) wrappers.computeIfAbsent(objectClass, BitserWrapper::wrap);
-    }
+	public <T> BitserWrapper<T> getWrapper(Class<T> objectClass) {
+		//noinspection unchecked
+		return (BitserWrapper<T>) wrappers.computeIfAbsent(objectClass, BitserWrapper::wrap);
+	}
 }

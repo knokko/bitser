@@ -9,16 +9,17 @@ import java.io.IOException;
 
 public abstract class BitserWrapper<T> {
 
-    public static <T> BitserWrapper<T> wrap(Class<T> objectClass) {
-        BitStruct bitStruct = objectClass.getAnnotation(BitStruct.class);
-        if (bitStruct != null) return new BitStructWrapper<T>(objectClass, bitStruct);
+	public static <T> BitserWrapper<T> wrap(Class<T> objectClass) {
+		BitStruct bitStruct = objectClass.getAnnotation(BitStruct.class);
+		if (bitStruct != null) return new BitStructWrapper<T>(objectClass, bitStruct);
 
-        throw new UnsupportedOperationException("Can't serialize " + objectClass);
-    }
+		throw new UnsupportedOperationException("Can't serialize " + objectClass);
+	}
 
-    BitserWrapper() {}
+	BitserWrapper() {
+	}
 
-    public abstract void write(Object object, BitOutputStream output, BitserCache cache) throws IOException;
+	public abstract void write(Object object, BitOutputStream output, BitserCache cache) throws IOException;
 
-    public abstract T read(BitInputStream input, BitserCache cache) throws IOException;
+	public abstract T read(BitInputStream input, BitserCache cache) throws IOException;
 }

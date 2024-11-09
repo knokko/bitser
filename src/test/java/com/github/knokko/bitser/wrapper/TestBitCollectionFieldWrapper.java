@@ -40,22 +40,22 @@ public class TestBitCollectionFieldWrapper {
 	@Test
 	public void testNullStrings() throws IOException {
 		Strings strings = new Strings();
-		strings.array = new String[] { "hello", null, "world" };
+		strings.array = new String[]{"hello", null, "world"};
 
 		Strings loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), strings);
-		assertArrayEquals(new String[] { "hello", null, "world" }, loaded.array);
+		assertArrayEquals(new String[]{"hello", null, "world"}, loaded.array);
 		assertNull(loaded.list);
 	}
 
 	@Test
 	public void testNonNullStrings() throws IOException {
 		Strings strings = new Strings();
-		strings.array = new String[] { "test1234" };
+		strings.array = new String[]{"test1234"};
 		strings.list = new ArrayList<>();
 		strings.list.add("hello, world!");
 
 		Strings loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), strings);
-		assertArrayEquals(new String[] { "test1234" }, loaded.array);
+		assertArrayEquals(new String[]{"test1234"}, loaded.array);
 		assertEquals(1, loaded.list.size());
 		assertEquals("hello, world!", loaded.list.get(0));
 	}
@@ -106,7 +106,7 @@ public class TestBitCollectionFieldWrapper {
 		bytes.list.add((byte) -123);
 
 		Bytes loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), bytes);
-		assertArrayEquals(new byte[] { -12, 34 }, loaded.array);
+		assertArrayEquals(new byte[]{-12, 34}, loaded.array);
 		assertEquals(1, loaded.list.size());
 		assertEquals((byte) -123, loaded.list.get(0));
 	}
@@ -164,9 +164,9 @@ public class TestBitCollectionFieldWrapper {
 	@Test
 	public void testNullLongValues() throws IOException {
 		Longs longs = new Longs();
-		longs.array = new Long[] { 12L, null, 34L };
+		longs.array = new Long[]{12L, null, 34L};
 		Longs loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), longs);
-		assertArrayEquals(new Long[] { 12L, null, 34L }, loaded.array);
+		assertArrayEquals(new Long[]{12L, null, 34L}, loaded.array);
 		assertEquals(0, loaded.set.size());
 	}
 
@@ -203,11 +203,11 @@ public class TestBitCollectionFieldWrapper {
 	@Test
 	public void testProperLongValues() throws IOException {
 		Longs longs = new Longs();
-		longs.array = new Long[] { -1L, 2L };
+		longs.array = new Long[]{-1L, 2L};
 		longs.set.add(-1234L);
 
 		Longs loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), longs);
-		assertArrayEquals(new Long[] { -1L, 2L }, loaded.array);
+		assertArrayEquals(new Long[]{-1L, 2L}, loaded.array);
 		assertEquals(1, loaded.set.size());
 		assertEquals(-1234L, loaded.set.iterator().next());
 	}

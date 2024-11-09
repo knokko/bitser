@@ -6,24 +6,24 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface BitField {
 
-    int ordering();
+	int ordering();
 
-    boolean optional() default false;
+	boolean optional() default false;
 
-    int since() default -1;
+	int since() default -1;
 
-    class Properties {
+	class Properties {
 
-        public final int ordering;
-        public final boolean optional;
+		public final int ordering;
+		public final boolean optional;
 
-        public Properties(int ordering, boolean optional) {
-            this.ordering = ordering;
-            this.optional = optional;
-        }
+		public Properties(int ordering, boolean optional) {
+			this.ordering = ordering;
+			this.optional = optional;
+		}
 
-        public Properties(BitField bitField) {
-            this(bitField.ordering(), bitField.optional());
-        }
-    }
+		public Properties(BitField bitField) {
+			this(bitField.ordering(), bitField.optional());
+		}
+	}
 }
