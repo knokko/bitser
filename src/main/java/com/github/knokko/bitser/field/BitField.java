@@ -23,9 +23,5 @@ public @interface BitField {
 			this.optional = optional;
 			this.type = type;
 		}
-
-		public Properties(BitField bitField, Class<?> type) {
-			this(bitField.ordering(), bitField.optional(), type);
-		}
 	}
 }

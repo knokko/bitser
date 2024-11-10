@@ -11,6 +11,7 @@ import com.github.knokko.bitser.serialize.BitserCache;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -113,12 +114,32 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		}
 
 		Field[] classFields = objectClass.getDeclaredFields();
-		for (Field classField : classFields) {
+		int[] orderingOffsets = new int[classFields.length];
+		Class<?> superClass = objectClass.getSuperclass();
+		while (superClass != null) {
+			Field[] superFields = superClass.getDeclaredFields();
+			int superOffset = 0;
+			for (Field field : superFields) {
+				if (field.getAnnotation(BitField.class) != null) superOffset += 1;
+			}
+			Field[] combinedFields = Arrays.copyOf(superFields, classFields.length + superFields.length);
+			int[] combinedOffsets = new int[combinedFields.length];
+			for (int index = 0; index < orderingOffsets.length; index++) {
+				combinedOffsets[index + superFields.length] = orderingOffsets[index] + superOffset;
+			}
+			System.arraycopy(classFields, 0, combinedFields, superFields.length, classFields.length);
+			classFields = combinedFields;
+			orderingOffsets = combinedOffsets;
+			superClass = superClass.getSuperclass();
+		}
+
+		for (int index = 0; index < classFields.length; index++) {
+			Field classField = classFields[index];
 			BitField bitField = classField.getAnnotation(BitField.class);
 			if (bitField != null) {
 				if (bitField.ordering() < 0) throw new InvalidBitFieldException("ordering must be non-negative");
-				fields.add(createWrapper(
-						new BitField.Properties(bitField, classField.getType()
+				fields.add(createWrapper(new BitField.Properties(
+						bitField.ordering() + orderingOffsets[index], bitField.optional(), classField.getType()
 				), classField, objectClass, 0, false));
 			}
 		}

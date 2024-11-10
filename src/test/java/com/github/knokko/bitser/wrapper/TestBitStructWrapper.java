@@ -7,6 +7,7 @@ import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.serialize.BitserCache;
 import org.junit.jupiter.api.Test;
@@ -122,5 +123,57 @@ public class TestBitStructWrapper {
 				invalid.getMessage().contains("Missing annotations for"),
 				"Expected " + invalid.getMessage() + " to contain \"Missing annotations for\""
 		);
+	}
+
+	private static class Entity {
+
+		@BitField(ordering = 1)
+		@IntegerField(expectUniform = false)
+		int x;
+
+		@SuppressWarnings("unused")
+		long tempStuff;
+
+		@BitField(ordering = 0)
+		@IntegerField(expectUniform = true)
+		int y;
+	}
+
+	private static class Rectangle extends Entity {
+
+		@SuppressWarnings("unused")
+		boolean temporary;
+
+		@BitField(ordering = 0)
+		@IntegerField(expectUniform = false, minValue = 1)
+		int width;
+
+		@BitField(ordering = 1)
+		@IntegerField(expectUniform = true, minValue = 1)
+		int height;
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class ColoredRectangle extends Rectangle {
+
+		@BitField(ordering = 0)
+		String color;
+	}
+
+	@Test
+	public void testInheritance() throws IOException {
+		ColoredRectangle rectangle = new ColoredRectangle();
+		rectangle.x = -12;
+		rectangle.y = -34;
+		rectangle.width = 56;
+		rectangle.height = 789;
+		rectangle.color = "red";
+
+		ColoredRectangle loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), rectangle);
+		assertEquals(-12, loaded.x);
+		assertEquals(-34, loaded.y);
+		assertEquals(56, loaded.width);
+		assertEquals(789, loaded.height);
+		assertEquals("red", loaded.color);
 	}
 }
