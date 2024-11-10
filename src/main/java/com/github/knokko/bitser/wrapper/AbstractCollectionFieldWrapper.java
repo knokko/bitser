@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
@@ -9,6 +10,7 @@ import com.github.knokko.bitser.serialize.BitserCache;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
@@ -24,6 +26,9 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		super(properties, classField);
 		if (sizeField.minValue() > Integer.MAX_VALUE) throw new IllegalArgumentException();
 		if (sizeField.maxValue() < 0) throw new IllegalArgumentException();
+		if (!properties.type.isArray() && (properties.type.isInterface() || Modifier.isAbstract(properties.type.getModifiers()))) {
+			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + classField);
+		}
 		this.sizeField = sizeField;
 	}
 
@@ -61,14 +66,14 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	private Object constructCollectionWithSize(int size) {
-		if (classField.getType().isArray()) {
-			return Array.newInstance(classField.getType().getComponentType(), size);
+		if (properties.type.isArray()) {
+			return Array.newInstance(properties.type.getComponentType(), size);
 		} else {
 			try {
-				return classField.getType().getConstructor(int.class).newInstance(size);
+				return properties.type.getConstructor(int.class).newInstance(size);
 			} catch (NoSuchMethodException noIntConstructor) {
 				try {
-					return classField.getType().getConstructor().newInstance();
+					return properties.type.getConstructor().newInstance();
 				} catch (Exception unexpected) {
 					throw new RuntimeException(unexpected);
 				}

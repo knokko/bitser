@@ -13,10 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -272,6 +269,30 @@ public class TestBitCollectionFieldWrapper {
 		assertTrue(
 				invalid.getMessage().contains("Unexpected generic type for"),
 				"Expected " + invalid.getMessage() + " to contain \"Unexpected generic type for\""
+		);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class WithAbstractList {
+
+		@BitField(ordering = 0)
+		@CollectionField
+		@SuppressWarnings("unused")
+		List<String> list = new ArrayList<>();
+	}
+
+	@Test
+	public void testAbstractList() {
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).serialize(new WithAbstractList(), new BitCountStream())
+		);
+		assertTrue(
+				invalid.getMessage().contains("Field type must not be abstract or an interface"),
+				"Expected " + invalid.getMessage() + " to contain \"Field type must not be abstract or an interface\""
+		);
+		assertTrue(
+				invalid.getMessage().contains("WithAbstractList.list"),
+				"Expected " + invalid.getMessage() + " to contain\"WithAbstractList.list\""
 		);
 	}
 }
