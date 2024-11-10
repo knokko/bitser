@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
@@ -71,6 +72,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		if (properties.type.getAnnotation(BitStruct.class) != null) {
 			result.add(new StructFieldWrapper(properties, classField));
 		}
+
+		BitEnum bitEnum = properties.type.getAnnotation(BitEnum.class);
+		if (bitEnum != null) result.add(new EnumFieldWrapper(properties, classField, bitEnum, properties.type));
 
 		if (expectNothing && result.isEmpty()) return null;
 
