@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.CollectionField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -154,8 +155,8 @@ public class TestBitCollectionFieldWrapper {
 	public void testForbidLongSetNull() {
 		Longs longs = new Longs();
 		longs.set = null;
-		NullPointerException failed = assertThrows(
-				NullPointerException.class,
+		InvalidBitValueException failed = assertThrows(
+				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
 		);
 		assertTrue(

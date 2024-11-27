@@ -20,11 +20,13 @@ public @interface BitField {
 		public final int ordering;
 		public final boolean optional;
 		public final Class<?> type;
+		public final ReferenceFieldTarget referenceTarget;
 
-		public Properties(int ordering, boolean optional, Class<?> type) {
+		public Properties(int ordering, boolean optional, Class<?> type, ReferenceFieldTarget referenceTarget) {
 			this.ordering = ordering;
 			this.optional = optional;
 			this.type = type;
+			this.referenceTarget = referenceTarget;
 		}
 	}
 }

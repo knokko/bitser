@@ -7,13 +7,12 @@ import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 class BitStructWrapper<T> extends BitserWrapper<T> {
 
@@ -21,6 +20,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			BitField.Properties properties, Field classField, Class<?> objectClass,
 			int depth, boolean expectNothing
 	) {
+		if (properties.referenceTarget != null && classField.getType().isPrimitive()) {
+			throw new InvalidBitFieldException("Reference target " + classField + " is primitive, which is forbidden");
+		}
 		CollectionField collectionField = classField.getAnnotation(CollectionField.class);
 		if (collectionField != null && depth == 0) { // TODO Nested collection fields
 			Class<?> innerFieldType;
@@ -41,9 +43,11 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 					innerFieldType = (Class<?>) genericType.getActualTypeArguments()[0];
 				} else throw new InvalidBitFieldException("Unexpected generic type for " + classField);
 			}
+			BitField.Properties valueProperties = new BitField.Properties(
+					-1, collectionField.optionalValues(), innerFieldType, properties.referenceTarget
+			);
 			BitFieldWrapper valueWrapper = createWrapper(
-					new BitField.Properties(-1, collectionField.optionalValues(), innerFieldType),
-					classField, objectClass, depth + 1, collectionField.writeAsBytes()
+					valueProperties, classField, objectClass, depth + 1, collectionField.writeAsBytes()
 			);
 
 			if (collectionField.writeAsBytes()) {
@@ -55,8 +59,27 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 				}
 				return new ByteCollectionFieldWrapper(properties, collectionField.size(), classField);
 			} else {
+				if (properties.referenceTarget != null) properties = new BitField.Properties(
+						properties.ordering, properties.optional, properties.type, null
+				);
 				return new BitCollectionFieldWrapper(properties, classField, collectionField.size(), valueWrapper);
 			}
+		}
+
+		if (classField.isAnnotationPresent(StableReferenceFieldId.class)) {
+			if (properties.type != UUID.class) throw new InvalidBitFieldException(
+					"Only UUID fields can have @StableReferenceFieldId"
+			);
+			if (properties.optional) throw new InvalidBitFieldException("@StableReferenceFieldId's can't be optional");
+		}
+
+		ReferenceField referenceField = classField.getAnnotation(ReferenceField.class);
+		if (referenceField != null) {
+			if (classField.isAnnotationPresent(ReferenceFieldTarget.class)) throw new InvalidBitFieldException(
+					classField + " is both a reference field and a reference target, which is forbidden"
+			);
+			if (referenceField.stable()) return new StableReferenceFieldWrapper(properties, classField, referenceField.label());
+			return new UnstableReferenceFieldWrapper(properties, classField, referenceField.label());
 		}
 
 		List<BitFieldWrapper> result = new ArrayList<>(1);
@@ -79,7 +102,12 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 		if (expectNothing && result.isEmpty()) return null;
 
-		if (properties.type == UUID.class) result.add(new UUIDFieldWrapper(properties, classField));
+		if (properties.type == UUID.class) {
+			result.add(new UUIDFieldWrapper(
+					properties, classField, classField.isAnnotationPresent(StableReferenceFieldId.class))
+			);
+		}
+
 		if (properties.type == boolean.class || properties.type == Boolean.class) {
 			result.add(new BooleanFieldWrapper(properties, classField));
 		}
@@ -95,6 +123,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	private final BitStruct bitStruct;
 	private final List<BitFieldWrapper> fields = new ArrayList<>();
 	private final Constructor<T> constructor;
+	private final Field stableIdField;
 
 	BitStructWrapper(Class<T> objectClass, BitStruct bitStruct) {
 		if (bitStruct == null)
@@ -139,33 +168,78 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			if (bitField != null) {
 				if (bitField.ordering() < 0) throw new InvalidBitFieldException("ordering must be non-negative");
 				fields.add(createWrapper(new BitField.Properties(
-						bitField.ordering() + orderingOffsets[index], bitField.optional(), classField.getType()
+						bitField.ordering() + orderingOffsets[index],
+						bitField.optional(),
+						classField.getType(),
+						classField.getAnnotation(ReferenceFieldTarget.class)
 				), classField, objectClass, 0, false));
 			}
 		}
 
 		fields.sort(null);
 
+		Field stableIdField = null;
+
 		for (int index = 0; index < fields.size(); index++) {
-			if (fields.get(index).properties.ordering != index)
-				throw new Error("Orderings of " + objectClass + " has gaps");
+			BitFieldWrapper field = fields.get(index);
+			if (field.properties.ordering != index) {
+				throw new InvalidBitFieldException("Orderings of " + objectClass + " has gaps");
+			}
+			if (field instanceof UUIDFieldWrapper && ((UUIDFieldWrapper) field).isStableReferenceId) {
+				if (stableIdField != null) throw new InvalidBitFieldException(
+						"Bit struct " + objectClass + " has multiple stable ID fields, but at most 1 is allowed"
+				);
+				stableIdField = field.classField;
+			}
+		}
+
+		this.stableIdField = stableIdField;
+	}
+
+	@Override
+	public void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedStructs) {
+		if (visitedStructs.contains(this)) return;
+		visitedStructs.add(this);
+		for (BitFieldWrapper field : fields) field.collectReferenceTargetLabels(cache, destination, visitedStructs);
+	}
+
+	@Override
+	public void registerReferenceTargets(Object object, BitserCache cache, ReferenceIdMapper mapper) {
+		for (BitFieldWrapper field : fields) {
+			try {
+				field.registerReferenceTargets(field.classField.get(object), cache, mapper);
+			} catch (IllegalAccessException shouldNotHappen) {
+				throw new Error(shouldNotHappen);
+			}
 		}
 	}
 
 	@Override
-	public void write(Object object, BitOutputStream output, BitserCache cache) throws IOException {
-		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
-		for (BitFieldWrapper field : fields) field.write(object, output, cache);
+	public UUID getStableId(Object target) {
+		if (stableIdField == null) throw new InvalidBitFieldException(target + " doesn't have an @StableReferenceFieldId");
+		try {
+			return (UUID) stableIdField.get(target);
+		} catch (IllegalAccessException shouldNotHappen) {
+			throw new Error(shouldNotHappen);
+		}
 	}
 
 	@Override
-	public T read(BitInputStream input, BitserCache cache) throws IOException {
+	public void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+		for (BitFieldWrapper field : fields) field.write(object, output, cache, idMapper);
+	}
+
+	@Override
+	public void read(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
 		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
 
 		try {
 			T object = constructor.newInstance();
-			for (BitFieldWrapper field : fields) field.read(object, input, cache);
-			return object;
+			for (BitFieldWrapper field : fields) field.read(object, input, cache, idLoader);
+			setValue.consume(object);
 		} catch (InstantiationException e) {
 			throw new Error("Failed to instantiate " + constructor, e);
 		} catch (IllegalAccessException shouldNotHappen) {

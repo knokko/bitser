@@ -6,6 +6,8 @@ import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -33,31 +35,35 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
+	void writeValue(
+			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
+	) throws IOException, IllegalAccessException {
 		int size = getCollectionSize(value);
 		if (sizeField.expectUniform()) encodeUniformInteger(size, getMinSize(), getMaxSize(), output);
 		else encodeVariableInteger(size, getMinSize(), getMaxSize(), output);
 
-		writeValue(value, size, output, cache);
+		writeValue(value, size, output, cache, idMapper);
 	}
 
 	@Override
-	Object readValue(BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException, IllegalAccessException {
 		int size;
 		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), input);
 
 		Object value = constructCollectionWithSize(size);
-		readValue(value, size, input, cache);
-		return value;
+		readValue(value, size, input, cache, idLoader);
+		setValue.consume(value);
 	}
 
 	abstract void writeValue(
-			Object value, int size, BitOutputStream output, BitserCache cache
+			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException, IllegalAccessException;
 
 	abstract void readValue(
-			Object value, int size, BitInputStream input, BitserCache cache
+			Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
 	) throws IOException, IllegalAccessException;
 
 	private int getCollectionSize(Object object) {

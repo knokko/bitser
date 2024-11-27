@@ -5,6 +5,8 @@ import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -18,7 +20,9 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, int size, BitOutputStream output, BitserCache cache) throws IOException {
+	void writeValue(
+			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
+	) throws IOException {
 		if (value instanceof boolean[]) output.write(toByteArray((boolean[]) value));
 		else if (value instanceof byte[]) output.write((byte[]) value);
 		else if (value instanceof int[]) output.write(toByteArray((int[]) value));
@@ -50,7 +54,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void readValue(Object value, int size, BitInputStream input, BitserCache cache) throws IOException {
+	void readValue(Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader) throws IOException {
 		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, input);
 		else if (value instanceof byte[]) input.read((byte[]) value);
 		else if (value instanceof int[]) backToIntArray((int[]) value, input);

@@ -1,15 +1,15 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
-import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,7 +27,7 @@ public class TestStringFieldWrapper {
 	@Test
 	public void testOptionalStrings() throws IOException {
 		Bitser bitser = new Bitser(false);
-		assertThrows(NullPointerException.class, () -> bitser.serialize(this, new BitOutputStream(new ByteArrayOutputStream())));
+		assertThrows(InvalidBitValueException.class, () -> bitser.serialize(this, new BitCountStream()));
 		this.b = "abcde";
 
 		TestStringFieldWrapper loaded = BitserHelper.serializeAndDeserialize(bitser, this);

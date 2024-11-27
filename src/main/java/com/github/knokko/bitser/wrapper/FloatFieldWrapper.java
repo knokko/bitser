@@ -8,6 +8,8 @@ import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.IntegerBitser;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -31,7 +33,7 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
+	void writeValue(Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
 		if (floatField.expectMultipleOf() != 0.0) {
 			double doubleValue = ((Number) value).doubleValue();
 			long count = Math.round(doubleValue / floatField.expectMultipleOf());
@@ -59,18 +61,21 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException, IllegalAccessException {
 		if (floatField.expectMultipleOf() != 0.0 && input.read()) {
 			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, input);
 			double result = count * floatField.expectMultipleOf();
-			if (properties.type == float.class || properties.type == Float.class) return (float) result;
-			return result;
+			if (properties.type == float.class || properties.type == Float.class) setValue.consume((float) result);
+			else setValue.consume(result);
+			return;
 		}
 
 		if (properties.type == float.class || properties.type == Float.class) {
-			return Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, input));
+			setValue.consume(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, input)));
 		} else {
-			return Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input));
+			setValue.consume(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input)));
 		}
 	}
 }

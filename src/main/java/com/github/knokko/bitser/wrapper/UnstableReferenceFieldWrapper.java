@@ -10,23 +10,26 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
-class BooleanFieldWrapper extends BitFieldWrapper {
+class UnstableReferenceFieldWrapper extends BitFieldWrapper {
 
-	BooleanFieldWrapper(BitField.Properties properties, Field classField) {
+	private final String label;
+
+	UnstableReferenceFieldWrapper(BitField.Properties properties, Field classField, String label) {
 		super(properties, classField);
+		this.label = label;
 	}
 
 	@Override
 	void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException, IllegalAccessException {
-		output.write((Boolean) value);
+		idMapper.encodeUnstableId(label, value, output);
 	}
 
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
 	) throws IOException, IllegalAccessException {
-		setValue.consume(input.read());
+		idLoader.getUnstable(label, setValue, input);
 	}
 }

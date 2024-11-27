@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.CollectionField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -84,8 +85,8 @@ public class TestByteCollectionFieldWrapper {
 	@Test
 	public void testIntArray() throws IOException {
 		IntArray nullArray = new IntArray(null);
-		NullPointerException failed = assertThrows(
-				NullPointerException.class,
+		InvalidBitValueException failed = assertThrows(
+				InvalidBitValueException.class,
 				() -> BitserHelper.serializeAndDeserialize(new Bitser(false), nullArray)
 		);
 		assertTrue(

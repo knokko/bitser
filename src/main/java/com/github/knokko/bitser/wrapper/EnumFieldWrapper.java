@@ -6,6 +6,8 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -27,7 +29,9 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException, IllegalAccessException {
+	void writeValue(
+			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
+	) throws IOException, IllegalAccessException {
 		Enum<?> enumValue = (Enum<?>) value;
 		if (bitEnum.mode() == BitEnum.Mode.Name) {
 			byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
@@ -42,7 +46,9 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object readValue(BitInputStream input, BitserCache cache) throws IOException, IllegalAccessException {
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException, IllegalAccessException {
 		if (bitEnum.mode() == BitEnum.Mode.Name) {
 			int numBytes = (int) decodeVariableInteger(1, Integer.MAX_VALUE, input);
 			byte[] stringBytes = new byte[numBytes];
@@ -51,7 +57,8 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			}
 			String name = new String(stringBytes, StandardCharsets.UTF_8);
 			try {
-				return enumClass.getDeclaredField(name).get(null);
+				setValue.consume(enumClass.getDeclaredField(name).get(null));
+				return;
 			} catch (NoSuchFieldException e) {
 				throw new InvalidBitFieldException("Missing enum constant " + name + " in " + enumClass);
 			}
@@ -69,6 +76,6 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		if (ordinal >= constants.length) {
 			throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + enumClass);
 		}
-		return constants[ordinal];
+		setValue.consume(constants[ordinal]);
 	}
 }

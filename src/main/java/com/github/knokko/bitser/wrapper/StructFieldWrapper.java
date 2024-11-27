@@ -4,9 +4,12 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Set;
 
 class StructFieldWrapper extends BitFieldWrapper {
 
@@ -15,12 +18,26 @@ class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
-		if (value != null) cache.getWrapper(properties.type).write(value, output, cache);
+	void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedObjects) {
+		super.collectReferenceTargetLabels(cache, destination, visitedObjects);
+		cache.getWrapper(properties.type).collectReferenceTargetLabels(cache, destination, visitedObjects);
 	}
 
 	@Override
-	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
-		return cache.getWrapper(properties.type).read(input, cache);
+	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
+		super.registerReferenceTargets(value, cache, idMapper);
+		if (value != null) cache.getWrapper(properties.type).registerReferenceTargets(value, cache, idMapper);
+	}
+
+	@Override
+	void writeValue(Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+		cache.getWrapper(properties.type).write(value, output, cache, idMapper);
+	}
+
+	@Override
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException, IllegalAccessException {
+		cache.getWrapper(properties.type).read(input, cache, idLoader, setValue);
 	}
 }

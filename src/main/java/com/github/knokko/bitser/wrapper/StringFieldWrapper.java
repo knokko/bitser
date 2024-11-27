@@ -5,6 +5,8 @@ import com.github.knokko.bitser.field.StringField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -24,7 +26,7 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache) throws IOException {
+	void writeValue(Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
 		if (stringField != null && stringField.length().expectUniform()) {
@@ -35,7 +37,9 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object readValue(BitInputStream input, BitserCache cache) throws IOException {
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException, IllegalAccessException {
 		int length;
 		if (stringField != null && stringField.length().expectUniform()) {
 			length = (int) decodeUniformInteger(minLength(), maxLength(), input);
@@ -45,7 +49,7 @@ public class StringFieldWrapper extends BitFieldWrapper {
 		for (int index = 0; index < length; index++) {
 			bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, input);
 		}
-		return new String(bytes, StandardCharsets.UTF_8);
+		setValue.consume(new String(bytes, StandardCharsets.UTF_8));
 	}
 
 	private int minLength() {

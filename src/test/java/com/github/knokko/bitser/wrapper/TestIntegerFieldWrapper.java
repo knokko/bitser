@@ -1,7 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
