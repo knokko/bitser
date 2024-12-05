@@ -14,7 +14,7 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestByteCollectionFieldWrapper {
+public class TestByteCollectionField {
 
 	@BitStruct(backwardCompatible = false)
 	private static class BooleanArray {

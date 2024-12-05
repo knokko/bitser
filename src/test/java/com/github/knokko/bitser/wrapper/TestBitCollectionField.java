@@ -18,7 +18,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestBitCollectionFieldWrapper {
+public class TestBitCollectionField {
 
 	@BitStruct(backwardCompatible = false)
 	private static class Strings {

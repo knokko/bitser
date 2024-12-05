@@ -18,7 +18,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 @BitStruct(backwardCompatible = false)
-public class TestBitEnumWrapper {
+public class TestBitEnum {
 
 	@SuppressWarnings("unused")
 	@BitEnum(mode = BitEnum.Mode.Name)
@@ -61,7 +61,7 @@ public class TestBitEnumWrapper {
 		this.seasons = Season.WINTER;
 		this.direction = Direction.UP;
 
-		TestBitEnumWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
+		TestBitEnum loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertNull(loaded.element);

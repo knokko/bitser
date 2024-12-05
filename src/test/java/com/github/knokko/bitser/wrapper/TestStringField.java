@@ -15,7 +15,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 @BitStruct(backwardCompatible = false)
-public class TestStringFieldWrapper {
+public class TestStringField {
 
 	@BitField(ordering = 1, optional = true)
 	public String a;
@@ -30,7 +30,7 @@ public class TestStringFieldWrapper {
 		assertThrows(InvalidBitValueException.class, () -> bitser.serialize(this, new BitCountStream()));
 		this.b = "abcde";
 
-		TestStringFieldWrapper loaded = BitserHelper.serializeAndDeserialize(bitser, this);
+		TestStringField loaded = BitserHelper.serializeAndDeserialize(bitser, this);
 		assertNull(loaded.a);
 		assertEquals("abcde", loaded.b);
 	}
@@ -40,7 +40,7 @@ public class TestStringFieldWrapper {
 		this.a = "Ώ ΐ Α Β Γ Δ Ε Ζ Η Θ Ι ";
 		this.b = " ນ ບ ";
 
-		TestStringFieldWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
+		TestStringField loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
 		assertEquals(this.a, loaded.a);
 		assertEquals(this.b, loaded.b);
 	}

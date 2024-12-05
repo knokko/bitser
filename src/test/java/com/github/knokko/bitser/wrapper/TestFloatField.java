@@ -17,7 +17,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 @BitStruct(backwardCompatible = false)
-public class TestFloatFieldWrapper {
+public class TestFloatField {
 
 	@BitField(ordering = 0, optional = true)
 	@FloatField
@@ -42,7 +42,7 @@ public class TestFloatFieldWrapper {
 		this.optional = null;
 		this.required = 1.8;
 
-		TestFloatFieldWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
+		TestFloatField loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
 		assertNull(loaded.optional);
 		assertEquals(1.8, loaded.required);
 
@@ -69,8 +69,8 @@ public class TestFloatFieldWrapper {
 		// This should fit in 2 bytes
 		assertEquals(2, byteOutput.toByteArray().length);
 
-		TestFloatFieldWrapper loaded = bitser.deserialize(
-				TestFloatFieldWrapper.class, new BitInputStream(new ByteArrayInputStream(byteOutput.toByteArray()))
+		TestFloatField loaded = bitser.deserialize(
+				TestFloatField.class, new BitInputStream(new ByteArrayInputStream(byteOutput.toByteArray()))
 		);
 		assertNull(loaded.optional);
 		assertEquals(1.4, loaded.required, 0.001);

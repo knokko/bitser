@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @BitStruct(backwardCompatible = false)
-public class TestUUIDFieldWrapper {
+public class TestUUIDField {
 
 	@BitField(ordering = 0, optional = true)
 	private UUID optional;
@@ -24,7 +24,7 @@ public class TestUUIDFieldWrapper {
 	@Test
 	public void testNullAndZero() throws IOException {
 		this.required = new UUID(0, 0);
-		TestUUIDFieldWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
+		TestUUIDField loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
 		assertNull(loaded.optional);
 		assertEquals(new UUID(0, 0), loaded.required);
 	}
@@ -33,7 +33,7 @@ public class TestUUIDFieldWrapper {
 	public void testGeneral() throws IOException {
 		this.optional = UUID.randomUUID();
 		this.required = new UUID(12, 345);
-		TestUUIDFieldWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
+		TestUUIDField loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
 		assertEquals(this.optional, loaded.optional);
 		assertEquals(new UUID(12, 345), loaded.required);
 	}

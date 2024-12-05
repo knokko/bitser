@@ -14,7 +14,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 @BitStruct(backwardCompatible = false)
-public class TestBooleanFieldWrapper {
+public class TestBooleanField {
 
 	@BitField(ordering = 0, optional = true)
 	Boolean optional;
@@ -27,7 +27,7 @@ public class TestBooleanFieldWrapper {
 		this.optional = null;
 		this.required = true;
 
-		TestBooleanFieldWrapper loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
+		TestBooleanField loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
 		assertNull(loaded.optional);
 		assertTrue(loaded.required);
 

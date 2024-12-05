@@ -13,7 +13,7 @@ import java.io.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestBitStructWrapper {
+public class TestBitStruct {
 
 	@BitStruct(backwardCompatible = false)
 	private static class WandCooldowns {
