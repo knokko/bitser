@@ -1,19 +1,18 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 class BooleanFieldWrapper extends BitFieldWrapper {
 
-	BooleanFieldWrapper(BitField.Properties properties, Field classField) {
-		super(properties, classField);
+	BooleanFieldWrapper(VirtualField field) {
+		super(field);
 	}
 
 	@Override

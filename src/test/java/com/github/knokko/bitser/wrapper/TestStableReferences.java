@@ -64,11 +64,9 @@ public class TestStableReferences {
 	private static class ItemRoot {
 
 		@BitField(ordering = 0)
-		@CollectionField
 		final ArrayList<Item> items = new ArrayList<>();
 
 		@BitField(ordering = 1)
-		@CollectionField
 		@ReferenceFieldTarget(label = "item types")
 		final ArrayList<ItemType> types = new ArrayList<>();
 	}
@@ -115,7 +113,6 @@ public class TestStableReferences {
 		final int score;
 
 		@BitField(ordering = 2)
-		@CollectionField
 		@ReferenceField(stable = true, label = "nodes")
 		final ArrayList<Node> neighbours = new ArrayList<>();
 
@@ -170,7 +167,6 @@ public class TestStableReferences {
 	static class Graph {
 
 		@BitField(ordering = 0)
-		@CollectionField
 		@ReferenceFieldTarget(label = "nodes")
 		final ArrayList<Node> mostNodes = new ArrayList<>();
 

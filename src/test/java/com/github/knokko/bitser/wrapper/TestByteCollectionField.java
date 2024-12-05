@@ -4,8 +4,8 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.field.CollectionField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.field.NestedFieldSetting;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ public class TestByteCollectionField {
 	private static class BooleanArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(writeAsBytes = true)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
 		boolean[] data;
 	}
 
@@ -45,8 +45,8 @@ public class TestByteCollectionField {
 	@BitStruct(backwardCompatible = false)
 	private static class ByteArray {
 
-		@BitField(ordering = 0, optional = true)
-		@CollectionField(writeAsBytes = true)
+		@BitField(ordering = 0)
+		@NestedFieldSetting(path = "", optional = true, writeAsBytes = true)
 		byte[] data;
 	}
 
@@ -69,7 +69,7 @@ public class TestByteCollectionField {
 	private static class IntArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(writeAsBytes = true)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final int[] data;
 
 		@SuppressWarnings("unused")
@@ -108,30 +108,31 @@ public class TestByteCollectionField {
 	@BitStruct(backwardCompatible = false)
 	private static class InvalidOptional {
 
-		@BitField(ordering = 0)
 		@SuppressWarnings("unused")
-		@CollectionField(optionalValues = true, writeAsBytes = true)
+		@BitField(ordering = 0)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
+		@NestedFieldSetting(path = "c", optional = true)
 		byte[] data = new byte[10];
 	}
 
 	@Test
 	public void testInvalidOptional() {
-		InvalidBitFieldException failed = assertThrows(InvalidBitFieldException.class,
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
 				() -> BitserHelper.serializeAndDeserialize(new Bitser(true), new InvalidOptional())
-		);
+		).getMessage();
 		assertTrue(
-				failed.getMessage().contains("optionalValues must be false when writeAsBytes is true"),
-				"Expected " + failed.getMessage() + " to contain \"optionalValues must be false when writeAsBytes is true\""
+				errorMessage.contains("NestedFieldSetting's on writeAsBytes targets is forbidden:"),
+				"Expected " + errorMessage + " to contain \"NestedFieldSetting's on writeAsBytes targets is forbidden:\""
 		);
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class InvalidAnnotations {
 
-		@BitField(ordering = 0)
 		@SuppressWarnings("unused")
+		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
-		@CollectionField(writeAsBytes = true)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
 		byte[] data = new byte[10];
 	}
 

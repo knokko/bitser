@@ -1,16 +1,16 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -20,8 +20,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	private final BitFieldWrapper valuesWrapper;
 
-	BitCollectionFieldWrapper(BitField.Properties properties, Field classField, IntegerField sizeField, BitFieldWrapper valuesWrapper) {
-		super(properties, sizeField, classField);
+	BitCollectionFieldWrapper(VirtualField field, IntegerField sizeField, BitFieldWrapper valuesWrapper) {
+		super(field, sizeField);
 		this.valuesWrapper = valuesWrapper;
 	}
 
@@ -38,7 +38,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
 		super.registerReferenceTargets(value, cache, idMapper);
 		if (value == null) return;
-		if (properties.type.isArray()) {
+		if (field.type.isArray()) {
 			int size = Array.getLength(value);
 			for (int index = 0; index < size; index++) {
 				valuesWrapper.registerReferenceTargets(Array.get(value, index), cache, idMapper);
@@ -52,7 +52,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	void writeValue(
 			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException, IllegalAccessException {
-		if (properties.type.isArray()) {
+		if (field.type.isArray()) {
 			for (int index = 0; index < size; index++) writeElement(Array.get(value, index), output, cache, idMapper);
 		} else {
 			for (Object element : (Collection<?>) value) writeElement(element, output, cache, idMapper);
@@ -62,14 +62,14 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	private void writeElement(
 			Object element, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException, IllegalAccessException {
-		if (valuesWrapper.properties.optional) output.write(element != null);
+		if (valuesWrapper.field.optional) output.write(element != null);
 		else if (element == null) {
-			throw new NullPointerException("Field " + classField + " must not have null values");
+			throw new InvalidBitValueException("Field " + field + " must not have null values");
 		}
 		if (element != null) {
 			valuesWrapper.writeValue(element, output, cache, idMapper);
-			if (valuesWrapper.properties.referenceTarget != null) {
-				idMapper.maybeEncodeUnstableId(valuesWrapper.properties.referenceTarget.label(), element, output);
+			if (valuesWrapper.field.referenceTargetLabel != null) {
+				idMapper.maybeEncodeUnstableId(valuesWrapper.field.referenceTargetLabel, element, output);
 			}
 		}
 	}
@@ -80,7 +80,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
 	) throws IOException, IllegalAccessException {
 		for (int index = 0; index < size; index++) {
-			if (valuesWrapper.properties.optional && !input.read()) {
+			if (valuesWrapper.field.optional && !input.read()) {
 				if (value instanceof Collection<?>) {
 					((Collection<Object>) value).add(null);
 				} else {
@@ -98,8 +98,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 					}
 				});
 
-				if (valuesWrapper.properties.referenceTarget != null) {
-					idLoader.register(valuesWrapper.properties.referenceTarget.label(), rememberElement.get(0), input, cache);
+				if (valuesWrapper.field.referenceTargetLabel != null) {
+					idLoader.register(valuesWrapper.field.referenceTargetLabel, rememberElement.get(0), input, cache);
 				}
 			}
 		}

@@ -155,4 +155,32 @@ public class TestBitStruct {
 		assertEquals(789, loaded.height);
 		assertEquals("red", loaded.color);
 	}
+
+	static class SubWandCooldowns extends WandCooldowns {}
+
+	@Test
+	public void testNoBitStructInheritance() {
+		String errorMessage = assertThrows(
+				InvalidBitFieldException.class,
+				() -> new Bitser(false).serialize(new SubWandCooldowns(), new BitCountStream())
+		).getMessage();
+		assertEquals(errorMessage, "class com.github.knokko.bitser.wrapper.TestBitStruct$SubWandCooldowns is not a BitStruct");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	static class StaticBitField {
+
+		@BitField(ordering = 0)
+		public static int test = 1;
+	}
+
+	@Test
+	public void testForbidStaticBitFields() {
+		@SuppressWarnings("InstantiationOfUtilityClass")
+		String errorMessage = assertThrows(
+				InvalidBitFieldException.class,
+				() -> new Bitser(true).serialize(new StaticBitField(), new BitCountStream())
+		).getMessage();
+		assertEquals("@BitField is not allowed on static fields", errorMessage);
+	}
 }

@@ -1,15 +1,14 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static java.lang.Long.max;
@@ -19,8 +18,8 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
 	private final IntegerField intField;
 
-	IntegerFieldWrapper(BitField.Properties properties, IntegerField intField, Field classField) {
-		super(properties, classField);
+	IntegerFieldWrapper(VirtualField field, IntegerField intField) {
+		super(field);
 		this.intField = intField;
 	}
 
@@ -39,7 +38,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), input);
 		else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), input);
 
-		Class<?> type = properties.type;
+		Class<?> type = field.type;
 		if (type == byte.class || type == Byte.class) setValue.consume((byte) longValue);
 		else if (type == short.class || type == Short.class) setValue.consume((short) longValue);
 		else if (type == int.class || type == Integer.class) setValue.consume((int) longValue);
@@ -51,7 +50,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
 		long classMinValue = Long.MIN_VALUE;
 
-		Class<?> type = properties.type;
+		Class<?> type = field.type;
 		if (type == byte.class || type == Byte.class) classMinValue = Byte.MIN_VALUE;
 		if (type == short.class || type == Short.class) classMinValue = Short.MIN_VALUE;
 		if (type == int.class || type == Integer.class) classMinValue = Integer.MIN_VALUE;
@@ -64,7 +63,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
 		long classMaxValue = Long.MAX_VALUE;
 
-		Class<?> type = properties.type;
+		Class<?> type = field.type;
 		if (type == byte.class || type == Byte.class) classMaxValue = Byte.MAX_VALUE;
 		if (type == short.class || type == Short.class) classMaxValue = Short.MAX_VALUE;
 		if (type == int.class || type == Integer.class) classMaxValue = Integer.MAX_VALUE;

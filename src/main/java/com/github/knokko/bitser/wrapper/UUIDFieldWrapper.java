@@ -1,14 +1,14 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.StableReferenceFieldId;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.UUID;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
@@ -18,9 +18,9 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 
 	final boolean isStableReferenceId;
 
-	UUIDFieldWrapper(BitField.Properties properties, Field classField, boolean isStableReferenceId) {
-		super(properties, classField);
-		this.isStableReferenceId = isStableReferenceId;
+	UUIDFieldWrapper(VirtualField field) {
+		super(field);
+		this.isStableReferenceId = field.annotations.has(StableReferenceFieldId.class);
 	}
 
 	@Override

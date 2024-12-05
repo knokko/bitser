@@ -2,7 +2,6 @@ package com.github.knokko.bitser.util;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 
@@ -38,12 +37,12 @@ public class ReferenceIdMapper {
 		}
 	}
 
-	public void register(ReferenceFieldTarget referenceTarget, Object value, BitserCache cache) {
+	public void register(String referenceTargetLabel, Object value, BitserCache cache) {
 		if (readOnly) throw new IllegalStateException("This mapper has become read-only");
 
-		Mappings mappings = this.labelMappings.get(referenceTarget.label());
+		Mappings mappings = this.labelMappings.get(referenceTargetLabel);
 		if (mappings == null) throw new Error(
-				"Unexpected target label " + referenceTarget.label() + ": expected one of " + labelMappings.keySet()
+				"Unexpected target label " + referenceTargetLabel + ": expected one of " + labelMappings.keySet()
 		);
 		mappings.register(value, cache);
 	}

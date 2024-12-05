@@ -1,17 +1,16 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 
@@ -24,12 +23,12 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	private final IntegerField sizeField;
 
-	AbstractCollectionFieldWrapper(BitField.Properties properties, IntegerField sizeField, Field classField) {
-		super(properties, classField);
+	AbstractCollectionFieldWrapper(VirtualField field, IntegerField sizeField) {
+		super(field);
 		if (sizeField.minValue() > Integer.MAX_VALUE) throw new IllegalArgumentException();
 		if (sizeField.maxValue() < 0) throw new IllegalArgumentException();
-		if (!properties.type.isArray() && (properties.type.isInterface() || Modifier.isAbstract(properties.type.getModifiers()))) {
-			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + classField);
+		if (!field.type.isArray() && (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers()))) {
+			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
 		this.sizeField = sizeField;
 	}
@@ -72,14 +71,14 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	private Object constructCollectionWithSize(int size) {
-		if (properties.type.isArray()) {
-			return Array.newInstance(properties.type.getComponentType(), size);
+		if (field.type.isArray()) {
+			return Array.newInstance(field.type.getComponentType(), size);
 		} else {
 			try {
-				return properties.type.getConstructor(int.class).newInstance(size);
+				return field.type.getConstructor(int.class).newInstance(size);
 			} catch (NoSuchMethodException noIntConstructor) {
 				try {
-					return properties.type.getConstructor().newInstance();
+					return field.type.getConstructor().newInstance();
 				} catch (Exception unexpected) {
 					throw new RuntimeException(unexpected);
 				}

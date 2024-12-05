@@ -1,15 +1,14 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.StringField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
@@ -20,8 +19,8 @@ public class StringFieldWrapper extends BitFieldWrapper {
 
 	private final StringField stringField;
 
-	StringFieldWrapper(BitField.Properties properties, StringField stringField, Field classField) {
-		super(properties, classField);
+	StringFieldWrapper(VirtualField field, StringField stringField) {
+		super(field);
 		this.stringField = stringField;
 	}
 

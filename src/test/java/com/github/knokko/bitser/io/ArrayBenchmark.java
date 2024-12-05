@@ -2,8 +2,8 @@ package com.github.knokko.bitser.io;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.field.CollectionField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.field.NestedFieldSetting;
 import com.github.knokko.bitser.serialize.Bitser;
 
 import java.io.*;
@@ -66,7 +66,6 @@ public class ArrayBenchmark {
 	private static class SlowBooleanArray {
 
 		@BitField(ordering = 0)
-		@CollectionField
 		final boolean[] data = new boolean[80_000_000];
 
 		@SuppressWarnings("unused")
@@ -82,7 +81,7 @@ public class ArrayBenchmark {
 	private static class FastBooleanArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(writeAsBytes = true)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final boolean[] data = new boolean[80_000_000];
 
 		@SuppressWarnings("unused")
@@ -99,7 +98,7 @@ public class ArrayBenchmark {
 
 		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true)
-		@CollectionField(size = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
+		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
 		final byte[] data = new byte[10_000_000];
 
 		@SuppressWarnings("unused")
@@ -114,7 +113,7 @@ public class ArrayBenchmark {
 	private static class FastByteArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(writeAsBytes = true)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final byte[] data = new byte[10_000_000];
 
 		@SuppressWarnings("unused")
@@ -130,7 +129,7 @@ public class ArrayBenchmark {
 
 		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true)
-		@CollectionField(size = @IntegerField(minValue = 2_500_000, maxValue = 2_500_000, expectUniform = true))
+		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 2_500_000, maxValue = 2_500_000, expectUniform = true))
 		final int[] data = new int[2_500_000];
 
 		@SuppressWarnings("unused")
@@ -146,7 +145,7 @@ public class ArrayBenchmark {
 	private static class FastIntArray {
 
 		@BitField(ordering = 0)
-		@CollectionField(writeAsBytes = true)
+		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final int[] data = new int[2_500_000];
 
 		@SuppressWarnings("unused")

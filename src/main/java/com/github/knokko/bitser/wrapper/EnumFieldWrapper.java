@@ -2,15 +2,14 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -19,13 +18,11 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 class EnumFieldWrapper extends BitFieldWrapper {
 
 	private final BitEnum bitEnum;
-	private final Class<?> enumClass;
 
-	EnumFieldWrapper(BitField.Properties properties, Field classField, BitEnum bitEnum, Class<?> enumClass) {
-		super(properties, classField);
+	EnumFieldWrapper(VirtualField field, BitEnum bitEnum) {
+		super(field);
 		this.bitEnum = Objects.requireNonNull(bitEnum);
-		if (!enumClass.isEnum()) throw new InvalidBitFieldException("BitEnum can only be used on enums, but got " + enumClass);
-		this.enumClass = enumClass;
+		if (!field.type.isEnum()) throw new InvalidBitFieldException("BitEnum can only be used on enums, but got " + field);
 	}
 
 	@Override
@@ -38,7 +35,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			encodeVariableInteger(bytes.length, 1, Integer.MAX_VALUE, output);
 			for (byte stringByte : bytes) encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, output);
 		} else if (bitEnum.mode() == BitEnum.Mode.UniformOrdinal) {
-			int maxOrdinal = enumClass.getEnumConstants().length - 1;
+			int maxOrdinal = field.type.getEnumConstants().length - 1;
 			encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, output);
 		} else if (bitEnum.mode() == BitEnum.Mode.VariableIntOrdinal) {
 			encodeVariableInteger(enumValue.ordinal(), 0, 65535, output);
@@ -57,24 +54,24 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			}
 			String name = new String(stringBytes, StandardCharsets.UTF_8);
 			try {
-				setValue.consume(enumClass.getDeclaredField(name).get(null));
+				setValue.consume(field.type.getDeclaredField(name).get(null));
 				return;
 			} catch (NoSuchFieldException e) {
-				throw new InvalidBitFieldException("Missing enum constant " + name + " in " + enumClass);
+				throw new InvalidBitFieldException("Missing enum constant " + name + " in " + field.type);
 			}
 		}
 
 		int ordinal;
 		if (bitEnum.mode() == BitEnum.Mode.UniformOrdinal) {
-			int maxOrdinal = enumClass.getEnumConstants().length - 1;
+			int maxOrdinal = field.type.getEnumConstants().length - 1;
 			ordinal = (int) decodeUniformInteger(0, maxOrdinal, input);
 		} else if (bitEnum.mode() == BitEnum.Mode.VariableIntOrdinal) {
 			ordinal = (int) decodeVariableInteger(0, 65535, input);
 		} else throw new Error("Unknown BitEnum mode: " + bitEnum.mode());
 
-		Object[] constants = enumClass.getEnumConstants();
+		Object[] constants = field.type.getEnumConstants();
 		if (ordinal >= constants.length) {
-			throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + enumClass);
+			throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + field.type);
 		}
 		setValue.consume(constants[ordinal]);
 	}
