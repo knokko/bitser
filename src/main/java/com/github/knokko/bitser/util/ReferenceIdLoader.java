@@ -13,18 +13,22 @@ import static com.github.knokko.bitser.util.ReferenceIdMapper.extractStableId;
 
 public class ReferenceIdLoader {
 
-	public static ReferenceIdLoader load(BitInputStream input, Set<String> labels) throws IOException {
-		String[] sortedLabels = new String[labels.size()];
+	public static ReferenceIdLoader load(
+			BitInputStream input, Set<String> declaredTargetLabels, Set<String> stableLabels, Set<String> unstableLabels
+	) throws IOException {
+		String[] sortedLabels = new String[declaredTargetLabels.size()];
 		int index = 0;
-		for (String label : labels) {
+		for (String label : declaredTargetLabels) {
 			sortedLabels[index] = label;
 			index += 1;
 		}
 		Arrays.sort(sortedLabels);
 
-		Map<String, Mappings> labelMappings = new HashMap<>(labels.size());
+		Map<String, Mappings> labelMappings = new HashMap<>(declaredTargetLabels.size());
 		for (String label : sortedLabels) {
-			labelMappings.put(label, new Mappings((int) decodeVariableInteger(0, Integer.MAX_VALUE, input)));
+			int unstableSize = 0;
+			if (unstableLabels.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+			labelMappings.put(label, new Mappings(unstableSize, stableLabels.contains(label)));
 		}
 
 		return new ReferenceIdLoader(labelMappings);
@@ -36,18 +40,14 @@ public class ReferenceIdLoader {
 		this.labelMappings = labelMappings;
 	}
 
-	public void registerStable(String label, Object value, BitserCache cache) {
+	public void register(String label, Object value, BitInputStream input, BitserCache cache) throws IOException {
 		Mappings mappings = labelMappings.get(label);
 		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
 
-		mappings.registerStable(value, extractStableId(value, cache));
-	}
-
-	public void registerUnstable(String label, Object value, BitInputStream input) throws IOException {
-		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
-
-		mappings.registerUnstable(value, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input));
+		if (mappings.stable != null) mappings.registerStable(value, extractStableId(value, cache));
+		if (mappings.unstable != null) {
+			mappings.registerUnstable(value, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input));
+		}
 	}
 
 	public void getUnstable(String label, ValueConsumer setValue, BitInputStream input) throws IOException {
@@ -78,12 +78,13 @@ public class ReferenceIdLoader {
 
 		final int unstableSize;
 		final Map<Integer, Object> unstable;
-		final Map<UUID, Object> stable = new HashMap<>();
+		final Map<UUID, Object> stable;
 		final Collection<ResolveTask> resolveTasks = new ArrayList<>();
 
-		Mappings(int unstableSize) {
+		Mappings(int unstableSize, boolean hasStable) {
 			this.unstableSize = unstableSize;
-			this.unstable = new HashMap<>(unstableSize);
+			this.unstable = unstableSize > 0 ? new HashMap<>(unstableSize) : null;
+			this.stable = hasStable ? new HashMap<>() : null;
 		}
 
 		void registerUnstable(Object target, int id) {

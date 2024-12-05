@@ -9,6 +9,7 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Set;
 
 class UnstableReferenceFieldWrapper extends BitFieldWrapper {
 
@@ -20,10 +21,19 @@ class UnstableReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredTargetLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+	) {
+		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+		unstableLabels.add(label);
+	}
+
+	@Override
 	void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException, IllegalAccessException {
-		idMapper.encodeUnstableId(label, value, output);
+		idMapper.maybeEncodeUnstableId(label, value, output);
 	}
 
 	@Override

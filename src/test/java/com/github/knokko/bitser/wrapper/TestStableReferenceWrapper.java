@@ -69,7 +69,7 @@ public class TestStableReferenceWrapper {
 
 		@BitField(ordering = 1)
 		@CollectionField
-		@ReferenceFieldTarget(stable = true, label = "item types")
+		@ReferenceFieldTarget(label = "item types")
 		final ArrayList<ItemType> types = new ArrayList<>();
 	}
 
@@ -153,7 +153,7 @@ public class TestStableReferenceWrapper {
 	static class DeepNodeTarget {
 
 		@BitField(ordering = 0)
-		@ReferenceFieldTarget(stable = true, label = "nodes")
+		@ReferenceFieldTarget(label = "nodes")
 		final Node node;
 
 		DeepNodeTarget(Node node) {
@@ -171,7 +171,7 @@ public class TestStableReferenceWrapper {
 
 		@BitField(ordering = 0)
 		@CollectionField
-		@ReferenceFieldTarget(stable = true, label = "nodes")
+		@ReferenceFieldTarget(label = "nodes")
 		final ArrayList<Node> mostNodes = new ArrayList<>();
 
 		@BitField(ordering = 1)
@@ -250,7 +250,7 @@ public class TestStableReferenceWrapper {
 		@SuppressWarnings("unused")
 		@BitField(ordering = 0)
 		@ReferenceField(stable = true, label = "test")
-		@ReferenceFieldTarget(stable = true, label = "test")
+		@ReferenceFieldTarget(label = "test")
 		final JustAnId id = new JustAnId();
 	}
 
@@ -280,8 +280,13 @@ public class TestStableReferenceWrapper {
 
 		@SuppressWarnings("unused")
 		@BitField(ordering = 0)
-		@ReferenceFieldTarget(stable = true, label = "test")
+		@ReferenceFieldTarget(label = "test")
 		final UUID id = UUID.randomUUID();
+
+		@SuppressWarnings("unused")
+		@BitField(ordering = 1)
+		@ReferenceField(stable = true, label = "test")
+		final UUID reference = id;
 	}
 
 	@Test
@@ -309,14 +314,19 @@ public class TestStableReferenceWrapper {
 
 		@SuppressWarnings("unused")
 		@BitField(ordering = 0)
-		@ReferenceFieldTarget(stable = true, label = "test")
+		@ReferenceFieldTarget(label = "test")
+		WithoutStableId target;
+
+		@BitField(ordering = 1)
+		@ReferenceField(stable = true, label = "test")
 		WithoutStableId reference;
 	}
 
 	@Test
 	public void testStableReferenceTargetWithoutStableId() {
 		StableReferenceTargetWithoutStableId target = new StableReferenceTargetWithoutStableId();
-		target.reference = new WithoutStableId();
+		target.target = new WithoutStableId();
+		target.reference = target.target;
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
 				() -> new Bitser(false).serialize(target, new BitCountStream())
@@ -353,7 +363,7 @@ public class TestStableReferenceWrapper {
 
 		@SuppressWarnings("unused")
 		@BitField(ordering = 1)
-		@ReferenceFieldTarget(stable = true, label = "test")
+		@ReferenceFieldTarget(label = "test")
 		final WithNullId actualId = new WithNullId();
 
 		@SuppressWarnings("unused")
@@ -448,8 +458,8 @@ public class TestStableReferenceWrapper {
 		).getMessage();
 
 		assertTrue(
-				errorMessage.contains("Can't find stable @ReferenceFieldTarget with label nope"),
-				"Expected " + errorMessage + " to contain \"Can't find unstable @ReferenceFieldTarget with label nope\""
+				errorMessage.contains("Can't find @ReferenceFieldTarget with label nope"),
+				"Expected " + errorMessage + " to contain \"Can't find @ReferenceFieldTarget with label nope\""
 		);
 	}
 }

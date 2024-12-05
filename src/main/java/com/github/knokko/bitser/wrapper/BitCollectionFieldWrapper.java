@@ -26,9 +26,12 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedObjects) {
-		super.collectReferenceTargetLabels(cache, destination, visitedObjects);
-		valuesWrapper.collectReferenceTargetLabels(cache, destination, visitedObjects);
+	void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredTargetLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+	) {
+		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+		valuesWrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
 	}
 
 	@Override
@@ -65,8 +68,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		}
 		if (element != null) {
 			valuesWrapper.writeValue(element, output, cache, idMapper);
-			if (valuesWrapper.properties.referenceTarget != null && !valuesWrapper.properties.referenceTarget.stable()) {
-				idMapper.encodeUnstableId(valuesWrapper.properties.referenceTarget.label(), element, output);
+			if (valuesWrapper.properties.referenceTarget != null) {
+				idMapper.maybeEncodeUnstableId(valuesWrapper.properties.referenceTarget.label(), element, output);
 			}
 		}
 	}
@@ -96,10 +99,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				});
 
 				if (valuesWrapper.properties.referenceTarget != null) {
-					Object element = rememberElement.get(0);
-					if (valuesWrapper.properties.referenceTarget.stable()) {
-						idLoader.registerStable(valuesWrapper.properties.referenceTarget.label(), element, cache);
-					} else idLoader.registerUnstable(valuesWrapper.properties.referenceTarget.label(), element, input);
+					idLoader.register(valuesWrapper.properties.referenceTarget.label(), rememberElement.get(0), input, cache);
 				}
 			}
 		}

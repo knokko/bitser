@@ -38,8 +38,11 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		return Integer.compare(this.properties.ordering, other.properties.ordering);
 	}
 
-	void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedObjects) {
-		if (properties.referenceTarget != null) destination.add(properties.referenceTarget.label());
+	void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredTargetLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+	) {
+		if (properties.referenceTarget != null) declaredTargetLabels.add(properties.referenceTarget.label());
 	}
 
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
@@ -69,8 +72,8 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 			}
 		} else {
 			writeValue(value, output, cache, idMapper);
-			if (properties.referenceTarget != null && !properties.referenceTarget.stable()) {
-				idMapper.encodeUnstableId(properties.referenceTarget.label(), value, output);
+			if (properties.referenceTarget != null) {
+				idMapper.maybeEncodeUnstableId(properties.referenceTarget.label(), value, output);
 			}
 		}
 	}
@@ -94,10 +97,7 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		else {
 			readValue(input, cache, idLoader, value -> classField.set(object, value));
 			if (properties.referenceTarget != null) {
-				Object value = classField.get(object);
-				if (properties.referenceTarget.stable()) {
-					idLoader.registerStable(properties.referenceTarget.label(), value, cache);
-				} else idLoader.registerUnstable(properties.referenceTarget.label(), value, input);
+				idLoader.register(properties.referenceTarget.label(), classField.get(object), input, cache);
 			}
 		}
 	}

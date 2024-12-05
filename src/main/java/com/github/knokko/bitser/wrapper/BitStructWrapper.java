@@ -197,10 +197,15 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedStructs) {
+	public void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredTargetLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedStructs
+	) {
 		if (visitedStructs.contains(this)) return;
 		visitedStructs.add(this);
-		for (BitFieldWrapper field : fields) field.collectReferenceTargetLabels(cache, destination, visitedStructs);
+		for (BitFieldWrapper field : fields) {
+			field.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
+		}
 	}
 
 	@Override

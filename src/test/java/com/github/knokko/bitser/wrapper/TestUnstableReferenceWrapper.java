@@ -65,7 +65,7 @@ public class TestUnstableReferenceWrapper {
 
 		@BitField(ordering = 1)
 		@CollectionField
-		@ReferenceFieldTarget(stable = false, label = "item types")
+		@ReferenceFieldTarget(label = "item types")
 		final ArrayList<ItemType> types = new ArrayList<>();
 	}
 
@@ -143,7 +143,7 @@ public class TestUnstableReferenceWrapper {
 	static class DeepNodeTarget {
 
 		@BitField(ordering = 0)
-		@ReferenceFieldTarget(stable = false, label = "nodes")
+		@ReferenceFieldTarget(label = "nodes")
 		final Node node;
 
 		DeepNodeTarget(Node node) {
@@ -161,7 +161,7 @@ public class TestUnstableReferenceWrapper {
 
 		@BitField(ordering = 0)
 		@CollectionField
-		@ReferenceFieldTarget(stable = false, label = "nodes")
+		@ReferenceFieldTarget(label = "nodes")
 		final ArrayList<Node> mostNodes = new ArrayList<>();
 
 		@BitField(ordering = 1)
@@ -232,7 +232,7 @@ public class TestUnstableReferenceWrapper {
 	static class NonStructReferences {
 
 		@BitField(ordering = 0)
-		@ReferenceFieldTarget(stable = false, label = "no struct")
+		@ReferenceFieldTarget(label = "no struct")
 		final String hello;
 
 		@SuppressWarnings("unused")
@@ -293,8 +293,8 @@ public class TestUnstableReferenceWrapper {
 		).getMessage();
 
 		assertTrue(
-				errorMessage.contains("Can't find unstable @ReferenceFieldTarget with label nope"),
-				"Expected " + errorMessage + " to contain \"Can't find unstable @ReferenceFieldTarget with label nope\""
+				errorMessage.contains("Can't find @ReferenceFieldTarget with label nope"),
+				"Expected " + errorMessage + " to contain \"Can't find @ReferenceFieldTarget with label nope\""
 		);
 	}
 
@@ -304,7 +304,7 @@ public class TestUnstableReferenceWrapper {
 		@SuppressWarnings("unused")
 		@BitField(ordering = 0)
 		@ReferenceField(stable = false, label = "test")
-		@ReferenceFieldTarget(stable = false, label = "test")
+		@ReferenceFieldTarget(label = "test")
 		final JustAnId id = new JustAnId();
 	}
 
@@ -334,7 +334,7 @@ public class TestUnstableReferenceWrapper {
 		@SuppressWarnings("unused")
 		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
-		@ReferenceFieldTarget(stable = false, label = "invalid")
+		@ReferenceFieldTarget(label = "invalid")
 		final int test = 1234;
 	}
 
@@ -365,5 +365,61 @@ public class TestUnstableReferenceWrapper {
 				errorMessage.contains("Multiple unstable targets have identity"),
 				"Expected " + errorMessage + " to contain \"Multiple unstable targets have identity\""
 		);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	static class StableTarget {
+
+		@SuppressWarnings("unused")
+		@BitField(ordering = 0)
+		@StableReferenceFieldId
+		final UUID id = UUID.randomUUID();
+
+		@BitField(ordering = 1)
+		String hello;
+	}
+
+	@BitStruct(backwardCompatible = false)
+	static class Mixed {
+
+		@BitField(ordering = 0)
+		@ReferenceFieldTarget(label = "hi")
+		StableTarget target1;
+
+		@BitField(ordering = 1)
+		@ReferenceFieldTarget(label = "hi")
+		StableTarget target2;
+
+		@BitField(ordering = 2)
+		@ReferenceField(stable = true, label = "hi")
+		StableTarget stableReference;
+
+		@BitField(ordering = 3)
+		@ReferenceField(stable = false, label = "hi")
+		StableTarget unstableReference1;
+
+		@BitField(ordering = 4)
+		@ReferenceField(stable = false, label = "hi")
+		StableTarget unstableReference2;
+	}
+
+	@Test
+	public void testMixStableAndUnstableReferences() throws IOException {
+		Mixed mixed = new Mixed();
+		mixed.target1 = new StableTarget();
+		mixed.target1.hello = "world";
+		mixed.target2 = new StableTarget();
+		mixed.target2.hello = "triangle";
+
+		mixed.stableReference = mixed.target2;
+		mixed.unstableReference1 = mixed.target1;
+		mixed.unstableReference2 = mixed.target2;
+
+		Mixed loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), mixed);
+		assertEquals("world", loaded.target1.hello);
+		assertEquals("triangle", loaded.target2.hello);
+		assertSame(loaded.target1, loaded.unstableReference1);
+		assertSame(loaded.target2, loaded.stableReference);
+		assertSame(loaded.target2, loaded.unstableReference2);
 	}
 }

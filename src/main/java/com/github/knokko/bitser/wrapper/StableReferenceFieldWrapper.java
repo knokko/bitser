@@ -9,6 +9,7 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Set;
 
 class StableReferenceFieldWrapper extends BitFieldWrapper {
 
@@ -17,6 +18,15 @@ class StableReferenceFieldWrapper extends BitFieldWrapper {
 	StableReferenceFieldWrapper(BitField.Properties properties, Field classField, String label) {
 		super(properties, classField);
 		this.label = label;
+	}
+
+	@Override
+	void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredTargetLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+	) {
+		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+		stableLabels.add(label);
 	}
 
 	@Override

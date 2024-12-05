@@ -23,7 +23,10 @@ public abstract class BitserWrapper<T> {
 
 	BitserWrapper() {}
 
-	public abstract void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedStructs);
+	public abstract void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedStructs
+	);
 
 	public abstract void registerReferenceTargets(Object object, BitserCache cache, ReferenceIdMapper idMapper);
 

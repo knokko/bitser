@@ -31,9 +31,11 @@ public class ReferenceIdMapper {
 
 	private boolean readOnly;
 
-	public ReferenceIdMapper(Set<String> labels) {
-		this.labelMappings = new HashMap<>(labels.size());
-		for (String label : labels) this.labelMappings.put(label, new Mappings());
+	public ReferenceIdMapper(Set<String> declaredTargetLabels, Set<String> stableLabels, Set<String> unstableLabels) {
+		this.labelMappings = new HashMap<>(declaredTargetLabels.size());
+		for (String label : declaredTargetLabels) {
+			this.labelMappings.put(label, new Mappings(stableLabels.contains(label), unstableLabels.contains(label)));
+		}
 	}
 
 	public void register(ReferenceFieldTarget referenceTarget, Object value, BitserCache cache) {
@@ -43,17 +45,18 @@ public class ReferenceIdMapper {
 		if (mappings == null) throw new Error(
 				"Unexpected target label " + referenceTarget.label() + ": expected one of " + labelMappings.keySet()
 		);
-		mappings.register(value, referenceTarget.stable(), cache);
+		mappings.register(value, cache);
 	}
 
-	public void encodeUnstableId(String label, Object value, BitOutputStream output) throws IOException {
+	public void maybeEncodeUnstableId(String label, Object value, BitOutputStream output) throws IOException {
 		if (!readOnly) throw new IllegalStateException("You can't call encodeUnstableId until the mapper is read-only");
 
 		Mappings mappings = this.labelMappings.get(label);
 		if (mappings == null) throw new InvalidBitFieldException(
-				"Can't find unstable @ReferenceFieldTarget with label " + label +
+				"Can't find @ReferenceFieldTarget with label " + label +
 						": supported labels are " + labelMappings.keySet()
 		);
+		if (mappings.unstable == null) return;
 
 		Integer id = mappings.unstable.get(new IdWrapper(value));
 		if (id == null) throw new InvalidBitValueException(
@@ -68,7 +71,7 @@ public class ReferenceIdMapper {
 
 		Mappings mappings = this.labelMappings.get(label);
 		if (mappings == null) throw new InvalidBitFieldException(
-				"Can't find stable @ReferenceFieldTarget with label " + label +
+				"Can't find @ReferenceFieldTarget with label " + label +
 						": supported labels are " + labelMappings.keySet()
 		);
 
@@ -96,8 +99,11 @@ public class ReferenceIdMapper {
 		}
 		Arrays.sort(sortedLabels);
 
-		for (String label: sortedLabels) {
-			encodeVariableInteger(labelMappings.get(label).unstable.size(), 0, Integer.MAX_VALUE, output);
+		for (String label : sortedLabels) {
+			Mappings mappings = labelMappings.get(label);
+			if (mappings.unstable != null) {
+				encodeVariableInteger(mappings.unstable.size(), 0, Integer.MAX_VALUE, output);
+			}
 		}
 	}
 
@@ -124,11 +130,16 @@ public class ReferenceIdMapper {
 
 	private static class Mappings {
 
-		final Map<IdWrapper, Integer> unstable = new HashMap<>();
-		final Map<UUID, Object> stable = new HashMap<>();
+		final Map<UUID, Object> stable;
+		final Map<IdWrapper, Integer> unstable;
 
-		void register(Object target, boolean isStable, BitserCache cache) {
-			if (isStable) {
+		Mappings(boolean hasStable, boolean hasUnstable) {
+			this.stable = hasStable ? new HashMap<>() : null;
+			this.unstable = hasUnstable ? new HashMap<>() : null;
+		}
+
+		void register(Object target, BitserCache cache) {
+			if (stable != null) {
 				UUID targetId = extractStableId(target, cache);
 				Object existing = stable.putIfAbsent(targetId, target);
 				if (existing != null) {
@@ -139,7 +150,8 @@ public class ReferenceIdMapper {
 							"Multiple objects (" + existing + " and " + target + ") have ID " + targetId
 					);
 				}
-			} else {
+			}
+			if (unstable != null) {
 				IdWrapper wrapper = new IdWrapper(target);
 				if (unstable.containsKey(wrapper)) throw new InvalidBitValueException(
 						"Multiple unstable targets have identity " + target

@@ -20,10 +20,12 @@ public class Bitser {
 	public void serialize(Object object, BitOutputStream output) throws IOException {
 		BitserWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
-		Set<String> labels = new HashSet<>();
-		wrapper.collectReferenceTargetLabels(cache, labels, new HashSet<>());
+		Set<String> declaredTargetLabels = new HashSet<>();
+		Set<String> stableLabels = new HashSet<>();
+		Set<String> unstableLabels = new HashSet<>();
+		wrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, new HashSet<>());
 
-		ReferenceIdMapper idMapper = new ReferenceIdMapper(labels);
+		ReferenceIdMapper idMapper = new ReferenceIdMapper(declaredTargetLabels, stableLabels, unstableLabels);
 		wrapper.registerReferenceTargets(object, cache, idMapper);
 
 		idMapper.save(output);
@@ -34,10 +36,12 @@ public class Bitser {
 	public <T> T deserialize(Class<T> objectClass, BitInputStream input) throws IOException {
 		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
 
-		Set<String> labels = new HashSet<>();
-		wrapper.collectReferenceTargetLabels(cache, labels, new HashSet<>());
+		Set<String> declaredTargetLabels = new HashSet<>();
+		Set<String> stableLabels = new HashSet<>();
+		Set<String> unstableLabels = new HashSet<>();
+		wrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, new HashSet<>());
 
-		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels);
+		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, declaredTargetLabels, stableLabels, unstableLabels);
 
 		List<T> result = new ArrayList<>(1);
 		//noinspection unchecked

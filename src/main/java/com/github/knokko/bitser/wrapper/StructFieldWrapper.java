@@ -18,9 +18,14 @@ class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceTargetLabels(BitserCache cache, Set<String> destination, Set<Object> visitedObjects) {
-		super.collectReferenceTargetLabels(cache, destination, visitedObjects);
-		cache.getWrapper(properties.type).collectReferenceTargetLabels(cache, destination, visitedObjects);
+	void collectReferenceTargetLabels(
+			BitserCache cache, Set<String> declaredTargetLabels,
+			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+	) {
+		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+		cache.getWrapper(properties.type).collectReferenceTargetLabels(
+				cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects
+		);
 	}
 
 	@Override
