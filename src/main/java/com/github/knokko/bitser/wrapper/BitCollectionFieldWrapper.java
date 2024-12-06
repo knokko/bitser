@@ -52,7 +52,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	void writeValue(
 			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		String nullErrorMessage = "Field " + field + " must not have null elements";
 		if (field.type.isArray()) {
 			for (int index = 0; index < size; index++) {
@@ -69,7 +69,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@SuppressWarnings("unchecked")
 	void readValue(
 			Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		for (int index = 0; index < size; index++) {
 			if (valuesWrapper.field.optional && !input.read()) {
 				if (value instanceof Collection<?>) {

@@ -41,7 +41,7 @@ class StructFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		cache.getWrapper(field.type).read(input, cache, idLoader, setValue);
 	}
 }

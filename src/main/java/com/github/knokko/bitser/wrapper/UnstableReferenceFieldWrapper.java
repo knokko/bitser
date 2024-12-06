@@ -31,14 +31,14 @@ class UnstableReferenceFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		idMapper.maybeEncodeUnstableId(label, value, output);
 	}
 
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		idLoader.getUnstable(label, setValue, input);
 	}
 }

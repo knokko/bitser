@@ -35,7 +35,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		int size = getCollectionSize(value);
 		if (sizeField.expectUniform()) encodeUniformInteger(size, getMinSize(), getMaxSize(), output);
 		else encodeVariableInteger(size, getMinSize(), getMaxSize(), output);
@@ -46,7 +46,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		int size;
 		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), input);
@@ -58,11 +58,11 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	abstract void writeValue(
 			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException;
+	) throws IOException;
 
 	abstract void readValue(
 			Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
-	) throws IOException, IllegalAccessException;
+	) throws IOException;
 
 	private int getCollectionSize(Object object) {
 		if (object instanceof Collection<?>) return ((Collection<?>) object).size();

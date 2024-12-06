@@ -38,7 +38,7 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		int length;
 		if (stringField != null && stringField.length().expectUniform()) {
 			length = (int) decodeUniformInteger(minLength(), maxLength(), input);

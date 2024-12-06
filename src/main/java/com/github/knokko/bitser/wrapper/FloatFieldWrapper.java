@@ -62,7 +62,7 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		if (floatField.expectMultipleOf() != 0.0 && input.read()) {
 			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, input);
 			double result = count * floatField.expectMultipleOf();

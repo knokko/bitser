@@ -18,14 +18,14 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		output.write((Boolean) value);
 	}
 
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		setValue.consume(input.read());
 	}
 }

@@ -24,7 +24,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	static void writeElement(
 			Object element, BitFieldWrapper wrapper, BitOutputStream output,
 			BitserCache cache, ReferenceIdMapper idMapper, String nullErrorMessage
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		if (wrapper.field.optional) output.write(element != null);
 		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
 		if (element != null) {
@@ -87,7 +87,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(
 			Object rawValue, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		Map<?, ?> map = (Map<?, ?>) rawValue;
 		if (sizeField.expectUniform()) encodeUniformInteger(map.size(), getMinSize(), getMaxSize(), output);
 		else encodeVariableInteger(map.size(), getMinSize(), getMaxSize(), output);
@@ -105,7 +105,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void readValue(BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue) throws IOException, IllegalAccessException {
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
 		int size;
 		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), input);
@@ -122,7 +124,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	private void readElement(
 			BitFieldWrapper wrapper, BitInputStream input, BitserCache cache,
 			ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		if (wrapper.field.optional && !input.read()) {
 			setValue.consume(null);
 		} else {
@@ -145,8 +147,6 @@ class MapFieldWrapper extends BitFieldWrapper {
 	private int getMaxSize() {
 		return (int) min(Integer.MAX_VALUE, sizeField.maxValue());
 	}
-
-
 
 	private static class DelayedEntry {
 

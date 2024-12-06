@@ -33,7 +33,7 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		setValue.consume(new UUID(
 				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input),
 				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input)

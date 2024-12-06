@@ -33,7 +33,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		long longValue;
 		if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), input);
 		else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), input);

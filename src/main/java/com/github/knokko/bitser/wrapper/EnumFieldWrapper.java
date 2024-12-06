@@ -28,7 +28,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		Enum<?> enumValue = (Enum<?>) value;
 		if (bitEnum.mode() == BitEnum.Mode.Name) {
 			byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
@@ -45,7 +45,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		if (bitEnum.mode() == BitEnum.Mode.Name) {
 			int numBytes = (int) decodeVariableInteger(1, Integer.MAX_VALUE, input);
 			byte[] stringBytes = new byte[numBytes];
@@ -58,6 +58,8 @@ class EnumFieldWrapper extends BitFieldWrapper {
 				return;
 			} catch (NoSuchFieldException e) {
 				throw new InvalidBitFieldException("Missing enum constant " + name + " in " + field.type);
+			} catch (IllegalAccessException e) {
+				throw new Error(e);
 			}
 		}
 

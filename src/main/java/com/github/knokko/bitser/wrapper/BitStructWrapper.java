@@ -402,6 +402,10 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 		fields.sort(null);
 
+		this.stableIdField = findStableField(objectClass);
+	}
+
+	private VirtualField findStableField(Class<T> objectClass) {
 		VirtualField stableIdField = null;
 
 		for (int index = 0; index < fields.size(); index++) {
@@ -416,8 +420,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 				stableIdField = field.field;
 			}
 		}
-
-		this.stableIdField = stableIdField;
+		return stableIdField;
 	}
 
 	@Override
@@ -459,7 +462,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 		try {
 			T object = constructor.newInstance();
-			for (BitFieldWrapper field : fields) field.read(object, input, cache, idLoader);
+			for (BitFieldWrapper field : fields) field.readField(object, input, cache, idLoader);
 			setValue.consume(object);
 		} catch (InstantiationException e) {
 			throw new Error("Failed to instantiate " + constructor, e);

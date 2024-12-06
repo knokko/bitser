@@ -18,12 +18,6 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
 	BitFieldWrapper(VirtualField field) {
 		this.field = field;
-//		if (Modifier.isStatic(classField.getModifiers()) && properties.ordering != -1) {
-//			throw new Error("Static fields should not have BitField annotation: " + classField);
-//		}
-//		if (!Modifier.isPublic(classField.getModifiers()) || Modifier.isFinal(classField.getModifiers())) {
-//			classField.setAccessible(true);
-//		}
 		if (field.optional && field.type.isPrimitive()) {
 			throw new InvalidBitFieldException("Primitive field " + field + " can't be optional");
 		}
@@ -50,8 +44,6 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 	void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
 		try {
 			writeField(object, output, cache, idMapper);
-		} catch (IllegalAccessException shouldNotHappen) {
-			throw new Error(shouldNotHappen);
 		} catch (InvalidBitValueException invalidValue) {
 			throw new InvalidBitValueException(invalidValue.getMessage() + " for " + field);
 		}
@@ -59,7 +51,7 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
 	void writeField(
 			Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		Object value = field.getValue.apply(object);
 		if (field.optional) output.write(value != null);
 		if (value == null) {
@@ -76,19 +68,11 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
 	abstract void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException;
-
-	void read(Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader) throws IOException {
-		try {
-			readField(object, input, cache, idLoader);
-		} catch (IllegalAccessException shouldNotHappen) {
-			throw new Error(shouldNotHappen);
-		}
-	}
+	) throws IOException;
 
 	void readField(
 			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
-	) throws IOException, IllegalAccessException {
+	) throws IOException {
 		if (field.optional && !input.read()) field.setValue.accept(object, null);
 		else {
 			readValue(input, cache, idLoader, value -> field.setValue.accept(object, value));
@@ -100,5 +84,5 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
 	abstract void readValue(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException, IllegalAccessException;
+	) throws IOException;
 }

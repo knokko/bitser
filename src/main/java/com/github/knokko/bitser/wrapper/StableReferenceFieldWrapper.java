@@ -29,12 +29,16 @@ class StableReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException, IllegalAccessException {
+	void writeValue(
+			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
+	) throws IOException {
 		idMapper.encodeStableId(label, value, output, cache);
 	}
 
 	@Override
-	void readValue(BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue) throws IOException, IllegalAccessException {
+	void readValue(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
 		idLoader.getStable(label, setValue, input);
 	}
 }
