@@ -25,8 +25,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	AbstractCollectionFieldWrapper(VirtualField field, IntegerField sizeField) {
 		super(field);
-		if (sizeField.minValue() > Integer.MAX_VALUE) throw new IllegalArgumentException();
-		if (sizeField.maxValue() < 0) throw new IllegalArgumentException();
+		if (sizeField.minValue() > Integer.MAX_VALUE || sizeField.maxValue() < 0) throw new IllegalArgumentException();
 		if (!field.type.isArray() && (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers()))) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
@@ -74,17 +73,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (field.type.isArray()) {
 			return Array.newInstance(field.type.getComponentType(), size);
 		} else {
-			try {
-				return field.type.getConstructor(int.class).newInstance(size);
-			} catch (NoSuchMethodException noIntConstructor) {
-				try {
-					return field.type.getConstructor().newInstance();
-				} catch (Exception unexpected) {
-					throw new RuntimeException(unexpected);
-				}
-			} catch (Exception unexpected) {
-				throw new RuntimeException(unexpected);
-			}
+			return MapFieldWrapper.constructCollectionWithSize(field, size);
 		}
 	}
 

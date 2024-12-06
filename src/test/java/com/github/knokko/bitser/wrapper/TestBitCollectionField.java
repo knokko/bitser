@@ -176,8 +176,8 @@ public class TestBitCollectionField {
 				() -> new Bitser(true).serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
 		).getMessage();
 		assertTrue(
-				errorMessage.contains("must not have null values"),
-				"Expected " + errorMessage + " to contain \"must not have null values\""
+				errorMessage.contains("must not have null elements"),
+				"Expected " + errorMessage + " to contain \"must not have null elements\""
 		);
 	}
 

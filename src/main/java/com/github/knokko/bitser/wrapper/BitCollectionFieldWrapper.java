@@ -1,6 +1,5 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -15,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
+import static com.github.knokko.bitser.wrapper.MapFieldWrapper.writeElement;
 
 class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
@@ -52,24 +53,14 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	void writeValue(
 			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException, IllegalAccessException {
+		String nullErrorMessage = "Field " + field + " must not have null elements";
 		if (field.type.isArray()) {
-			for (int index = 0; index < size; index++) writeElement(Array.get(value, index), output, cache, idMapper);
+			for (int index = 0; index < size; index++) {
+				writeElement(Array.get(value, index), valuesWrapper, output, cache, idMapper, nullErrorMessage);
+			}
 		} else {
-			for (Object element : (Collection<?>) value) writeElement(element, output, cache, idMapper);
-		}
-	}
-
-	private void writeElement(
-			Object element, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException, IllegalAccessException {
-		if (valuesWrapper.field.optional) output.write(element != null);
-		else if (element == null) {
-			throw new InvalidBitValueException("Field " + field + " must not have null values");
-		}
-		if (element != null) {
-			valuesWrapper.writeValue(element, output, cache, idMapper);
-			if (valuesWrapper.field.referenceTargetLabel != null) {
-				idMapper.maybeEncodeUnstableId(valuesWrapper.field.referenceTargetLabel, element, output);
+			for (Object element : (Collection<?>) value) {
+				writeElement(element, valuesWrapper, output, cache, idMapper, nullErrorMessage);
 			}
 		}
 	}

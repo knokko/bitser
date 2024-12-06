@@ -73,11 +73,123 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		}
 	}
 
+	private static BitFieldWrapper createChildWrapper(
+			Class<?> objectClass, VirtualField.AnnotationHolder rootAnnotations, VirtualField field,
+			String path, boolean propagateExpectNothing, String pathSuffix, ChildType child
+	) {
+		String childPath = path + pathSuffix;
+
+		NestedFieldSetting childSettings = getSetting(rootAnnotations, childPath, field);
+		child.annotations = getSettingAnnotations(child.annotations, childSettings, objectClass);
+
+		VirtualField childField = new VirtualField(
+				pathSuffix + " " + field,
+				child.fieldType,
+				-1,
+				childSettings != null && childSettings.optional(),
+				child.annotations,
+				null,
+				null
+		);
+
+		if (propagateExpectNothing && childSettings != null) {
+			throw new InvalidBitFieldException("NestedFieldSetting's on writeAsBytes targets is forbidden: " + field);
+		}
+
+		return createComplexWrapper(
+				objectClass, rootAnnotations, childField, child.genericType, childPath, propagateExpectNothing
+		);
+	}
+
+	private static class ChildType {
+
+		final Class<?> fieldType;
+		VirtualField.AnnotationHolder annotations;
+		final Type genericType;
+
+		ChildType(Class<?> fieldType, VirtualField.AnnotationHolder annotations, Type genericType) {
+			this.fieldType = fieldType;
+			this.annotations = annotations;
+			this.genericType = genericType;
+		}
+	}
+
+	private static ChildType childFromTypeArgument(
+			VirtualField field, VirtualField.AnnotationHolder rootAnnotations, Type actualTypeArgument, String path
+	) {
+		if (actualTypeArgument instanceof Class<?>) {
+			return new ChildType(
+					(Class<?>) actualTypeArgument,
+					maybeRootAnnotations(rootAnnotations, path),
+					null
+			);
+		} else if (actualTypeArgument instanceof ParameterizedType) {
+			ParameterizedType parType = (ParameterizedType) actualTypeArgument;
+			Type rawChildType = parType.getRawType();
+			if (rawChildType instanceof Class<?>) {
+				return new ChildType((Class<?>) rawChildType, new VirtualField.NoAnnotations(), parType);
+			} else throw new InvalidBitFieldException("Unexpected raw actual type argument for " + field);
+		} else if (actualTypeArgument instanceof GenericArrayType) {
+			GenericArrayType arrayType = (GenericArrayType) actualTypeArgument;
+			Type elementType = arrayType.getGenericComponentType();
+			if (elementType instanceof ParameterizedType) {
+				return new ChildType(Array.newInstance(
+						(Class<?>) ((ParameterizedType) elementType).getRawType(), 0
+				).getClass(), new VirtualField.NoAnnotations(), arrayType);
+			} else throw new RuntimeException("element type is " + elementType + " and array type is " + arrayType);
+		} else {
+			throw new InvalidBitFieldException(
+					"Unexpected generic type for " + field + ": " + actualTypeArgument.getClass()
+			);
+		}
+	}
+
+	private static VirtualField.AnnotationHolder maybeRootAnnotations(
+			VirtualField.AnnotationHolder rootAnnotations, String path
+	) {
+		if (path.contains("k")) return new VirtualField.NoAnnotations();
+		return rootAnnotations;
+	}
+
+	private static BitFieldWrapper[] createChildWrappers(
+			Class<?> objectClass, VirtualField.AnnotationHolder rootAnnotations, VirtualField field,
+			Type genericType, String path, boolean propagateExpectNothing
+	) {
+		ChildType child;
+		if (field.type.isArray() && (genericType == null || genericType instanceof Class<?>)) {
+			child = new ChildType(
+					field.type.getComponentType(),
+					maybeRootAnnotations(rootAnnotations, path),
+					null
+			);
+		} else if (Map.class.isAssignableFrom(field.type)) {
+			Type[] actualTypeArguments = getActualTypeArguments(field, genericType, 2);
+			return new BitFieldWrapper[] {
+					createChildWrapper(
+							objectClass, rootAnnotations, field, path, propagateExpectNothing, "k",
+							childFromTypeArgument(field, rootAnnotations, actualTypeArguments[0], path + "k")
+					),
+					createChildWrapper(
+							objectClass, rootAnnotations, field, path, propagateExpectNothing, "v",
+							childFromTypeArgument(field, rootAnnotations, actualTypeArguments[1], path + "v")
+					)
+			};
+		} else {
+			Type actualTypeArgument = getActualTypeArguments(field, genericType, 1)[0];
+			child = childFromTypeArgument(field, rootAnnotations, actualTypeArgument, path);
+		}
+
+		BitFieldWrapper childWrapper = createChildWrapper(
+				objectClass, rootAnnotations, field, path, propagateExpectNothing, "c", child
+		);
+		return new BitFieldWrapper[] { childWrapper };
+	}
+
 	private static BitFieldWrapper createComplexWrapper(
 			Class<?> objectClass, VirtualField.AnnotationHolder rootAnnotations, VirtualField field,
 			Type genericType, String path, boolean expectNothing
 	) {
-		if (Collection.class.isAssignableFrom(field.type) || field.type.isArray()) {
+		if (Collection.class.isAssignableFrom(field.type) || field.type.isArray() || Map.class.isAssignableFrom(field.type)) {
 			if (rootAnnotations.get(BitField.class).optional()) {
 				throw new InvalidBitFieldException("optional BitField is not allowed on collection field " +
 						field + ": use @NestedFieldSetting instead");
@@ -96,62 +208,8 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 				return new UnstableReferenceFieldWrapper(field, referenceField.label());
 			}
 
-			Class<?> childFieldType;
-			VirtualField.AnnotationHolder childAnnotations;
-			Type childGenericType;
-			if (field.type.isArray() && (genericType == null || genericType instanceof Class<?>)) {
-				childFieldType = field.type.getComponentType();
-				childAnnotations = rootAnnotations;
-				childGenericType = null;
-			} else {
-				Type actualTypeArgument = getActualTypeArgument(field, genericType);
-
-				if (actualTypeArgument instanceof Class<?>) {
-					childFieldType = (Class<?>) actualTypeArgument;
-					childAnnotations = rootAnnotations;
-					childGenericType = null;
-				} else if (actualTypeArgument instanceof ParameterizedType) {
-					ParameterizedType parType = (ParameterizedType) actualTypeArgument;
-					Type rawChildType = parType.getRawType();
-					if (rawChildType instanceof Class<?>) {
-						childFieldType = (Class<?>) rawChildType;
-						childAnnotations = new VirtualField.NoAnnotations();
-						childGenericType = parType;
-					} else throw new InvalidBitFieldException("Unexpected raw actual type argument for " + field);
-				} else if (actualTypeArgument instanceof GenericArrayType) {
-					GenericArrayType arrayType = (GenericArrayType) actualTypeArgument;
-					Type elementType = arrayType.getGenericComponentType();
-					childGenericType = arrayType;
-					childAnnotations = new VirtualField.NoAnnotations();
-					if (elementType instanceof ParameterizedType) {
-						childFieldType = (Class<?>) ((ParameterizedType) elementType).getRawType();
-						childFieldType = Array.newInstance(childFieldType, 0).getClass();
-					}
-					else throw new RuntimeException("element type is " + elementType + " and array type is " + arrayType);
-				} else {
-					throw new InvalidBitFieldException(
-							"Unexpected generic type for " + field + ": " + actualTypeArgument.getClass()
-					);
-				}
-			}
-
-			String childPath = path + "c";
-
-			NestedFieldSetting childSettings = getSetting(rootAnnotations, childPath, field);
-			childAnnotations = getSettingAnnotations(childAnnotations, childSettings, objectClass);
-
-			VirtualField childField = new VirtualField(
-					"c " + field,
-					childFieldType,
-					-1,
-					childSettings != null && childSettings.optional(),
-					childAnnotations,
-					null,
-					null
-			);
-
-			BitFieldWrapper childWrapper = createComplexWrapper(
-					objectClass, rootAnnotations, childField, childGenericType, childPath,
+			BitFieldWrapper[] childWrappers = createChildWrappers(
+					objectClass, rootAnnotations, field, genericType, path,
 					parentSettings != null && parentSettings.writeAsBytes()
 			);
 
@@ -165,44 +223,53 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 					field.setValue
 			);
 			if (parentSettings != null && parentSettings.writeAsBytes()) {
-				if (childWrapper != null) {
+				if (Map.class.isAssignableFrom(field.type)) {
+					throw new InvalidBitFieldException("writeAsBytes is not allowed on Maps: field is " + field);
+				}
+				if (childWrappers.length != 1) {
+					throw new Error("Expected exactly 1 child wrapper, but got " + Arrays.toString(childWrappers));
+				}
+				if (childWrappers[0] != null) {
 					throw new InvalidBitFieldException("Value annotations are forbidden when writeAsBytes is true: " + field);
 				}
-				if (childSettings != null) {
-					throw new InvalidBitFieldException("NestedFieldSetting's on writeAsBytes targets is forbidden: " + field);
-				}
-
 				return new ByteCollectionFieldWrapper(parentField, parentSettings.sizeField());
-			} else {
+			} else if (Map.class.isAssignableFrom(field.type)) {
+				if (childWrappers.length != 2) {
+					throw new Error("Expected exactly 2 child wrappers, but got " + Arrays.toString(childWrappers));
+				}
 				IntegerField sizeField = parentSettings != null ? parentSettings.sizeField() : DEFAULT_SIZE_FIELD;
-				return new BitCollectionFieldWrapper(parentField, sizeField, childWrapper);
+				return new MapFieldWrapper(parentField, sizeField, childWrappers[0], childWrappers[1]);
+			} else {
+				if (childWrappers.length != 1) {
+					throw new Error("Expected exactly 1 child wrapper, but got " + Arrays.toString(childWrappers));
+				}
+				IntegerField sizeField = parentSettings != null ? parentSettings.sizeField() : DEFAULT_SIZE_FIELD;
+				return new BitCollectionFieldWrapper(parentField, sizeField, childWrappers[0]);
 			}
 		}
 
 		return createSimpleWrapper(field, expectNothing);
 	}
 
-	private static Type getActualTypeArgument(VirtualField field, Type genericType) {
-		Type actualTypeArgument;
+	private static Type[] getActualTypeArguments(VirtualField field, Type genericType, int expectedAmount) {
 		if (genericType instanceof ParameterizedType) {
 			ParameterizedType parGenericType = (ParameterizedType) genericType;
 
 			Type[] actualTypeArguments = parGenericType.getActualTypeArguments();
-			if (actualTypeArguments.length == 0) {
-				throw new Error("Missing type argument for " + field);
+			if (actualTypeArguments.length != expectedAmount) {
+				throw new InvalidBitFieldException(
+						"Unexpected number of type arguments " + actualTypeArguments.length + " for field " + field
+				);
 			}
-			if (actualTypeArguments.length > 1) {
-				throw new InvalidBitFieldException("Too many generic types for " + field);
-			}
-
-			actualTypeArgument = actualTypeArguments[0];
+			return actualTypeArguments;
 		} else if (genericType instanceof GenericArrayType) {
+			if (expectedAmount != 1) {
+				throw new InvalidBitFieldException("Expected " + expectedAmount + " type parameters on field " + field);
+			}
 			GenericArrayType genericArrayType = (GenericArrayType) genericType;
-			actualTypeArgument = genericArrayType.getGenericComponentType();
+			return new Type[] { genericArrayType.getGenericComponentType() };
 		} else throw new InvalidBitFieldException("Unexpected generic type " + genericType + " for " + field);
-		return actualTypeArgument;
 	}
-
 
 	private static BitFieldWrapper createSimpleWrapper(VirtualField field, boolean expectNothing) {
 		if (field.referenceTargetLabel != null && field.type.isPrimitive()) {

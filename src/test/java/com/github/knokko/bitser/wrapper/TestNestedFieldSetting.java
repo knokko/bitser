@@ -393,8 +393,8 @@ public class TestNestedFieldSetting {
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertTrue(
-				error1.contains("must not have null values"),
-				"Expected " + error1 + " to contain \"must not have null values\""
+				error1.contains("must not have null elements"),
+				"Expected " + error1 + " to contain \"must not have null elements\""
 		);
 
 		LinkedList<Float> floatList = new LinkedList<>();
@@ -415,8 +415,8 @@ public class TestNestedFieldSetting {
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertTrue(
-				error2.contains("must not have null values"),
-				"Expected " + error2 + " to contain \"must not have null values\""
+				error2.contains("must not have null elements"),
+				"Expected " + error2 + " to contain \"must not have null elements\""
 		);
 
 		alternating.nested = null;
@@ -442,8 +442,8 @@ public class TestNestedFieldSetting {
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertTrue(
-				error1.contains("must not have null values"),
-				"Expected " + error1 + " to contain \"must not have null values\""
+				error1.contains("must not have null elements"),
+				"Expected " + error1 + " to contain \"must not have null elements\""
 		);
 
 		alternating.nested = null;
@@ -456,4 +456,6 @@ public class TestNestedFieldSetting {
 				"Expected " + error2 + " to contain \"must not be null\""
 		);
 	}
+
+	// TODO Monster test with nested maps, arrays, and collections
 }
