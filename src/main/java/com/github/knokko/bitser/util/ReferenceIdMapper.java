@@ -87,6 +87,16 @@ public class ReferenceIdMapper {
 		encodeUniformInteger(id.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
 	}
 
+	public void shareWith(ReferenceIdLoader loader) {
+		readOnly = true;
+		loader.prepareWith();
+
+		labelMappings.forEach((label, mappings) -> {
+			if (mappings.stable != null) mappings.stable.forEach((id, target) -> loader.withStable(label, id, target));
+			if (mappings.unstable != null) mappings.unstable.forEach((wrapper, id) -> loader.withUnstable(label, id, wrapper.value));
+		});
+	}
+
 	public void save(BitOutputStream output) throws IOException {
 		readOnly = true;
 

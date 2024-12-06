@@ -50,6 +50,24 @@ public class ReferenceIdLoader {
 		}
 	}
 
+	void prepareWith() {
+		labelMappings.values().forEach(Mappings::prepareWith);
+	}
+
+	void withStable(String label, UUID id, Object target) {
+		Mappings mappings = labelMappings.get(label);
+		if (mappings == null) throw new Error("Invalid with: label " + label + " was never saved");
+
+		mappings.registerStable(target, id);
+	}
+
+	void withUnstable(String label, int id, Object target) {
+		Mappings mappings = labelMappings.get(label);
+		if (mappings == null) throw new Error("Invalid with: label " + label + " was never saved");
+
+		mappings.registerUnstable(target, mappings.ownUnstableSize + id);
+	}
+
 	public void getUnstable(String label, ValueConsumer setValue, BitInputStream input) throws IOException {
 		Mappings mappings = labelMappings.get(label);
 		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
@@ -68,7 +86,7 @@ public class ReferenceIdLoader {
 		mappings.getStable(label, id, setValue);
 	}
 
-	public void resolve() throws IOException, IllegalAccessException {
+	public void resolve() throws IOException {
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}
@@ -80,6 +98,8 @@ public class ReferenceIdLoader {
 		final Map<Integer, Object> unstable;
 		final Map<UUID, Object> stable;
 		final Collection<ResolveTask> resolveTasks = new ArrayList<>();
+
+		int ownUnstableSize;
 
 		Mappings(int unstableSize, boolean hasStable) {
 			this.unstableSize = unstableSize;
@@ -116,11 +136,15 @@ public class ReferenceIdLoader {
 				setValue.consume(value);
 			});
 		}
+
+		void prepareWith() {
+			if (unstable != null) ownUnstableSize = unstable.size();
+		}
 	}
 
 	@FunctionalInterface
 	private interface ResolveTask {
 
-		void resolve() throws IOException, IllegalAccessException;
+		void resolve() throws IOException;
 	}
 }
