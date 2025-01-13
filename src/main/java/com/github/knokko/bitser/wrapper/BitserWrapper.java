@@ -39,4 +39,6 @@ public abstract class BitserWrapper<T> {
 	public abstract void read(
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
 	) throws IOException;
+
+	public abstract T shallowCopy(Object original);
 }

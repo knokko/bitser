@@ -11,7 +11,7 @@ import java.util.*;
 
 public class Bitser {
 
-	private final BitserCache cache;
+	public final BitserCache cache;
 
 	public Bitser(boolean threadSafe) {
 		this.cache = new BitserCache(threadSafe);

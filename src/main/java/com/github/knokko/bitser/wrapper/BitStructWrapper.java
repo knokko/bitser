@@ -454,16 +454,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		for (BitFieldWrapper field : fields) field.write(object, output, cache, idMapper);
 	}
 
-	@Override
-	public void read(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
-
+	private T createEmptyInstance() {
 		try {
-			T object = constructor.newInstance();
-			for (BitFieldWrapper field : fields) field.readField(object, input, cache, idLoader);
-			setValue.consume(object);
+			return constructor.newInstance();
 		} catch (InstantiationException e) {
 			throw new Error("Failed to instantiate " + constructor, e);
 		} catch (IllegalAccessException shouldNotHappen) {
@@ -471,5 +464,25 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		} catch (InvocationTargetException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void read(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
+		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+
+		T object = createEmptyInstance();
+		for (BitFieldWrapper field : fields) field.readField(object, input, cache, idLoader);
+		setValue.consume(object);
+	}
+
+	@Override
+	public T shallowCopy(Object original) {
+		T copy = createEmptyInstance();
+		for (BitFieldWrapper fieldWrapper : fields) {
+			fieldWrapper.field.setValue.accept(copy, fieldWrapper.field.getValue.apply(original));
+		}
+		return copy;
 	}
 }
