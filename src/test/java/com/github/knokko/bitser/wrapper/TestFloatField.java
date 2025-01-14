@@ -4,13 +4,11 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
-import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -54,24 +52,18 @@ public class TestFloatField {
 	}
 
 	@Test
-	public void testExpectMultipleOf() throws IOException {
+	public void testExpectMultipleOf() {
 		Bitser bitser = new Bitser(false);
-
-		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream(1);
-		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
 
 		this.optional = null;
 		this.required = 1.4;
 
-		bitser.serialize(this, bitOutput);
-		bitOutput.finish();
+		byte[] bytes = bitser.serializeToBytes(this);
 
 		// This should fit in 2 bytes
-		assertEquals(2, byteOutput.toByteArray().length);
+		assertEquals(2, bytes.length);
 
-		TestFloatField loaded = bitser.deserialize(
-				TestFloatField.class, new BitInputStream(new ByteArrayInputStream(byteOutput.toByteArray()))
-		);
+		TestFloatField loaded = bitser.deserializeFromBytes(TestFloatField.class, bytes);
 		assertNull(loaded.optional);
 		assertEquals(1.4, loaded.required, 0.001);
 	}

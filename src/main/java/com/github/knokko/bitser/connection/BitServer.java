@@ -15,7 +15,6 @@ import static com.github.knokko.bitser.connection.ConnectionHelper.*;
 
 public class BitServer<T> {
 
-
 	public static <T> BitServer<T> tcp(Bitser bitser, T rootStruct, int port) throws IOException {
 		@SuppressWarnings("resource") ServerSocket serverSocket = new ServerSocket(port);
 
@@ -89,8 +88,7 @@ public class BitServer<T> {
 	}
 
 	private synchronized void addConnection(InputStream input, OutputStream output) throws IOException {
-		// TODO Maybe create Bitser method for this
-		byte[] encodedRootState = ConnectionHelper.encodePacket(bitser, rootStruct);
+		byte[] encodedRootState = bitser.serializeToBytes(rootStruct);
 		connections.add(new Connection(new DataInputStream(input), new DataOutputStream(output), encodedRootState));
 	}
 

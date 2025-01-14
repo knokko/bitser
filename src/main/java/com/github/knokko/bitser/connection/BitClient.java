@@ -9,8 +9,7 @@ import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static com.github.knokko.bitser.connection.ConnectionHelper.STOP_SIGN;
-import static com.github.knokko.bitser.connection.ConnectionHelper.readPacket;
+import static com.github.knokko.bitser.connection.ConnectionHelper.*;
 
 public class BitClient<T> {
 
@@ -18,8 +17,7 @@ public class BitClient<T> {
 		@SuppressWarnings("resource") Socket socket = new Socket(host, port);
 
 		DataInputStream input = new DataInputStream(socket.getInputStream());
-		// TODO Maybe create Bitser method for this
-		T rootStruct = bitser.deserialize(rootStructClass, new BitInputStream(new ByteArrayInputStream(readPacket(input))));
+		T rootStruct = bitser.deserializeFromBytes(rootStructClass, readPacket(input));
 
 		return new BitClient<>(bitser, rootStruct, input, new DataOutputStream(socket.getOutputStream()), socket::close);
 	}
@@ -59,6 +57,7 @@ public class BitClient<T> {
 	private void inputThread() {
 		try {
 			while (true) {
+				// TODO Maybe do this through bitser
 				root.handleChanges(new BitInputStream(new ByteArrayInputStream(readPacket(input))));
 			}
 		} catch (IOException io) {
@@ -73,7 +72,7 @@ public class BitClient<T> {
 			while (true) {
 				byte[] nextChanges = pendingChanges.take();
 				if (nextChanges == STOP_SIGN) return;
-				ConnectionHelper.sendPacket(nextChanges, output);
+				sendPacket(nextChanges, output);
 			}
 		} catch (IOException io) {
 			System.out.println("Client output thread encountered IO exception: " + io.getMessage());

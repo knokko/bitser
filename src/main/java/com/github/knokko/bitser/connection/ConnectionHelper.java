@@ -1,9 +1,5 @@
 package com.github.knokko.bitser.connection;
 
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.Bitser;
-
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,14 +7,6 @@ import java.io.IOException;
 class ConnectionHelper {
 
 	static final byte[] STOP_SIGN = new byte[0];
-
-	static byte[] encodePacket(Bitser bitser, Object packet) throws IOException {
-		ByteArrayOutputStream packetBytes = new ByteArrayOutputStream();
-		BitOutputStream packetBits = new BitOutputStream(packetBytes);
-		bitser.serialize(packet, packetBits);
-		packetBits.finish();
-		return packetBytes.toByteArray();
-	}
 
 	static void sendPacket(byte[] packet, DataOutputStream output) throws IOException {
 		if (packet.length > 254) {

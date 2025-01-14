@@ -6,6 +6,8 @@ import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.wrapper.BitserWrapper;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -42,6 +44,18 @@ public class Bitser {
 		wrapper.write(object, output, cache, idMapper);
 	}
 
+	public byte[] serializeToBytes(Object object, Object... with) {
+		try {
+			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+			serialize(object, bitOutput, with);
+			bitOutput.finish();
+			return byteOutput.toByteArray();
+		} catch (IOException shouldNotHappen) {
+			throw new Error(shouldNotHappen);
+		}
+	}
+
 	public <T> T deserialize(Class<T> objectClass, BitInputStream input, Object... with) throws IOException {
 		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
 
@@ -71,5 +85,13 @@ public class Bitser {
 		idLoader.resolve();
 
 		return result.get(0);
+	}
+
+	public <T> T deserializeFromBytes(Class<T> objectClass, byte[] bytes, Object... with) {
+		try {
+			return deserialize(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), with);
+		} catch (IOException shouldNotHappen) {
+			throw new Error(shouldNotHappen);
+		}
 	}
 }
