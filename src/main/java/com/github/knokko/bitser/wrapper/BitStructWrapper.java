@@ -2,15 +2,19 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.connection.BitStructChange;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.VirtualField;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -478,11 +482,58 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
+	public void handleChange(Object target, BitStructChange change, BitserCache cache) {
+		BitFieldWrapper field = fields.get(change.fieldOrdering);
+		if (change.isNested) {
+			throw new UnsupportedOperationException("TODO");
+		} else {
+			try {
+				field.readField(target, new BitInputStream(new ByteArrayInputStream(change.payload)), cache, null);
+			} catch (IOException shouldNotHappen) {
+				throw new RuntimeException(shouldNotHappen);
+			}
+		}
+	}
+
+	@Override
 	public T shallowCopy(Object original) {
 		T copy = createEmptyInstance();
 		for (BitFieldWrapper fieldWrapper : fields) {
 			fieldWrapper.field.setValue.accept(copy, fieldWrapper.field.getValue.apply(original));
 		}
 		return copy;
+	}
+
+	@Override
+	public List<BitStructChange> findChanges(Bitser bitser, Object original, Object modified, Object... with) {
+		List<BitStructChange> changes = new ArrayList<>();
+		for (BitFieldWrapper fieldWrapper : fields) {
+			Class<?> fieldType = fieldWrapper.field.type;
+			Object originalValue = fieldWrapper.field.getValue.apply(original);
+			Object modifiedValue = fieldWrapper.field.getValue.apply(modified);
+
+			boolean hasChanged;
+			if (fieldType.isPrimitive() || Number.class.isAssignableFrom(fieldType) || fieldType == Boolean.class) {
+				// TODO Test second case!
+				hasChanged = !Objects.equals(modifiedValue, fieldWrapper.field.getValue.apply(original));
+			} else {
+				hasChanged = modifiedValue != originalValue;
+			}
+
+			if (hasChanged) {
+				// TODO Test (reference fields)
+				ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+				BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+				try {
+					fieldWrapper.writeField(modified, bitOutput, bitser.cache, null);
+					bitOutput.finish();
+				} catch (IOException shouldNotHappen) {
+					throw new RuntimeException(shouldNotHappen);
+				}
+				changes.add(new BitStructChange(fieldWrapper.field.ordering, false, byteOutput.toByteArray()));
+			}
+		}
+
+		return changes;
 	}
 }
