@@ -2,15 +2,17 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.connection.BitStructChange;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,8 +45,23 @@ public class TestBitStructChanges {
 		double d;
 	}
 
+	private byte[] captureChanges(Bitser bitser, Object original, Object modified, int expectedAmount) throws IOException {
+		// TODO Maybe create method in Bitser for this
+		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+		int numChanges = bitser.cache.getWrapper(original.getClass()).findAndWriteChanges(bitser, bitOutput, original, modified);
+		assertEquals(expectedAmount, numChanges);
+		bitOutput.finish();
+		return byteOutput.toByteArray();
+	}
+
+	private void applyChanges(Bitser bitser, Object target, byte[] changes) throws IOException {
+		BitInputStream bitInput = new BitInputStream(new ByteArrayInputStream(changes));
+		bitser.cache.getWrapper(target.getClass()).readAndApplyChanges(bitser, bitInput, target);
+	}
+
 	@Test
-	public void testFindPrimitiveChanges() {
+	public void testFindPrimitiveChanges() throws IOException {
 		Bitser bitser = new Bitser(false);
 
 		Primitives original = new Primitives();
@@ -57,17 +74,11 @@ public class TestBitStructChanges {
 		modified.j = 12; // Note that it was already 12
 		modified.f = 3f;
 
-		List<BitStructChange> changes = bitser.cache.getWrapper(original.getClass()).findChanges(bitser, original, modified);
-		assertEquals(3, changes.size());
-		for (BitStructChange change : changes) assertFalse(change.isNested);
-		assertEquals(0, changes.get(0).fieldOrdering);
-		assertEquals(2, changes.get(1).fieldOrdering);
-		assertEquals(4, changes.get(2).fieldOrdering);
+		byte[] changes = captureChanges(bitser, original, modified, 3);
 
 		original.d = 60f;
-		for (BitStructChange change : changes) {
-			bitser.cache.getWrapper(modified.getClass()).handleChange(original, change, bitser.cache);
-		}
+
+		applyChanges(bitser, original, changes);
 
 		assertTrue(original.b1);
 		assertFalse(original.b2);
@@ -104,7 +115,7 @@ public class TestBitStructChanges {
 	}
 
 	@Test
-	public void testFindPrimitiveWrapperChanges() {
+	public void testFindPrimitiveWrapperChanges() throws IOException {
 		Bitser bitser = new Bitser(false);
 		PrimitiveWrappers original = new PrimitiveWrappers();
 		original.b1 = true;
@@ -118,24 +129,15 @@ public class TestBitStructChanges {
 		notReallyModified.f = -1234.5f;
 		assertNotSame(original.f, notReallyModified.f);
 
-		assertEquals(new ArrayList<BitStructChange>(), bitser.cache.getWrapper(original.getClass()).findChanges(bitser, original, notReallyModified));
+		captureChanges(bitser, original, notReallyModified, 0);
 
 		PrimitiveWrappers actuallyModified = bitser.cache.getWrapper(original.getClass()).shallowCopy(notReallyModified);
 		actuallyModified.b2 = false;
 		actuallyModified.i = 1235;
 		actuallyModified.d = 1234.5;
 
-		// TODO Hm... make bitser.cache private again?
-		List<BitStructChange> changes = bitser.cache.getWrapper(original.getClass()).findChanges(bitser, original, actuallyModified);
-		assertEquals(3, changes.size());
-		assertEquals(1, changes.get(0).fieldOrdering);
-		assertEquals(2, changes.get(1).fieldOrdering);
-		assertEquals(5, changes.get(2).fieldOrdering);
-
-		for (BitStructChange change : changes) {
-			assertFalse(change.isNested);
-			bitser.cache.getWrapper(actuallyModified.getClass()).handleChange(original, change, bitser.cache);
-		}
+		byte[] changes = captureChanges(bitser, original, actuallyModified, 3);
+		applyChanges(bitser, original, changes);
 
 		assertTrue(original.b1);
 		assertFalse(original.b2);
@@ -175,7 +177,7 @@ public class TestBitStructChanges {
 	}
 
 	@Test
-	public void testFindSimpleNonNestedChanges() {
+	public void testFindSimpleNonNestedChanges() throws IOException {
 		NoNesting original = new NoNesting();
 		original.s1 = "hello";
 		original.s2 = "hi";
@@ -190,18 +192,8 @@ public class TestBitStructChanges {
 		modified.example2 = ExampleEnum.B;
 
 		Bitser bitser = new Bitser(false);
-		List<BitStructChange> changes = bitser.cache.getWrapper(original.getClass()).findChanges(bitser, original, modified);
-		assertEquals(5, changes.size());
-		assertEquals(0, changes.get(0).fieldOrdering);
-		assertEquals(1, changes.get(1).fieldOrdering);
-		assertEquals(2, changes.get(2).fieldOrdering);
-		assertEquals(4, changes.get(3).fieldOrdering);
-		assertEquals(5, changes.get(4).fieldOrdering);
-
-		for (BitStructChange change : changes) {
-			assertFalse(change.isNested);
-			bitser.cache.getWrapper(original.getClass()).handleChange(original, change, bitser.cache);
-		}
+		byte[] changes = captureChanges(bitser, original, modified, 5);
+		applyChanges(bitser, original, changes);
 
 		assertNull(original.s1);
 		assertEquals("world", original.s2);

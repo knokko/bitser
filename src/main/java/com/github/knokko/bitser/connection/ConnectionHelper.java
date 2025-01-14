@@ -9,6 +9,8 @@ import java.io.IOException;
 
 class ConnectionHelper {
 
+	static final byte[] STOP_SIGN = new byte[0];
+
 	static byte[] encodePacket(Bitser bitser, Object packet) throws IOException {
 		ByteArrayOutputStream packetBytes = new ByteArrayOutputStream();
 		BitOutputStream packetBits = new BitOutputStream(packetBytes);

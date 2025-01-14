@@ -13,12 +13,15 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static com.github.knokko.bitser.connection.ConnectionHelper.STOP_SIGN;
+
 public class BitServer<T> {
+
 
 	public static <T> BitServer<T> tcp(Bitser bitser, T rootStruct, int port) throws IOException {
 		@SuppressWarnings("resource") ServerSocket serverSocket = new ServerSocket(port);
 
-		BitServer<T> server = new BitServer<T>(bitser, rootStruct, serverSocket.getLocalPort());
+		BitServer<T> server = new BitServer<>(bitser, rootStruct, serverSocket.getLocalPort());
 
 		new Thread(() -> {
 			while (!serverSocket.isClosed()) {
@@ -39,7 +42,7 @@ public class BitServer<T> {
 	private final BitserWrapper<T> rootWrapper;
 	public final T rootStruct;
 	private final Collection<Connection> connections = new ArrayList<>();
-	private final BlockingQueue<List<BitStructChange>> changesToServer = new LinkedBlockingQueue<>();
+	private final BlockingQueue<byte[]> changesToServer = new LinkedBlockingQueue<>();
 	public final int port;
 
 	public BitServer(Bitser bitser, T rootStruct, int port) {
@@ -53,20 +56,22 @@ public class BitServer<T> {
 	}
 
 	public void stop() {
-		changesToServer.add(Collections.emptyList());
+		changesToServer.add(STOP_SIGN);
 	}
 
 	private void runUpdateLoop() {
 		try {
 			while (true) {
-				List<BitStructChange> changes = changesToServer.take();
-				if (changes.isEmpty()) break;
+				byte[] changes = changesToServer.take();
+				if (changes == STOP_SIGN) break;
 
 				synchronized (this) {
 					for (Connection connection : connections) connection.changesToClient.add(changes);
 
-					for (BitStructChange change : changes) {
-						rootWrapper.handleChange(rootStruct, change, bitser.cache);
+					try {
+						rootWrapper.readAndApplyChanges(bitser, new BitInputStream(new ByteArrayInputStream(changes)), rootStruct);
+					} catch (IOException shouldNotHappen) {
+						throw new RuntimeException(shouldNotHappen);
 					}
 				}
 			}
@@ -82,7 +87,7 @@ public class BitServer<T> {
 
 	private class Connection {
 
-		final BlockingQueue<List<BitStructChange>> changesToClient = new LinkedBlockingQueue<>();
+		final BlockingQueue<byte[]> changesToClient = new LinkedBlockingQueue<>();
 
 		final BitInputStream input;
 		final BitOutputStream output;
@@ -101,11 +106,10 @@ public class BitServer<T> {
 			try {
 				while (true) {
 					int packetSize = (int) IntegerBitser.decodeVariableInteger(0, Integer.MAX_VALUE, input);
-					byte[] packetBytes = new byte[packetSize];
-					input.read(packetBytes);
-					BitPacket packet = bitser.deserialize(BitPacket.class, new BitInputStream(new ByteArrayInputStream(packetBytes)));
-					System.out.println("Received packet " + packet.changes);
-					changesToServer.add(packet.changes);
+					byte[] changes = new byte[packetSize];
+					input.read(changes);
+					System.out.println("Received packet of size " + changes.length);
+					changesToServer.add(changes);
 				}
 			} catch (IOException io) {
 				System.out.println("Connection input thread encountered IO exception: " + io.getMessage());
@@ -117,13 +121,8 @@ public class BitServer<T> {
 				ConnectionHelper.sendEncodedPacket(encodedRootState, output);
 				encodedRootState = null;
 				while (true) {
-					List<BitStructChange> nextChanges = changesToClient.take();
-					// TODO Maybe poll ~1 ms for more?
-
-					BitPacket packet = new BitPacket();
-					packet.changes.addAll(nextChanges);
-
-					ConnectionHelper.sendEncodedPacket(ConnectionHelper.encodePacket(bitser, packet), output);
+					byte[] nextChanges = changesToClient.take();
+					ConnectionHelper.sendEncodedPacket(nextChanges, output);
 				}
 			} catch (IOException io) {
 				System.out.println("Connection output thread encountered IO exception: " + io.getMessage());

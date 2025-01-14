@@ -6,12 +6,13 @@ import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.serialize.IntegerBitser;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import static com.github.knokko.bitser.connection.ConnectionHelper.STOP_SIGN;
 
 public class BitClient<T> {
 
@@ -33,16 +34,24 @@ public class BitClient<T> {
 		void close() throws IOException;
 	}
 
-	private final Bitser bitser;
 	public final BitStructConnection<T> root;
-	private final BlockingQueue<List<BitStructChange>> pendingChanges = new LinkedBlockingQueue<>();
+	private final BlockingQueue<byte[]> pendingChanges = new LinkedBlockingQueue<>();
 	private final BitInputStream input;
 	private final BitOutputStream output;
 	private final CloseMethod close;
 
 	public BitClient(Bitser bitser, T rootStruct, BitInputStream input, BitOutputStream output, CloseMethod close) {
-		this.bitser = bitser;
-		this.root = new BitStructConnection<>(bitser, rootStruct, pendingChanges::add);
+		this.root = new BitStructConnection<>(bitser, rootStruct, listener -> {
+			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+			try {
+				listener.report(bitOutput);
+				bitOutput.finish();
+			} catch (IOException shouldNotHappen) {
+				throw new Error(shouldNotHappen);
+			}
+			pendingChanges.add(byteOutput.toByteArray());
+		});
 		this.input = input;
 		this.output = output;
 		this.close = close;
@@ -57,8 +66,7 @@ public class BitClient<T> {
 				int packetSize = (int) IntegerBitser.decodeVariableInteger(0, Integer.MAX_VALUE, input);
 				byte[] packetBytes = new byte[packetSize];
 				input.read(packetBytes);
-				BitPacket packet = bitser.deserialize(BitPacket.class, new BitInputStream(new ByteArrayInputStream(packetBytes)));
-				root.handleChanges(packet.changes);
+				root.handleChanges(new BitInputStream(new ByteArrayInputStream(packetBytes)));
 			}
 		} catch (IOException io) {
 			System.out.println("Client input thread encountered IO exception: " + io.getMessage());
@@ -68,13 +76,9 @@ public class BitClient<T> {
 	private void outputThread() {
 		try {
 			while (true) {
-				List<BitStructChange> nextChanges = pendingChanges.take();
-				if (nextChanges.isEmpty()) return;
-				// TODO Maybe poll ~1 ms for more?
-
-				BitPacket packet = new BitPacket();
-				packet.changes.addAll(nextChanges);
-				ConnectionHelper.sendEncodedPacket(ConnectionHelper.encodePacket(bitser, packet), output);
+				byte[] nextChanges = pendingChanges.take();
+				if (nextChanges == STOP_SIGN) return;
+				ConnectionHelper.sendEncodedPacket(nextChanges, output);
 			}
 		} catch (IOException io) {
 			System.out.println("Client output thread encountered IO exception: " + io.getMessage());
@@ -90,6 +94,6 @@ public class BitClient<T> {
 	}
 
 	public void close() {
-		pendingChanges.add(Collections.emptyList());
+		pendingChanges.add(STOP_SIGN);
 	}
 }

@@ -1,7 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.connection.BitStructChange;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -11,7 +10,6 @@ import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,7 +17,7 @@ public abstract class BitserWrapper<T> {
 
 	public static <T> BitserWrapper<T> wrap(Class<T> objectClass) {
 		BitStruct bitStruct = objectClass.getAnnotation(BitStruct.class);
-		if (bitStruct != null) return new BitStructWrapper<T>(objectClass, bitStruct);
+		if (bitStruct != null) return new BitStructWrapper<>(objectClass, bitStruct);
 
 		throw new InvalidBitFieldException(objectClass + " is not a BitStruct");
 	}
@@ -43,9 +41,13 @@ public abstract class BitserWrapper<T> {
 			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
 	) throws IOException;
 
-	public abstract void handleChange(Object target, BitStructChange change, BitserCache cache);
-
 	public abstract T shallowCopy(Object original);
 
-	public abstract List<BitStructChange> findChanges(Bitser bitser, Object original, Object modified, Object... with);
+	public abstract int findAndWriteChanges(
+			Bitser bitser, BitOutputStream output, Object original, Object modified, Object... with
+	) throws IOException;
+
+	public abstract void readAndApplyChanges(
+			Bitser bitser, BitInputStream input, Object target, Object... with
+	) throws IOException;
 }

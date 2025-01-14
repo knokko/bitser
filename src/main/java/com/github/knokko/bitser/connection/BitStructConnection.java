@@ -1,10 +1,11 @@
 package com.github.knokko.bitser.connection;
 
+import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.wrapper.BitserWrapper;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.function.Consumer;
 
 public class BitStructConnection<T> {
@@ -13,9 +14,9 @@ public class BitStructConnection<T> {
 	private final BitserWrapper<T> wrapper;
 	private T referenceState;
 	public final T state;
-	private final Consumer<List<BitStructChange>> reportChanges;
+	private final Consumer<ChangeListener> reportChanges;
 
-	public BitStructConnection(Bitser bitser, T state, Consumer<List<BitStructChange>> reportChanges) {
+	public BitStructConnection(Bitser bitser, T state, Consumer<ChangeListener> reportChanges) {
 		this.bitser = bitser;
 		@SuppressWarnings("unchecked") Class<T> structClass = (Class<T>) state.getClass();
 		this.wrapper = bitser.cache.getWrapper(structClass);
@@ -25,19 +26,28 @@ public class BitStructConnection<T> {
 	}
 
 	public void checkForChanges() {
-		List<BitStructChange> changes;
 		synchronized (state) {
-			changes = wrapper.findChanges(bitser, referenceState, state); // TODO What about the with?
+			// TODO What about the with?
+			try {
+				if (wrapper.findAndWriteChanges(bitser, null, referenceState, state) == 0) return;
+			} catch (IOException shouldNotHappen) {
+				throw new RuntimeException(shouldNotHappen);
+			}
+			reportChanges.accept(output -> wrapper.findAndWriteChanges(bitser, output, referenceState, state));
 			referenceState = wrapper.shallowCopy(state);
 		}
-
-		reportChanges.accept(changes);
 	}
 
-	public void handleChanges(List<BitStructChange> changes) throws IOException {
+	public void handleChanges(BitInputStream input) throws IOException {
 		synchronized (state) {
-			// TODO Maybe merge the changes
-			for (BitStructChange change : changes) wrapper.handleChange(state, change, bitser.cache);
+			// TODO What about the with?
+			wrapper.readAndApplyChanges(bitser, input, state);
+			referenceState = wrapper.shallowCopy(state);
 		}
+	}
+
+	@FunctionalInterface
+	public interface ChangeListener {
+		void report(BitOutputStream output) throws IOException;
 	}
 }
