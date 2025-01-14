@@ -49,6 +49,8 @@ public class TestSimpleConnection {
 
 	@Test
 	public void testSimpleStructConnection() throws IOException {
+		int oldThreadCount = Thread.activeCount();
+
 		ExampleStruct serverStruct = new ExampleStruct();
 		serverStruct.y = 5.5;
 
@@ -85,5 +87,7 @@ public class TestSimpleConnection {
 		assertEquals(21.0, client.root.state.y);
 
 		server.stop();
+
+		waitUntil(() -> Thread.activeCount() == oldThreadCount);
 	}
 }

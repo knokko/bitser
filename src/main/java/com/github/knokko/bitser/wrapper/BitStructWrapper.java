@@ -516,7 +516,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			}
 		}
 
-		System.out.println("numChanges is " + numChanges);
 		return numChanges;
 	}
 

@@ -29,11 +29,6 @@ public class BitOutputStream {
 		byteStream.write(values);
 	}
 
-	public void flush() throws IOException {
-		if (boolIndex != 0) throw new IllegalStateException("You must ensure that boolIndex is 0");
-		byteStream.flush();
-	}
-
 	public void finish() throws IOException {
 		if (boolIndex != 0) flushCurrentByte();
 		byteStream.flush();

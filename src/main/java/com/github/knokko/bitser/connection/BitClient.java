@@ -3,29 +3,25 @@ package com.github.knokko.bitser.connection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
-import com.github.knokko.bitser.serialize.IntegerBitser;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.github.knokko.bitser.connection.ConnectionHelper.STOP_SIGN;
+import static com.github.knokko.bitser.connection.ConnectionHelper.readPacket;
 
 public class BitClient<T> {
 
 	public static <T> BitClient<T> tcp(Bitser bitser, Class<T> rootStructClass, String host, int port) throws IOException {
 		@SuppressWarnings("resource") Socket socket = new Socket(host, port);
 
-		BitInputStream input = new BitInputStream(socket.getInputStream());
-		int rootByteSize = (int) IntegerBitser.decodeVariableInteger(0, Integer.MAX_VALUE, input);
-		byte[] rootBytes = new byte[rootByteSize];
-		input.read(rootBytes);
-		T rootStruct = bitser.deserialize(rootStructClass, new BitInputStream(new ByteArrayInputStream(rootBytes)));
+		DataInputStream input = new DataInputStream(socket.getInputStream());
+		// TODO Maybe create Bitser method for this
+		T rootStruct = bitser.deserialize(rootStructClass, new BitInputStream(new ByteArrayInputStream(readPacket(input))));
 
-		return new BitClient<>(bitser, rootStruct, input, new BitOutputStream(socket.getOutputStream()), socket::close);
+		return new BitClient<>(bitser, rootStruct, input, new DataOutputStream(socket.getOutputStream()), socket::close);
 	}
 
 	@FunctionalInterface
@@ -36,11 +32,11 @@ public class BitClient<T> {
 
 	public final BitStructConnection<T> root;
 	private final BlockingQueue<byte[]> pendingChanges = new LinkedBlockingQueue<>();
-	private final BitInputStream input;
-	private final BitOutputStream output;
+	private final DataInputStream input;
+	private final DataOutputStream output;
 	private final CloseMethod close;
 
-	public BitClient(Bitser bitser, T rootStruct, BitInputStream input, BitOutputStream output, CloseMethod close) {
+	public BitClient(Bitser bitser, T rootStruct, DataInputStream input, DataOutputStream output, CloseMethod close) {
 		this.root = new BitStructConnection<>(bitser, rootStruct, listener -> {
 			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
@@ -63,13 +59,12 @@ public class BitClient<T> {
 	private void inputThread() {
 		try {
 			while (true) {
-				int packetSize = (int) IntegerBitser.decodeVariableInteger(0, Integer.MAX_VALUE, input);
-				byte[] packetBytes = new byte[packetSize];
-				input.read(packetBytes);
-				root.handleChanges(new BitInputStream(new ByteArrayInputStream(packetBytes)));
+				root.handleChanges(new BitInputStream(new ByteArrayInputStream(readPacket(input))));
 			}
 		} catch (IOException io) {
 			System.out.println("Client input thread encountered IO exception: " + io.getMessage());
+		} finally {
+			pendingChanges.add(STOP_SIGN);
 		}
 	}
 
@@ -78,7 +73,7 @@ public class BitClient<T> {
 			while (true) {
 				byte[] nextChanges = pendingChanges.take();
 				if (nextChanges == STOP_SIGN) return;
-				ConnectionHelper.sendEncodedPacket(nextChanges, output);
+				ConnectionHelper.sendPacket(nextChanges, output);
 			}
 		} catch (IOException io) {
 			System.out.println("Client output thread encountered IO exception: " + io.getMessage());

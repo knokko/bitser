@@ -29,6 +29,7 @@ public class BitStructConnection<T> {
 		synchronized (state) {
 			// TODO What about the with?
 			try {
+
 				if (wrapper.findAndWriteChanges(bitser, null, referenceState, state) == 0) return;
 			} catch (IOException shouldNotHappen) {
 				throw new RuntimeException(shouldNotHappen);
