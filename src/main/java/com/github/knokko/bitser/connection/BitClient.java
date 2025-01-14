@@ -35,7 +35,7 @@ public class BitClient<T> {
 	private final CloseMethod close;
 
 	public BitClient(Bitser bitser, T rootStruct, DataInputStream input, DataOutputStream output, CloseMethod close) {
-		this.root = new BitStructConnection<>(bitser, rootStruct, listener -> {
+		this.root = bitser.createStructConnection(rootStruct, listener -> {
 			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
 			try {
@@ -57,7 +57,6 @@ public class BitClient<T> {
 	private void inputThread() {
 		try {
 			while (true) {
-				// TODO Maybe do this through bitser
 				root.handleChanges(new BitInputStream(new ByteArrayInputStream(readPacket(input))));
 			}
 		} catch (IOException io) {

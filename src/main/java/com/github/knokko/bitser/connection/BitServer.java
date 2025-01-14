@@ -2,7 +2,6 @@ package com.github.knokko.bitser.connection;
 
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.Bitser;
-import com.github.knokko.bitser.wrapper.BitserWrapper;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -42,8 +41,7 @@ public class BitServer<T> {
 	}
 
 	private final Bitser bitser;
-	private final BitserWrapper<T> rootWrapper;
-	public final T rootStruct;
+	public final BitStructConnection<T> root;
 	private final Collection<Connection> connections = new ArrayList<>();
 	private final BlockingQueue<byte[]> changesToServer = new LinkedBlockingQueue<>();
 	public final int port;
@@ -51,9 +49,7 @@ public class BitServer<T> {
 
 	public BitServer(Bitser bitser, T rootStruct, int port, Runnable stopCallback) {
 		this.bitser = bitser;
-		@SuppressWarnings("unchecked") Class<T> rootClass = (Class<T>) rootStruct.getClass();
-		this.rootWrapper = bitser.cache.getWrapper(rootClass);
-		this.rootStruct = rootStruct;
+		this.root = bitser.createStructConnection(rootStruct, null);
 		this.port = port;
 		this.stopCallback = stopCallback;
 
@@ -74,7 +70,7 @@ public class BitServer<T> {
 					if (changes == STOP_SIGN) break;
 
 					try {
-						rootWrapper.readAndApplyChanges(bitser, new BitInputStream(new ByteArrayInputStream(changes)), rootStruct);
+						root.handleChanges(new BitInputStream(new ByteArrayInputStream(changes)));
 					} catch (IOException shouldNotHappen) {
 						throw new RuntimeException(shouldNotHappen);
 					}
@@ -88,7 +84,7 @@ public class BitServer<T> {
 	}
 
 	private synchronized void addConnection(InputStream input, OutputStream output) throws IOException {
-		byte[] encodedRootState = bitser.serializeToBytes(rootStruct);
+		byte[] encodedRootState = bitser.serializeToBytes(root.state);
 		connections.add(new Connection(new DataInputStream(input), new DataOutputStream(output), encodedRootState));
 	}
 

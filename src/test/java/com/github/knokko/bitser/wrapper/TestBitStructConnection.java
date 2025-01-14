@@ -1,0 +1,287 @@
+package com.github.knokko.bitser.wrapper;
+
+import com.github.knokko.bitser.BitEnum;
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.connection.BitStructConnection;
+import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.FloatField;
+import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.serialize.Bitser;
+import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class TestBitStructConnection {
+
+	@BitStruct(backwardCompatible = false)
+	private static class Primitives {
+
+		@BitField(ordering = 0)
+		boolean b1;
+
+		@BitField(ordering = 1)
+		boolean b2;
+
+		@BitField(ordering = 2)
+		@IntegerField(expectUniform = false)
+		int i;
+
+		@BitField(ordering = 3)
+		@IntegerField(expectUniform = false)
+		int j;
+
+		@BitField(ordering = 4)
+		@FloatField
+		float f;
+
+		@BitField(ordering = 5)
+		@FloatField
+		double d;
+	}
+
+	private static class ChangeTracker implements Consumer<BitStructConnection.ChangeListener> {
+
+		private byte[] bytes;
+		int expectedNumberOfChanges;
+
+		ChangeTracker(int expectedNumberOfChanges) {
+			this.expectedNumberOfChanges = expectedNumberOfChanges;
+		}
+
+		@Override
+		public void accept(BitStructConnection.ChangeListener changeListener) {
+			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+			try {
+				assertEquals(expectedNumberOfChanges, changeListener.report(bitOutput));
+				bitOutput.finish();
+			} catch (IOException e) {
+				throw new Error(e);
+			}
+			this.bytes = byteOutput.toByteArray();
+		}
+
+		public void applyChanges(BitStructConnection<?> receiver) throws IOException {
+			receiver.handleChanges(new BitInputStream(new ByteArrayInputStream(bytes)));
+		}
+	}
+
+	@Test
+	public void testFindPrimitiveChanges() throws IOException {
+		Bitser bitser = new Bitser(false);
+		ChangeTracker tracker = new ChangeTracker(3);
+
+		Primitives original = new Primitives();
+		original.j = 12;
+		original.f = 1f;
+
+		BitStructConnection<Primitives> connection1 = bitser.createStructConnection(bitser.shallowCopy(original), tracker);
+		BitStructConnection<Primitives> connection2 = bitser.createStructConnection(bitser.shallowCopy(original), null);
+
+		connection1.state.b1 = true;
+		connection1.state.i = 1234;
+		connection1.state.j = 12; // Note that it was already 12
+		connection1.state.f = 3f;
+
+		connection1.checkForChanges();
+		connection2.state.d = 60f;
+		tracker.applyChanges(connection2);
+
+		assertTrue(connection2.state.b1);
+		assertFalse(connection2.state.b2);
+		assertEquals(1234, connection2.state.i);
+		assertEquals(12, connection2.state.j);
+		assertEquals(3f, connection2.state.f);
+		assertEquals(60f, connection2.state.d);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class PrimitiveWrappers {
+
+		@BitField(ordering = 0)
+		Boolean b1;
+
+		@BitField(ordering = 1, optional = true)
+		Boolean b2;
+
+		@BitField(ordering = 2)
+		@IntegerField(expectUniform = false)
+		Integer i;
+
+		@BitField(ordering = 3, optional = true)
+		@IntegerField(expectUniform = false)
+		Integer j;
+
+		@BitField(ordering = 4)
+		@FloatField
+		Float f;
+
+		@BitField(ordering = 5, optional = true)
+		@FloatField
+		Double d;
+	}
+
+	@Test
+	public void testFindPrimitiveWrapperChanges() throws IOException {
+		Bitser bitser = new Bitser(false);
+		ChangeTracker tracker = new ChangeTracker(0);
+
+		PrimitiveWrappers original = new PrimitiveWrappers();
+		original.b1 = true;
+		original.i = 1234;
+		original.f = -1234.5f;
+
+		BitStructConnection<PrimitiveWrappers> connection1 = bitser.createStructConnection(bitser.shallowCopy(original), tracker);
+		BitStructConnection<PrimitiveWrappers> connection2 = bitser.createStructConnection(bitser.shallowCopy(original), null);
+
+		connection1.state.b1 = true;
+		connection1.state.i = 1234;
+		assertNotSame(original.i, connection1.state.i);
+		connection1.state.f = -1234.5f;
+		assertNotSame(original.f, connection1.state.f);
+
+		connection1.checkForChanges();
+
+		connection1.state.b2 = false;
+		connection1.state.i = 1235;
+		connection1.state.d = 1234.5;
+		tracker.expectedNumberOfChanges = 3;
+		connection1.checkForChanges();
+
+		tracker.applyChanges(connection2);
+		assertTrue(connection2.state.b1);
+		assertFalse(connection2.state.b2);
+		assertEquals(1235, connection2.state.i);
+		assertNull(connection2.state.j);
+		assertEquals(-1234.5f, connection2.state.f);
+		assertEquals(1234.5, connection2.state.d);
+	}
+
+	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	private enum ExampleEnum {
+		A,
+		B,
+		C
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class NoNesting {
+
+		@BitField(ordering = 0, optional = true)
+		String s1;
+
+		@BitField(ordering = 1)
+		String s2;
+
+		@BitField(ordering = 2, optional = true)
+		UUID id1;
+
+		@BitField(ordering = 3)
+		UUID id2;
+
+		@BitField(ordering = 4, optional = true)
+		ExampleEnum example1;
+
+		@BitField(ordering = 5)
+		ExampleEnum example2;
+	}
+
+	@Test
+	public void testFindSimpleNonNestedChanges() throws IOException {
+		Bitser bitser = new Bitser(false);
+		ChangeTracker tracker = new ChangeTracker(5);
+		NoNesting original = new NoNesting();
+		original.s1 = "hello";
+		original.s2 = "hi";
+		original.id1 = new UUID(1, 2);
+		original.id2 = new UUID(3, 4);
+		original.example1 = ExampleEnum.A;
+		original.example2 = ExampleEnum.C;
+
+		BitStructConnection<NoNesting> connection1 = bitser.createStructConnection(bitser.shallowCopy(original), tracker);
+		BitStructConnection<NoNesting> connection2 = bitser.createStructConnection(bitser.shallowCopy(original), null);
+		connection1.state.s1 = null;
+		connection1.state.s2 = "world";
+		connection1.state.id1 = null;
+		connection1.state.id2 = original.id2;
+		connection1.state.example1 = null;
+		connection1.state.example2 = ExampleEnum.B;
+		connection1.checkForChanges();
+
+		tracker.applyChanges(connection2);
+
+		assertNull(connection2.state.s1);
+		assertEquals("world", connection2.state.s2);
+		assertNull(connection2.state.id1);
+		assertEquals(connection1.state.id2, connection2.state.id2);
+		assertNull(connection2.state.example1);
+		assertEquals(ExampleEnum.B, connection2.state.example2);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class Nested3 {
+
+		@BitField(ordering = 0)
+		@IntegerField(expectUniform = false)
+		int x;
+
+		@BitField(ordering = 1)
+		@IntegerField(expectUniform = false)
+		int y;
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class Nested2 {
+
+		@BitField(ordering = 0)
+		@IntegerField(expectUniform = false)
+		int a;
+
+		@BitField(ordering = 1)
+		Nested3 deeper = new Nested3();
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class Nested1 {
+
+		@BitField(ordering = 0)
+		Nested2 deeper = new Nested2();
+
+		@BitField(ordering = 1)
+		@FloatField
+		float f;
+	}
+
+	@Test
+	public void testNestedStructs() throws IOException {
+		ChangeTracker tracker = new ChangeTracker(1);
+		Bitser bitser = new Bitser(false);
+
+		Nested1 state2 = new Nested1();
+		state2.f = 123f;
+		state2.deeper.deeper.x = 999;
+
+		BitStructConnection<Nested1> connection1 = bitser.createStructConnection(new Nested1(), tracker);
+		BitStructConnection<Nested1> connection2 = bitser.createStructConnection(state2, null);
+
+		connection1.state.deeper.a = 43;
+		connection1.state.deeper.deeper.y = 45;
+		connection1.getChildStruct("deeper").checkForChanges();
+
+		tracker.applyChanges(connection2);
+		assertEquals(43, state2.deeper.a);
+		connection1.getChildStruct("deeper").getChildStruct("deeper").checkForChanges();
+
+		tracker.applyChanges(connection2);
+		assertEquals(999, state2.deeper.deeper.x);
+		assertEquals(45, state2.deeper.deeper.y);
+	}
+}

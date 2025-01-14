@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.serialize;
 
+import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
@@ -10,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Bitser {
 
@@ -93,5 +95,16 @@ public class Bitser {
 		} catch (IOException shouldNotHappen) {
 			throw new Error(shouldNotHappen);
 		}
+	}
+
+	public <T> T shallowCopy(T object) {
+		//noinspection unchecked
+		return (T) cache.getWrapper(object.getClass()).shallowCopy(object);
+	}
+
+	public <T> BitStructConnection<T> createStructConnection(
+			T initialState, Consumer<BitStructConnection.ChangeListener> reportChanges
+	) {
+		return cache.getWrapper(initialState.getClass()).createConnection(this, initialState, reportChanges);
 	}
 }

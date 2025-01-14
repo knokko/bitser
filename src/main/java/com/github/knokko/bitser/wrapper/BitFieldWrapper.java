@@ -12,9 +12,9 @@ import com.github.knokko.bitser.util.VirtualField;
 import java.io.IOException;
 import java.util.Set;
 
-abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
+public abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
-	protected final VirtualField field;
+	public final VirtualField field;
 
 	BitFieldWrapper(VirtualField field) {
 		this.field = field;
@@ -41,7 +41,7 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		}
 	}
 
-	void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	public final void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
 		try {
 			writeField(object, output, cache, idMapper);
 		} catch (InvalidBitValueException invalidValue) {
@@ -69,6 +69,12 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 	abstract void writeValue(
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException;
+
+	public final void read(
+			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
+	) throws IOException {
+		readField(object, input, cache, idLoader);
+	}
 
 	void readField(
 			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader

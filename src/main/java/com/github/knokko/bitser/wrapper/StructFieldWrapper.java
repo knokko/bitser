@@ -10,7 +10,7 @@ import com.github.knokko.bitser.util.VirtualField;
 import java.io.IOException;
 import java.util.Set;
 
-class StructFieldWrapper extends BitFieldWrapper {
+public class StructFieldWrapper extends BitFieldWrapper {
 
 	StructFieldWrapper(VirtualField field) {
 		super(field);

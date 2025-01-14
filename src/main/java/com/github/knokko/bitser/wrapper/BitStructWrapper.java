@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitInputStream;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.function.Consumer;
 
 class BitStructWrapper<T> extends BitserWrapper<T> {
 
@@ -488,45 +490,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public int findAndWriteChanges(
-			Bitser bitser, BitOutputStream output, Object original, Object modified, Object... with
-	) throws IOException {
-		int numChanges = 0;
-		for (BitFieldWrapper fieldWrapper : fields) {
-			Class<?> fieldType = fieldWrapper.field.type;
-			Object originalValue = fieldWrapper.field.getValue.apply(original);
-			Object modifiedValue = fieldWrapper.field.getValue.apply(modified);
-
-			boolean hasChanged;
-			if (fieldType.isPrimitive() || Number.class.isAssignableFrom(fieldType) || fieldType == Boolean.class) {
-				hasChanged = !Objects.equals(modifiedValue, fieldWrapper.field.getValue.apply(original));
-			} else {
-				hasChanged = modifiedValue != originalValue;
-			}
-
-			if (output != null) output.write(hasChanged);
-
-			if (hasChanged) {
-				numChanges += 1;
-
-				if (output != null) {
-					// TODO Test (reference fields)
-					fieldWrapper.writeField(modified, output, bitser.cache, null);
-				}
-			}
-		}
-
-		return numChanges;
-	}
-
-	public void readAndApplyChanges(
-			Bitser bitser, BitInputStream input, Object target, Object... with
-	) throws IOException {
-		for (BitFieldWrapper fieldWrapper : fields) {
-			boolean hasChanges = input.read();
-			if (!hasChanges) continue;
-
-			fieldWrapper.readField(target, input, bitser.cache, null);
-		}
+	public <C> BitStructConnection<C> createConnection(
+			Bitser bitser, C object, Consumer<BitStructConnection.ChangeListener> reportChanges
+	) {
+		return new BitStructConnection<>(bitser, new ArrayList<>(fields), object, reportChanges);
 	}
 }

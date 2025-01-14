@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -12,6 +13,7 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public abstract class BitserWrapper<T> {
 
@@ -43,11 +45,7 @@ public abstract class BitserWrapper<T> {
 
 	public abstract T shallowCopy(Object original);
 
-	public abstract int findAndWriteChanges(
-			Bitser bitser, BitOutputStream output, Object original, Object modified, Object... with
-	) throws IOException;
-
-	public abstract void readAndApplyChanges(
-			Bitser bitser, BitInputStream input, Object target, Object... with
-	) throws IOException;
+	public abstract <C> BitStructConnection<C> createConnection(
+			Bitser bitser, C object, Consumer<BitStructConnection.ChangeListener> reportChanges
+	);
 }
