@@ -12,9 +12,9 @@ import com.github.knokko.bitser.util.VirtualField;
 import java.io.IOException;
 import java.util.Set;
 
-abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
+public abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 
-	protected final VirtualField field;
+	public final VirtualField field;
 
 	BitFieldWrapper(VirtualField field) {
 		this.field = field;
@@ -26,6 +26,14 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 	@Override
 	public int compareTo(BitFieldWrapper other) {
 		return Integer.compare(this.field.ordering, other.field.ordering);
+	}
+
+	public String getFieldName() {
+		return field.annotations.getFieldName();
+	}
+
+	public BitFieldWrapper getChildWrapper() {
+		throw new UnsupportedOperationException("getChildWrapper only works on collection types, but this is " + getClass());
 	}
 
 	void collectReferenceTargetLabels(
@@ -41,7 +49,7 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		}
 	}
 
-	void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	public final void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
 		try {
 			writeField(object, output, cache, idMapper);
 		} catch (InvalidBitValueException invalidValue) {
@@ -70,16 +78,30 @@ abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
 	) throws IOException;
 
-	void readField(
+	public final void read(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
+		readField(input, cache, idLoader, setValue);
+	}
+
+	final void readField(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
+		if (field.optional && !input.read()) setValue.consume(null);
+		else {
+			readValue(input, cache, idLoader, value -> {
+				setValue.consume(value);
+				if (field.referenceTargetLabel != null) {
+					idLoader.register(field.referenceTargetLabel, value, input, cache);
+				}
+			});
+		}
+	}
+
+	final void readField(
 			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
 	) throws IOException {
-		if (field.optional && !input.read()) field.setValue.accept(object, null);
-		else {
-			readValue(input, cache, idLoader, value -> field.setValue.accept(object, value));
-			if (field.referenceTargetLabel != null) {
-				idLoader.register(field.referenceTargetLabel, field.getValue.apply(object), input, cache);
-			}
-		}
+		readField(input, cache, idLoader, value -> field.setValue.accept(object, value));
 	}
 
 	abstract void readValue(

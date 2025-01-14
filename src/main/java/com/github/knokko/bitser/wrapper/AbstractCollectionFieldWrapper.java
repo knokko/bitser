@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -19,7 +20,35 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.decodeVariableInt
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
+public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
+
+	public static void writeElement(
+			Object element, BitFieldWrapper wrapper, BitOutputStream output,
+			BitserCache cache, ReferenceIdMapper idMapper, String nullErrorMessage
+	) throws IOException {
+		if (wrapper.field.optional) output.write(element != null);
+		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
+		if (element != null) {
+			wrapper.writeValue(element, output, cache, idMapper);
+			if (wrapper.field.referenceTargetLabel != null) {
+				idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, output);
+			}
+		}
+	}
+
+	static Object constructCollectionWithSize(VirtualField field, int size) {
+		try {
+			return field.type.getConstructor(int.class).newInstance(size);
+		} catch (NoSuchMethodException noIntConstructor) {
+			try {
+				return field.type.getConstructor().newInstance();
+			} catch (Exception unexpected) {
+				throw new RuntimeException(unexpected);
+			}
+		} catch (Exception unexpected) {
+			throw new RuntimeException(unexpected);
+		}
+	}
 
 	private final IntegerField sizeField;
 
@@ -73,7 +102,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (field.type.isArray()) {
 			return Array.newInstance(field.type.getComponentType(), size);
 		} else {
-			return MapFieldWrapper.constructCollectionWithSize(field, size);
+			return constructCollectionWithSize(field, size);
 		}
 	}
 

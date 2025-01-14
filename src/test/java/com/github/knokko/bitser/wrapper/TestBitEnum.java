@@ -5,14 +5,10 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -119,16 +115,12 @@ public class TestBitEnum {
 	}
 
 	@Test
-	public void testDeletedEnumConstantName() throws IOException {
+	public void testDeletedEnumConstantName() {
 		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(new SeasonStruct());
 
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		BitOutputStream bitOutput = new BitOutputStream(bytes);
-		bitser.serialize(new SeasonStruct(), bitOutput);
-		bitOutput.finish();
-
-		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class, () -> bitser.deserialize(
-				MissingSeasonStruct.class, new BitInputStream(new ByteArrayInputStream(bytes.toByteArray()))
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				MissingSeasonStruct.class, bytes
 		));
 		assertTrue(
 				invalid.getMessage().contains("Missing enum constant AUTUMN"),
@@ -161,16 +153,12 @@ public class TestBitEnum {
 	}
 
 	@Test
-	public void testDeletedEnumConstantOrdinal() throws IOException {
+	public void testDeletedEnumConstantOrdinal() {
 		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(new DirectionStruct());
 
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		BitOutputStream bitOutput = new BitOutputStream(bytes);
-		bitser.serialize(new DirectionStruct(), bitOutput);
-		bitOutput.finish();
-
-		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class, () -> bitser.deserialize(
-				MissingDirectionStruct.class, new BitInputStream(new ByteArrayInputStream(bytes.toByteArray()))
+		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				MissingDirectionStruct.class, bytes
 		));
 		assertTrue(
 				invalid.getMessage().contains("Missing enum ordinal 3"),

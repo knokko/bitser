@@ -1,9 +1,11 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -11,12 +13,13 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public abstract class BitserWrapper<T> {
 
 	public static <T> BitserWrapper<T> wrap(Class<T> objectClass) {
 		BitStruct bitStruct = objectClass.getAnnotation(BitStruct.class);
-		if (bitStruct != null) return new BitStructWrapper<T>(objectClass, bitStruct);
+		if (bitStruct != null) return new BitStructWrapper<>(objectClass, bitStruct);
 
 		throw new InvalidBitFieldException(objectClass + " is not a BitStruct");
 	}
@@ -41,4 +44,8 @@ public abstract class BitserWrapper<T> {
 	) throws IOException;
 
 	public abstract T shallowCopy(Object original);
+
+	public abstract <C> BitStructConnection<C> createConnection(
+			Bitser bitser, C object, Consumer<BitStructConnection.ChangeListener> reportChanges
+	);
 }
