@@ -21,7 +21,6 @@ public class BitStructConnection<T> extends BitConnection {
 	public final T state;
 	private final Consumer<ChangeListener> reportChanges;
 	private final BitConnection[] childConnections;
-	private final Object[] expectedChildren;
 
 	public BitStructConnection(Bitser bitser, List<BitFieldWrapper> fields, T state, Consumer<ChangeListener> reportChanges) {
 		this.bitser = bitser;
@@ -30,24 +29,7 @@ public class BitStructConnection<T> extends BitConnection {
 		this.state = state;
 		this.reportChanges = reportChanges;
 		this.childConnections = new BitConnection[fields.size()];
-		this.expectedChildren = new Object[fields.size()];
-		for (int index = 0; index < fields.size(); index++) initChild(index);
-	}
-
-	private void initChild(int index) {
-		Object child = fields.get(index).field.getValue.apply(state);
-		expectedChildren[index] = child;
-		// TODO Handle null?
-		if (fields.get(index) instanceof StructFieldWrapper) {
-			childConnections[index] = bitser.createStructConnection(
-					child, listener -> writeNestedChange(child, index, listener)
-			);
-		} else if (List.class.isAssignableFrom(fields.get(index).field.type)) {
-			childConnections[index] = new BitListConnection<>(
-					bitser, (List<?>) child, fields.get(index).getChildWrapper(),
-					listener -> writeNestedChange(child, index, listener)
-			);
-		} else expectedChildren[index] = null;
+		for (BitFieldWrapper field : fields) updateChildConnection(field);
 	}
 
 	@Override
@@ -73,6 +55,7 @@ public class BitStructConnection<T> extends BitConnection {
 			// TODO What about the with?
 			if (input.read()) {
 				int ordering = (int) decodeUniformInteger(0, fields.size() - 1, input);
+				updateChildConnection(fields.get(ordering));
 				if (childConnections[ordering] != null) childConnections[ordering].handleChanges(input);
 				else throw new IllegalArgumentException("Unexpected ordering " + ordering);
 			} else {
@@ -82,7 +65,6 @@ public class BitStructConnection<T> extends BitConnection {
 								input, bitser.cache, null,
 								value -> fieldWrapper.field.setValue.accept(state, value)
 						);
-						initChild(fieldWrapper.field.ordering);
 					}
 				}
 				referenceState = bitser.shallowCopy(state);
@@ -90,13 +72,21 @@ public class BitStructConnection<T> extends BitConnection {
 		}
 	}
 
+	@Override
+	Object getState() {
+		return state;
+	}
+
 	private void writeNestedChange(Object actualChild, int ordering, ChangeListener listener) {
-		if (expectedChildren[ordering] != actualChild) return;
-		reportChanges.accept(output -> {
-			output.write(true);
-			encodeUniformInteger(ordering, 0, fields.size() - 1, output);
-			return listener.report(output);
-		});
+		synchronized (state) {
+			BitConnection childConnection = updateChildConnection(fields.get(ordering));
+			if (childConnection == null || childConnection.getState() != actualChild) return;
+			reportChanges.accept(output -> {
+				output.write(true);
+				encodeUniformInteger(ordering, 0, fields.size() - 1, output);
+				return listener.report(output);
+			});
+		}
 	}
 
 	private int findAndWriteChanges(BitOutputStream output) throws IOException {
@@ -121,10 +111,7 @@ public class BitStructConnection<T> extends BitConnection {
 				if (output != null) {
 					// TODO Test (reference fields)
 					fieldWrapper.write(state, output, bitser.cache, null);
-				}
-
-				if (childConnections[fieldWrapper.field.ordering] != null && true) { // TODO Hm...
-					initChild(fieldWrapper.field.ordering);
+					updateChildConnection(fieldWrapper);
 				}
 			}
 		}
@@ -132,21 +119,52 @@ public class BitStructConnection<T> extends BitConnection {
 		return numChanges;
 	}
 
-	private BitConnection getChild(String fieldName) {
-		for (int index = 0; index < fields.size(); index++) {
-			if (fieldName.equals(fields.get(index).getFieldName())) return childConnections[index];
-		}
-		throw new IllegalArgumentException("No child with name " + fieldName);
-	}
-
 	public <C> BitListConnection<C> getChildList(String fieldName) {
 		//noinspection unchecked
-		return (BitListConnection<C>) getChild(fieldName);
+		return (BitListConnection<C>) getChildConnection(fieldName);
 	}
 
 	public <C> BitStructConnection<C> getChildStruct(String fieldName) {
 		//noinspection unchecked
-		return (BitStructConnection<C>) getChild(fieldName);
+		return (BitStructConnection<C>) getChildConnection(fieldName);
+	}
+
+	private BitConnection getChildConnection(String fieldName) {
+		for (BitFieldWrapper fieldWrapper : fields) {
+			if (!fieldName.equals(fieldWrapper.getFieldName())) continue;
+			return updateChildConnection(fieldWrapper);
+		}
+		throw new IllegalArgumentException("Can't find field with name " + fieldName);
+	}
+
+	private BitConnection updateChildConnection(BitFieldWrapper fieldWrapper) {
+		boolean isStruct = fieldWrapper instanceof StructFieldWrapper;
+		boolean isList = List.class.isAssignableFrom(fieldWrapper.field.type);
+		if (isStruct || isList) {
+
+			int ordering = fieldWrapper.field.ordering;
+			synchronized (state) {
+				BitConnection oldConnection = childConnections[ordering];
+				BitConnection newConnection = oldConnection;
+				// TODO Handle null?
+				Object currentState = fieldWrapper.field.getValue.apply(state);
+				if (oldConnection == null || oldConnection.getState() != currentState) {
+					if (isStruct) {
+						newConnection = bitser.createStructConnection(
+								currentState, listener -> writeNestedChange(currentState, ordering, listener)
+						);
+					} else {
+						newConnection = new BitListConnection<>(
+								bitser, (List<?>) currentState, fields.get(ordering).getChildWrapper(),
+								listener -> writeNestedChange(currentState, ordering, listener)
+						);
+					}
+
+					childConnections[ordering] = newConnection;
+				}
+				return newConnection;
+			}
+		} else return null;
 	}
 
 	@FunctionalInterface

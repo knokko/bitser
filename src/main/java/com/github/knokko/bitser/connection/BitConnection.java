@@ -9,4 +9,6 @@ public abstract class BitConnection {
 	public abstract void checkForChanges();
 
 	public abstract void handleChanges(BitInputStream input) throws IOException;
+
+	abstract Object getState();
 }

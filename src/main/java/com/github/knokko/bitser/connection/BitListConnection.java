@@ -108,6 +108,11 @@ public class BitListConnection<T> extends BitConnection {
 		}
 	}
 
+	@Override
+	Object getState() {
+		return list;
+	}
+
 	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
 	private enum Action {
 		ADD,

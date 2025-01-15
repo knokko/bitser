@@ -274,15 +274,19 @@ public class TestBitStructConnection {
 
 		connection1.state.deeper.a = 43;
 		connection1.state.deeper.deeper.y = 45;
-		connection1.getChildStruct("deeper").checkForChanges();
+		BitStructConnection<Nested2> nested1 = connection1.getChildStruct("deeper");
+		nested1.checkForChanges();
+		assertSame(nested1, connection1.getChildStruct("deeper"));
 
 		tracker.applyChanges(connection2);
 		assertEquals(43, state2.deeper.a);
-		connection1.getChildStruct("deeper").getChildStruct("deeper").checkForChanges();
+		nested1.getChildStruct("deeper").checkForChanges();
 
 		tracker.applyChanges(connection2);
 		assertEquals(999, state2.deeper.deeper.x);
 		assertEquals(45, state2.deeper.deeper.y);
+
+		assertSame(nested1, connection1.getChildStruct("deeper"));
 	}
 
 	@Test
@@ -299,18 +303,21 @@ public class TestBitStructConnection {
 		tracker.applyChanges(connection2);
 
 		assertEquals(43, connection2.state.deeper.a);
-		BitStructConnection<Nested2> nested2 = connection2.getChildStruct("deeper");
-		assertEquals(43, nested2.state.a);
+		BitStructConnection<Nested2> oldNested2 = connection2.getChildStruct("deeper");
+		assertEquals(43, oldNested2.state.a);
 
 		// Replace child struct...
 		connection2.state.deeper = new Nested2();
 		connection2.checkForChanges();
 		tracker.applyChanges(connection1);
 		connection2.state.deeper.a = 100;
-		connection2.getChildStruct("deeper").checkForChanges();
+		BitStructConnection<Nested2> newNested2 = connection2.getChildStruct("deeper");
+		newNested2.checkForChanges();
+
 		tracker.applyChanges(connection1);
 
 		BitStructConnection<Nested2> newNested1 = connection1.getChildStruct("deeper");
+		assertSame(connection1.state.deeper, newNested1.state);
 		assertEquals(100, newNested1.state.a);
 
 		// Changing oldNested1 should not have any effect
