@@ -35,7 +35,7 @@ public class TestSimpleConnection {
 	}
 
 	// TODO Add proper acknowledgement logic
-	private void waitUntil(BooleanSupplier isFinished) {
+	static void waitUntil(BooleanSupplier isFinished) {
 		for (int counter = 0; counter < 100; counter++) {
 			if (isFinished.getAsBoolean()) return;
 			try {
