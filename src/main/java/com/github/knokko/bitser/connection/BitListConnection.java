@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class BitListConnection<T> {
+public class BitListConnection<T> extends BitConnection {
 
 	private final Bitser bitser;
 	public final List<T> list;
@@ -63,12 +63,14 @@ public class BitListConnection<T> {
 		postModification(new Modification<>(null, index, Action.REMOVE));
 	}
 
+	@Override
 	public void checkForChanges() {
 		synchronized (list) {
 			if (list.size() != myList.size()) throw new Error("Detected external modification");
 		}
 	}
 
+	@Override
 	public void handleChanges(BitInputStream input) throws IOException {
 		if (list.size() != myList.size()) throw new Error("Detected external modification");
 		if (input.read()) {
