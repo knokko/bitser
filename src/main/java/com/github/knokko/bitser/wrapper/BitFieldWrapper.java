@@ -28,6 +28,14 @@ public abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		return Integer.compare(this.field.ordering, other.field.ordering);
 	}
 
+	public String getFieldName() {
+		return field.annotations.getFieldName();
+	}
+
+	public BitFieldWrapper getChildWrapper() {
+		throw new UnsupportedOperationException("getChildWrapper only works on collection types, but this is " + getClass());
+	}
+
 	void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
 			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
@@ -71,21 +79,29 @@ public abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 	) throws IOException;
 
 	public final void read(
-			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
 	) throws IOException {
-		readField(object, input, cache, idLoader);
+		readField(input, cache, idLoader, setValue);
 	}
 
-	void readField(
+	final void readField(
+			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
+	) throws IOException {
+		if (field.optional && !input.read()) setValue.consume(null);
+		else {
+			readValue(input, cache, idLoader, value -> {
+				setValue.consume(value);
+				if (field.referenceTargetLabel != null) {
+					idLoader.register(field.referenceTargetLabel, value, input, cache);
+				}
+			});
+		}
+	}
+
+	final void readField(
 			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
 	) throws IOException {
-		if (field.optional && !input.read()) field.setValue.accept(object, null);
-		else {
-			readValue(input, cache, idLoader, value -> field.setValue.accept(object, value));
-			if (field.referenceTargetLabel != null) {
-				idLoader.register(field.referenceTargetLabel, field.getValue.apply(object), input, cache);
-			}
-		}
+		readField(input, cache, idLoader, value -> field.setValue.accept(object, value));
 	}
 
 	abstract void readValue(

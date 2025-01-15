@@ -21,6 +21,8 @@ public class BitStructConnection<T> {
 	public final T state;
 	private final Consumer<ChangeListener> reportChanges;
 	private final BitStructConnection<?>[] childStructs;
+	private final BitListConnection<?>[] childLists;
+	private final Object[] expectedChildren;
 
 	public BitStructConnection(Bitser bitser, List<BitFieldWrapper> fields, T state, Consumer<ChangeListener> reportChanges) {
 		this.bitser = bitser;
@@ -29,14 +31,25 @@ public class BitStructConnection<T> {
 		this.state = state;
 		this.reportChanges = reportChanges;
 		this.childStructs = new BitStructConnection[fields.size()];
-		for (int index = 0; index < fields.size(); index++) {
-			int ordering = index;
-			Object child = fields.get(index).field.getValue.apply(state);
-			if (fields.get(index) instanceof StructFieldWrapper) {
-				childStructs[index] = bitser.createStructConnection(
-						child, listener -> writeNestedChange(ordering, listener)
-				);
-			}
+		this.childLists = new BitListConnection[fields.size()];
+		this.expectedChildren = new Object[fields.size()];
+		for (int index = 0; index < fields.size(); index++) initChild(index);
+	}
+
+	private void initChild(int index) {
+		Object child = fields.get(index).field.getValue.apply(state);
+		expectedChildren[index] = child;
+		// TODO Handle null?
+		if (fields.get(index) instanceof StructFieldWrapper) {
+			childStructs[index] = bitser.createStructConnection(
+					child, listener -> writeNestedChange(child, index, listener)
+			);
+		}
+		if (List.class.isAssignableFrom(fields.get(index).field.type)) {
+			childLists[index] = new BitListConnection<>(
+					bitser, (List<?>) child, fields.get(index).getChildWrapper(),
+					listener -> writeNestedChange(child, index, listener)
+			);
 		}
 	}
 
@@ -61,17 +74,26 @@ public class BitStructConnection<T> {
 			// TODO What about the with?
 			if (input.read()) {
 				int ordering = (int) decodeUniformInteger(0, fields.size() - 1, input);
-				childStructs[ordering].handleChanges(input);
+				if (childStructs[ordering] != null) childStructs[ordering].handleChanges(input);
+				else if (childLists[ordering] != null) childLists[ordering].handleChanges(input);
+				else throw new IllegalArgumentException("Unexpected ordering " + ordering);
 			} else {
 				for (BitFieldWrapper fieldWrapper : fields) {
-					if (input.read()) fieldWrapper.read(state, input, bitser.cache, null);
+					if (input.read()) {
+						fieldWrapper.read(
+								input, bitser.cache, null,
+								value -> fieldWrapper.field.setValue.accept(state, value)
+						);
+						initChild(fieldWrapper.field.ordering);
+					}
 				}
 				referenceState = bitser.shallowCopy(state);
 			}
 		}
 	}
 
-	private void writeNestedChange(int ordering, ChangeListener listener) {
+	private void writeNestedChange(Object actualChild, int ordering, ChangeListener listener) {
+		if (expectedChildren[ordering] != actualChild) return;
 		reportChanges.accept(output -> {
 			output.write(true);
 			encodeUniformInteger(ordering, 0, fields.size() - 1, output);
@@ -102,17 +124,30 @@ public class BitStructConnection<T> {
 					// TODO Test (reference fields)
 					fieldWrapper.write(state, output, bitser.cache, null);
 				}
+
+				// TODO Unify childStructs and childLists
+				if (childStructs[fieldWrapper.field.ordering] != null && childStructs[fieldWrapper.field.ordering].state != modifiedValue) {
+					initChild(fieldWrapper.field.ordering);
+				}
 			}
 		}
 
 		return numChanges;
 	}
 
-	// TODO create child list
+	public <C> BitListConnection<C> getChildList(String fieldName) {
+		for (int index = 0; index < fields.size(); index++) {
+			if (fieldName.equals(fields.get(index).getFieldName())) {
+				//noinspection unchecked
+				return (BitListConnection<C>) childLists[index];
+			}
+		}
+		throw new IllegalArgumentException("No child list with name " + fieldName);
+	}
 
 	public <C> BitStructConnection<C> getChildStruct(String fieldName) {
 		for (int index = 0; index < fields.size(); index++) {
-			if (fieldName.equals(fields.get(index).field.annotations.getFieldName())) {
+			if (fieldName.equals(fields.get(index).getFieldName())) {
 				//noinspection unchecked
 				return (BitStructConnection<C>) childStructs[index];
 			}

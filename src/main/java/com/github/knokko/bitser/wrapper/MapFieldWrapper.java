@@ -16,38 +16,12 @@ import java.util.*;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeVariableInteger;
+import static com.github.knokko.bitser.wrapper.AbstractCollectionFieldWrapper.constructCollectionWithSize;
+import static com.github.knokko.bitser.wrapper.AbstractCollectionFieldWrapper.writeElement;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 class MapFieldWrapper extends BitFieldWrapper {
-
-	static void writeElement(
-			Object element, BitFieldWrapper wrapper, BitOutputStream output,
-			BitserCache cache, ReferenceIdMapper idMapper, String nullErrorMessage
-	) throws IOException {
-		if (wrapper.field.optional) output.write(element != null);
-		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
-		if (element != null) {
-			wrapper.writeValue(element, output, cache, idMapper);
-			if (wrapper.field.referenceTargetLabel != null) {
-				idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, output);
-			}
-		}
-	}
-
-	static Object constructCollectionWithSize(VirtualField field, int size) {
-		try {
-			return field.type.getConstructor(int.class).newInstance(size);
-		} catch (NoSuchMethodException noIntConstructor) {
-			try {
-				return field.type.getConstructor().newInstance();
-			} catch (Exception unexpected) {
-				throw new RuntimeException(unexpected);
-			}
-		} catch (Exception unexpected) {
-			throw new RuntimeException(unexpected);
-		}
-	}
 
 	private final IntegerField sizeField;
 	private final BitFieldWrapper keysWrapper, valuesWrapper;

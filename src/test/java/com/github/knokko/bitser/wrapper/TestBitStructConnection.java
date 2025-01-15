@@ -47,7 +47,7 @@ public class TestBitStructConnection {
 		double d;
 	}
 
-	private static class ChangeTracker implements Consumer<BitStructConnection.ChangeListener> {
+	static class ChangeTracker implements Consumer<BitStructConnection.ChangeListener> {
 
 		private byte[] bytes;
 		int expectedNumberOfChanges;
@@ -283,5 +283,46 @@ public class TestBitStructConnection {
 		tracker.applyChanges(connection2);
 		assertEquals(999, state2.deeper.deeper.x);
 		assertEquals(45, state2.deeper.deeper.y);
+	}
+
+	@Test
+	public void testNestedStructReassignments() throws IOException {
+		ChangeTracker tracker = new ChangeTracker(1);
+		Bitser bitser = new Bitser(false);
+
+		BitStructConnection<Nested1> connection1 = bitser.createStructConnection(new Nested1(), tracker);
+		BitStructConnection<Nested1> connection2 = bitser.createStructConnection(new Nested1(), tracker);
+
+		connection1.state.deeper.a = 43;
+		BitStructConnection<Nested2> oldNested1 = connection1.getChildStruct("deeper");
+		oldNested1.checkForChanges();
+		tracker.applyChanges(connection2);
+
+		assertEquals(43, connection2.state.deeper.a);
+		BitStructConnection<Nested2> nested2 = connection2.getChildStruct("deeper");
+		assertEquals(43, nested2.state.a);
+
+		// Replace child struct...
+		connection2.state.deeper = new Nested2();
+		connection2.checkForChanges();
+		tracker.applyChanges(connection1);
+		connection2.state.deeper.a = 100;
+		connection2.getChildStruct("deeper").checkForChanges();
+		tracker.applyChanges(connection1);
+
+		BitStructConnection<Nested2> newNested1 = connection1.getChildStruct("deeper");
+		assertEquals(100, newNested1.state.a);
+
+		// Changing oldNested1 should not have any effect
+		oldNested1.state.a = 200;
+		oldNested1.checkForChanges();
+		tracker.applyChanges(connection2);
+		assertEquals(100, connection2.state.deeper.a);
+
+		// Changing newNested1 should also update nested2
+		newNested1.state.a = 300;
+		newNested1.checkForChanges();
+		tracker.applyChanges(connection2);
+		assertEquals(300, connection2.state.deeper.a);
 	}
 }

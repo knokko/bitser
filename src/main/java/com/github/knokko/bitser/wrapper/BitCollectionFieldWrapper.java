@@ -15,8 +15,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import static com.github.knokko.bitser.wrapper.MapFieldWrapper.writeElement;
-
 class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	private final BitFieldWrapper valuesWrapper;
@@ -24,6 +22,16 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	BitCollectionFieldWrapper(VirtualField field, IntegerField sizeField, BitFieldWrapper valuesWrapper) {
 		super(field, sizeField);
 		this.valuesWrapper = valuesWrapper;
+	}
+
+	@Override
+	public String getFieldName() {
+		return valuesWrapper.getFieldName();
+	}
+
+	@Override
+	public BitFieldWrapper getChildWrapper() {
+		return valuesWrapper;
 	}
 
 	@Override

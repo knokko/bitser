@@ -102,6 +102,11 @@ public class Bitser {
 		return (T) cache.getWrapper(object.getClass()).shallowCopy(object);
 	}
 
+	public <T> T deepCopy(T object, Object... with) {
+		//noinspection unchecked
+		return (T) deserializeFromBytes(object.getClass(), serializeToBytes(object, with));
+	}
+
 	public <T> BitStructConnection<T> createStructConnection(
 			T initialState, Consumer<BitStructConnection.ChangeListener> reportChanges
 	) {
