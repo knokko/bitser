@@ -365,5 +365,7 @@ public class TestBitStructConnection {
 		assertNull(connection1.state.nested);
 		tracker.applyChanges(connection2);
 		assertNull(connection2.state.nested);
+
+		// TODO Edge case where struct is null on 1 connection
 	}
 }

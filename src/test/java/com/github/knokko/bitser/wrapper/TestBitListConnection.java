@@ -4,6 +4,7 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.NestedFieldSetting;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,5 +99,104 @@ public class TestBitListConnection {
 		assertSame(strings1.list, root1.state.strings);
 		assertEquals("world", strings1.list.get(0));
 		assertEquals(strings1.list, strings2.list);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class Mini {
+		@BitField(ordering = 0)
+		@IntegerField(expectUniform = false)
+		int x;
+
+		Mini(int x) {
+			this.x = x;
+		}
+
+		@SuppressWarnings("unused")
+		Mini() {
+			this(0);
+		}
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class StructList {
+
+		@SuppressWarnings("unused")
+		@BitField(ordering = 0)
+		LinkedList<Mini> list = new LinkedList<>();
+	}
+
+	@Test
+	public void testStructList() throws IOException {
+		Bitser bitser = new Bitser(false);
+		TestBitStructConnection.ChangeTracker tracker = new TestBitStructConnection.ChangeTracker(1);
+
+		BitStructConnection<StructList> connection1 = bitser.createStructConnection(new StructList(), tracker);
+		BitStructConnection<StructList> connection2 = bitser.createStructConnection(new StructList(), tracker);
+
+		BitListConnection<Mini> list1 = connection1.getChildList("list");
+		BitListConnection<Mini> list2 = connection2.getChildList("list");
+
+		list1.addDelayed(new Mini(20));
+		tracker.applyChanges(connection1);
+		tracker.applyChanges(connection2);
+
+		BitStructConnection<Mini> mini2 = list2.getChildStruct(0);
+		assertEquals(20, mini2.state.x);
+		mini2.state.x += 5;
+		mini2.checkForChanges();
+		tracker.applyChanges(connection1);
+		tracker.applyChanges(connection2);
+
+		BitStructConnection<Mini> mini1 = list1.getChildStruct(0);
+		assertEquals(25, mini1.state.x);
+		mini1.state.x = 5;
+		mini1.checkForChanges();
+		tracker.applyChanges(connection2);
+		assertEquals(5, mini2.state.x);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class NestedList {
+
+		@SuppressWarnings("unused")
+		@BitField(ordering = 0)
+		@FloatField
+		ArrayList<LinkedList<Double>> outerList = new ArrayList<>();
+	}
+
+	@Test
+	public void testNestedList() throws IOException {
+		Bitser bitser = new Bitser(false);
+		TestBitStructConnection.ChangeTracker tracker = new TestBitStructConnection.ChangeTracker(1);
+
+		BitStructConnection<NestedList> connection1 = bitser.createStructConnection(new NestedList(), tracker);
+		BitStructConnection<NestedList> connection2 = bitser.createStructConnection(new NestedList(), tracker);
+
+		BitListConnection<LinkedList<Double>> outer1 = connection1.getChildList("outerList");
+		BitListConnection<LinkedList<Double>> outer2 = connection2.getChildList("outerList");
+
+		LinkedList<Double> toAdd = new LinkedList<>();
+		toAdd.add(12.5);
+
+		outer1.addDelayed(toAdd);
+		tracker.applyChanges(connection1);
+		tracker.applyChanges(connection2);
+
+		BitListConnection<Double> inner2 = outer2.getChildList(0);
+		inner2.addDelayed(125.0);
+		tracker.applyChanges(connection1);
+		tracker.applyChanges(connection2);
+		inner2.addDelayed(-10.5);
+		tracker.applyChanges(connection1);
+		tracker.applyChanges(connection2);
+
+		BitListConnection<Double> inner1 = outer1.getChildList(0);
+		inner1.addDelayed(50.0);
+		tracker.applyChanges(connection2);
+		assertEquals(4, inner2.list.size());
+		assertEquals(12.5, inner2.list.get(0));
+		assertEquals(125.0, inner2.list.get(1));
+		assertEquals(-10.5, inner2.list.get(2));
+		assertEquals(50.0, inner2.list.get(3));
 	}
 }
