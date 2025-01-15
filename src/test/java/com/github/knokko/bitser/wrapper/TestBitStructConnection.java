@@ -332,4 +332,38 @@ public class TestBitStructConnection {
 		tracker.applyChanges(connection2);
 		assertEquals(300, connection2.state.deeper.a);
 	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class OptionalRoot {
+
+		@BitField(ordering = 0, optional = true)
+		Nested2 nested;
+	}
+
+	@Test
+	public void testHandleOptionalNestedStruct() throws IOException {
+		ChangeTracker tracker = new ChangeTracker(1);
+		Bitser bitser = new Bitser(false);
+
+		BitStructConnection<OptionalRoot> connection1 = bitser.createStructConnection(new OptionalRoot(), tracker);
+		BitStructConnection<OptionalRoot> connection2 = bitser.createStructConnection(new OptionalRoot(), tracker);
+
+		connection1.state.nested = new Nested2();
+		connection1.state.nested.a = 321;
+		connection1.checkForChanges();
+		BitStructConnection<Nested2> nested1 = connection1.getChildStruct("nested");
+		tracker.applyChanges(connection2);
+
+		assertEquals(321, connection2.state.nested.a);
+		connection2.state.nested = null;
+		connection2.checkForChanges();
+		tracker.applyChanges(connection1);
+		assertNull(connection1.state.nested);
+
+		nested1.state.a += 10;
+		nested1.checkForChanges();
+		assertNull(connection1.state.nested);
+		tracker.applyChanges(connection2);
+		assertNull(connection2.state.nested);
+	}
 }

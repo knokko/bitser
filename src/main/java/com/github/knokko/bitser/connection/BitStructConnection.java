@@ -146,9 +146,10 @@ public class BitStructConnection<T> extends BitConnection {
 			synchronized (state) {
 				BitConnection oldConnection = childConnections[ordering];
 				BitConnection newConnection = oldConnection;
-				// TODO Handle null?
 				Object currentState = fieldWrapper.field.getValue.apply(state);
-				if (oldConnection == null || oldConnection.getState() != currentState) {
+				if (currentState == null) {
+					newConnection = null;
+				} else if (oldConnection == null || oldConnection.getState() != currentState) {
 					if (isStruct) {
 						newConnection = bitser.createStructConnection(
 								currentState, listener -> writeNestedChange(currentState, ordering, listener)
@@ -159,9 +160,8 @@ public class BitStructConnection<T> extends BitConnection {
 								listener -> writeNestedChange(currentState, ordering, listener)
 						);
 					}
-
-					childConnections[ordering] = newConnection;
 				}
+				childConnections[ordering] = newConnection;
 				return newConnection;
 			}
 		} else return null;
