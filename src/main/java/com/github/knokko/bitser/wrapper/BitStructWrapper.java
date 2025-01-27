@@ -306,7 +306,10 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		StringField stringField = field.annotations.get(StringField.class);
 		if (stringField != null) result.add(new StringFieldWrapper(field, stringField));
 
-		if (field.type.getAnnotation(BitStruct.class) != null) result.add(new StructFieldWrapper(field));
+		ClassField classField = field.annotations.get(ClassField.class);
+		if (classField != null || field.type.getAnnotation(BitStruct.class) != null) {
+			result.add(new StructFieldWrapper(field, classField));
+		}
 
 		BitEnum bitEnum = field.type.getAnnotation(BitEnum.class);
 		if (bitEnum != null) result.add(new EnumFieldWrapper(field, bitEnum));
