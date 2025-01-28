@@ -1,17 +1,25 @@
 package com.github.knokko.bitser.util;
 
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+@BitStruct(backwardCompatible = false)
 public class VirtualField {
 
 	private final String source;
 	public final Class<?> type;
+
+	@BitField
 	public final boolean optional;
+
+	@BitField(optional = true)
 	public final String referenceTargetLabel;
 
 	public final AnnotationHolder annotations;
@@ -32,6 +40,16 @@ public class VirtualField {
 		this.setValue = setValue;
 	}
 
+	public VirtualField() {
+		this.source = null;
+		this.type = null;
+		this.optional = false;
+		this.referenceTargetLabel = null;
+		this.annotations = null;
+		this.getValue = null;
+		this.setValue = null;
+	}
+
 	@Override
 	public String toString() {
 		return source;
@@ -46,8 +64,6 @@ public class VirtualField {
 		default <T extends Annotation> boolean has(Class<T> annotation) {
 			return get(annotation) != null;
 		}
-
-		String getFieldName();
 	}
 
 	public static class NoAnnotations implements AnnotationHolder {
@@ -58,11 +74,6 @@ public class VirtualField {
 
 		@Override
 		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
-			return null;
-		}
-
-		@Override
-		public String getFieldName() {
 			return null;
 		}
 	}
@@ -84,10 +95,24 @@ public class VirtualField {
 		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
 			return field.getAnnotationsByType(annotation);
 		}
+	}
+
+	public static class MethodAnnotations implements AnnotationHolder {
+
+		private final Method method;
+
+		public MethodAnnotations(Method method) {
+			this.method = method;
+		}
 
 		@Override
-		public String getFieldName() {
-			return field.getName();
+		public <T extends Annotation> T get(Class<T> annotation) {
+			return method.getAnnotation(annotation);
+		}
+
+		@Override
+		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
+			return method.getAnnotationsByType(annotation);
 		}
 	}
 }

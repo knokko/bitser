@@ -9,10 +9,7 @@ import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Objects;
+import java.util.*;
 
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -416,5 +413,46 @@ public class TestNestedFieldSetting {
 		assertContains(error2, "must not be null");
 	}
 
-	// TODO Monster test with nested maps, arrays, and collections
+	@BitStruct(backwardCompatible = false)
+	private static class MonsterCollection {
+
+		@SuppressWarnings("unused")
+		@IntegerField(expectUniform = true)
+		private static final boolean KEY_PROPERTIES = false;
+
+		@SuppressWarnings("unused")
+		@IntegerField(expectUniform = false)
+		private static final boolean VALUE_PROPERTIES = false;
+
+		@NestedFieldSetting(path = "kc", fieldName = "KEY_PROPERTIES")
+		@NestedFieldSetting(path = "vcc", optional = true)
+		@NestedFieldSetting(path = "vccc", fieldName = "VALUE_PROPERTIES")
+		final HashMap<ArrayList<Short>, HashSet<TreeSet<Integer>>[]> root = new HashMap<>();
+	}
+
+	@Test
+	public void testNestedMonster() {
+		Bitser bitser = new Bitser(true);
+		MonsterCollection monster = new MonsterCollection();
+		ArrayList<Short> key = new ArrayList<>();
+		key.add((short) -12345);
+
+		HashSet<TreeSet<Integer>> highValue = new HashSet<>();
+		//noinspection unchecked
+		monster.root.put(key, new HashSet[] { highValue });
+
+		highValue.add(null);
+		TreeSet<Integer> innerSet = new TreeSet<>();
+		highValue.add(innerSet);
+		innerSet.add(321);
+
+		monster = bitser.deepCopy(monster);
+		assertEquals(1, monster.root.size());
+
+		assertEquals(1, monster.root.get(key).length);
+		highValue = monster.root.get(key)[0];
+		assertEquals(2, highValue.size());
+		assertTrue(highValue.contains(null));
+		assertTrue(highValue.contains(innerSet));
+	}
 }
