@@ -9,13 +9,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@BitStruct(backwardCompatible = false)
+@BitStruct(backwardCompatible = true)
 public class TestFloatField {
 
-	@BitField(optional = true)
+	@BitField(optional = true, id = 10)
 	@FloatField
 	public Float optional;
 
+	@BitField(id = 20)
 	@FloatField(expectMultipleOf = 0.2)
 	public double required;
 

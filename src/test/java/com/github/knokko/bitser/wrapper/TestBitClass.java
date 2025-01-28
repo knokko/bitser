@@ -29,26 +29,29 @@ public class TestBitClass {
 
 	private static class LivingEntity extends Entity {
 
+		@BitField(id = 0)
 		@IntegerField(expectUniform = false)
 		int maxHealth;
 	}
 
 	private static abstract class Enemy extends LivingEntity {
 
+		@BitField(id = 0)
 		@IntegerField(expectUniform = false)
 		int attackDamage;
 
-		@BitField(optional = true)
+		@BitField(optional = true, id = 1)
 		@ReferenceField(stable = false, label = "entities")
 		LivingEntity target;
 	}
 
-	@BitStruct(backwardCompatible = false)
+	@BitStruct(backwardCompatible = true)
 	private static class Zombie extends Enemy {
 
-		@BitField
+		@BitField(id = 2)
 		boolean wasVillager;
 
+		@BitField(id = 0)
 		@ReferenceField(stable = false, label = "positions")
 		String targetPosition;
 	}
