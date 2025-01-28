@@ -304,8 +304,12 @@ class WrapperFactory {
 			result.add(new StructFieldWrapper(field, classField));
 		}
 
+		EnumField enumField = field.annotations.get(EnumField.class);
+		if (enumField != null) {
+			result.add(new EnumFieldWrapper(field, enumField.mode()));
+		}
 		BitEnum bitEnum = field.type.getAnnotation(BitEnum.class);
-		if (bitEnum != null) result.add(new EnumFieldWrapper(field, bitEnum));
+		if (enumField == null && bitEnum != null) result.add(new EnumFieldWrapper(field, bitEnum.mode()));
 
 		if (expectNothing && result.isEmpty()) return null;
 

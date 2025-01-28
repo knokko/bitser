@@ -153,6 +153,46 @@ public class TestBitListConnection {
 		assertEquals(5, mini2.state.x);
 	}
 
+	@Test
+	public void testEditDeletedStruct() throws IOException {
+		Bitser bitser = new Bitser(false);
+		TestBitStructConnection.ChangeTracker tracker1 = new TestBitStructConnection.ChangeTracker(1);
+		TestBitStructConnection.CombinedChangeTracker tracker2 = new TestBitStructConnection.CombinedChangeTracker();
+
+		BitStructConnection<StructList> connection1 = bitser.createStructConnection(new StructList(), tracker1);
+		BitStructConnection<StructList> connection2 = bitser.createStructConnection(new StructList(), tracker2);
+
+		BitListConnection<Mini> list1 = connection1.getChildList("list");
+		BitListConnection<Mini> list2 = connection2.getChildList("list");
+
+		list1.addDelayed(new Mini(20));
+		tracker1.applyChanges(connection1);
+		tracker1.applyChanges(connection2);
+		list1.addDelayed(new Mini(50));
+		tracker1.applyChanges(connection1);
+		tracker1.applyChanges(connection2);
+
+		list1.removeDelayed(1);
+
+		BitStructConnection<Mini> mini21 = list2.getChildStruct(1);
+		assertEquals(50, mini21.state.x);
+		mini21.state.x = 100;
+		mini21.checkForChanges();
+
+		BitStructConnection<Mini> mini20 = list2.getChildStruct(0);
+		assertEquals(20, mini20.state.x);
+		mini20.state.x += 5;
+		mini20.checkForChanges();
+
+		tracker1.applyChanges(connection1);
+		tracker1.applyChanges(connection2);
+		tracker2.applyChanges(connection1, connection2);
+		assertEquals(1, list1.list.size());
+		assertEquals(1, list2.list.size());
+		assertEquals(25, list1.<Mini>getChildStruct(0).state.x);
+		assertEquals(25, mini20.state.x);
+	}
+
 	@BitStruct(backwardCompatible = false)
 	private static class NestedList {
 

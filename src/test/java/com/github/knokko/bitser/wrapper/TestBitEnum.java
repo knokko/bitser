@@ -4,6 +4,7 @@ import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.EnumField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ public class TestBitEnum {
 	}
 
 	@SuppressWarnings("unused")
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	private enum Direction {
 		LEFT,
 		RIGHT,
@@ -33,12 +34,19 @@ public class TestBitEnum {
 	}
 
 	@SuppressWarnings("unused")
-	@BitEnum(mode = BitEnum.Mode.VariableIntOrdinal)
 	private enum Element {
 		WATER,
 		FIRE,
 		AIR,
 		EARTH
+	}
+
+	@SuppressWarnings("unused")
+	private enum ReverseElement {
+		EARTH,
+		AIR,
+		FIRE,
+		WATER
 	}
 
 	@BitField
@@ -48,6 +56,7 @@ public class TestBitEnum {
 	private Direction direction;
 
 	@BitField(optional = true)
+	@EnumField(mode = BitEnum.Mode.Ordinal)
 	private Element element;
 
 	@Test
@@ -121,7 +130,7 @@ public class TestBitEnum {
 	}
 
 	@SuppressWarnings("unused")
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	private enum MissingDirection {
 		LEFT,
 		RIGHT,
@@ -153,5 +162,57 @@ public class TestBitEnum {
 				MissingDirectionStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum ordinal 3");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class OverruleSeason {
+
+		@BitField
+		@EnumField(mode = BitEnum.Mode.Ordinal)
+		Season season;
+	}
+
+	@Test
+	public void testOverruleDefaultMode() {
+		Bitser bitser = new Bitser(false);
+
+		OverruleSeason overrule = new OverruleSeason();
+		overrule.season = Season.SUMMER;
+
+		DirectionStruct direction = bitser.deserializeFromBytes(DirectionStruct.class, bitser.serializeToBytes(overrule));
+		assertEquals(Direction.LEFT, direction.direction);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class Boss {
+
+		@EnumField(mode = BitEnum.Mode.Ordinal)
+		Element weakAgainst;
+
+		@EnumField(mode = BitEnum.Mode.Name)
+		Element strongAgainst;
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class MixedBoss {
+
+		@EnumField(mode = BitEnum.Mode.Ordinal)
+		ReverseElement weakAgainst;
+
+		@EnumField(mode = BitEnum.Mode.Name)
+		ReverseElement strongAgainst;
+	}
+
+	@Test
+	public void testWithoutBitEnum() {
+		Bitser bitser = new Bitser(true);
+
+		Boss original = new Boss();
+		original.weakAgainst = Element.FIRE;
+		original.strongAgainst = Element.EARTH;
+
+		MixedBoss mixed = bitser.deserializeFromBytes(MixedBoss.class, bitser.serializeToBytes(original));
+		assertEquals(ReverseElement.AIR, mixed.weakAgainst);
+		assertEquals(ReverseElement.EARTH, mixed.strongAgainst);
 	}
 }

@@ -31,6 +31,8 @@ public class IntegerBitser {
 
 		int numBits = requiredNumberOfBitsForEncoding(minValue, maxValue);
 
+		//System.out.println("Encode uniform " + value + " using " + numBits + " bits");
+
 		if (numBits == 64) {
 			for (int bit = 63; bit >= 0; bit--) output.write((value & (1L << bit)) != 0);
 			return;
@@ -46,6 +48,7 @@ public class IntegerBitser {
 		if (numBits == 64) {
 			long value = 0;
 			for (int bit = 63; bit >= 0; bit--) if (input.read()) value |= 1L << bit;
+			//System.out.println("Decoded uniform " + value + " using " + numBits + " bits");
 			return value;
 		}
 
@@ -53,6 +56,7 @@ public class IntegerBitser {
 		for (int bit = numBits - 1; bit >= 0; bit--) {
 			if (input.read()) value |= 1L << bit;
 		}
+		//System.out.println("Decoded uniform " + (value + minValue) + " using " + numBits + " bits");
 		return value + minValue;
 	}
 
@@ -85,6 +89,7 @@ public class IntegerBitser {
 			if (input.read()) result = -result - 1;
 		}
 
+		//System.out.println("Decoded variable " + result);
 		if (result == -Long.MAX_VALUE && maxValue == 0 && minValue == Long.MIN_VALUE) {
 			if (input.read()) return Long.MIN_VALUE;
 		}
@@ -94,6 +99,7 @@ public class IntegerBitser {
 
 	public static void encodeVariableInteger(long value, long minValue, long maxValue, BitOutputStream output) throws IOException {
 		check(value, minValue, maxValue);
+		//System.out.println("Encode variable " + value);
 
 		boolean isNegative = value < 0;
 		boolean wasMinValue = value == Long.MIN_VALUE;

@@ -2,6 +2,7 @@ package com.github.knokko.bitser.util;
 
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.wrapper.ValueConsumer;
 
 import java.io.IOException;
@@ -13,28 +14,27 @@ import static com.github.knokko.bitser.util.ReferenceIdMapper.extractStableId;
 
 public class ReferenceIdLoader {
 
-	public static ReferenceIdLoader load(
-			BitInputStream input, Set<String> declaredTargetLabels, Set<String> stableLabels, Set<String> unstableLabels
-	) throws IOException {
-		String[] sortedLabels = new String[declaredTargetLabels.size()];
+	public static ReferenceIdLoader load(BitInputStream input, LabelCollection labels) throws IOException {
+		String[] sortedLabels = new String[labels.declaredTargets.size()];
 		int index = 0;
-		for (String label : declaredTargetLabels) {
+		for (String label : labels.declaredTargets) {
 			sortedLabels[index] = label;
 			index += 1;
 		}
 		Arrays.sort(sortedLabels);
 
-		Map<String, Mappings> labelMappings = new HashMap<>(declaredTargetLabels.size());
+		Map<String, Mappings> labelMappings = new HashMap<>(labels.declaredTargets.size());
 		for (String label : sortedLabels) {
 			int unstableSize = 0;
-			if (unstableLabels.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
-			labelMappings.put(label, new Mappings(unstableSize, stableLabels.contains(label)));
+			if (labels.unstable.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+			labelMappings.put(label, new Mappings(unstableSize, labels.stable.contains(label)));
 		}
 
 		return new ReferenceIdLoader(labelMappings);
 	}
 
 	private final Map<String, Mappings> labelMappings;
+	private final List<Runnable> postResolveCallbacks = new ArrayList<>();
 
 	private ReferenceIdLoader(Map<String, Mappings> labelMappings) {
 		this.labelMappings = labelMappings;
@@ -48,6 +48,11 @@ public class ReferenceIdLoader {
 		if (mappings.unstable != null) {
 			mappings.registerUnstable(value, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input));
 		}
+	}
+
+	public void replace(String label, Object oldTarget, Object newTarget) {
+		Mappings mappings = labelMappings.get(label);
+		if (mappings != null) mappings.replace(oldTarget, newTarget);
 	}
 
 	void prepareWith() {
@@ -86,10 +91,18 @@ public class ReferenceIdLoader {
 		mappings.getStable(label, id, setValue);
 	}
 
+	public void addPostResolveCallback(Runnable callback) {
+		postResolveCallbacks.add(callback);
+	}
+
 	public void resolve() throws IOException {
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}
+	}
+
+	public void postResolve() {
+		for (Runnable callback : postResolveCallbacks) callback.run();
 	}
 
 	private static class Mappings {
@@ -97,6 +110,7 @@ public class ReferenceIdLoader {
 		final int unstableSize;
 		final Map<Integer, Object> unstable;
 		final Map<UUID, Object> stable;
+		final Map<ReferenceIdMapper.IdWrapper, Object> replacements = new HashMap<>();
 		final Collection<ResolveTask> resolveTasks = new ArrayList<>();
 
 		int ownUnstableSize;
@@ -105,6 +119,10 @@ public class ReferenceIdLoader {
 			this.unstableSize = unstableSize;
 			this.unstable = unstableSize > 0 ? new HashMap<>(unstableSize) : null;
 			this.stable = hasStable ? new HashMap<>() : null;
+		}
+
+		void replace(Object oldTarget, Object newTarget) {
+			replacements.put(new ReferenceIdMapper.IdWrapper(oldTarget), newTarget);
 		}
 
 		void registerUnstable(Object target, int id) {
@@ -123,7 +141,9 @@ public class ReferenceIdLoader {
 				if (value == null) throw new Error(
 						"Reference with label " + label + " and id " + unstableId + " was never saved"
 				);
-				setValue.consume(value);
+				Object replacement = replacements.get(new ReferenceIdMapper.IdWrapper(value));
+				if (replacement == null) setValue.consume(value);
+				else setValue.consume(replacement);
 			});
 		}
 
@@ -133,7 +153,9 @@ public class ReferenceIdLoader {
 				if (value == null) throw new Error(
 						"Reference with label " + label + " and id " + id + " was never saved"
 				);
-				setValue.consume(value);
+				Object replacement = replacements.get(new ReferenceIdMapper.IdWrapper(value));
+				if (replacement == null) setValue.consume(value);
+				else setValue.consume(replacement);
 			});
 		}
 

@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -67,6 +69,33 @@ public class TestBitStructConnection {
 
 		public void applyChanges(BitStructConnection<?> receiver) throws IOException {
 			receiver.handleChanges(new BitInputStream(new ByteArrayInputStream(bytes)));
+		}
+	}
+
+	static class CombinedChangeTracker implements Consumer<BitStructConnection.ChangeListener> {
+
+		private final List<byte[]> packets = new ArrayList<>();
+
+		@Override
+		public void accept(BitStructConnection.ChangeListener changeListener) {
+			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+			try {
+				changeListener.report(bitOutput);
+				bitOutput.finish();
+			} catch (IOException e) {
+				throw new Error(e);
+			}
+			packets.add(byteOutput.toByteArray());
+		}
+
+		public void applyChanges(BitStructConnection<?>... receivers) throws IOException {
+			for (byte[] packet : packets) {
+				for (BitStructConnection<?> receiver : receivers) {
+					receiver.handleChanges(new BitInputStream(new ByteArrayInputStream(packet)));
+				}
+			}
+			packets.clear();
 		}
 	}
 
@@ -159,7 +188,7 @@ public class TestBitStructConnection {
 		assertEquals(1234.5, connection2.state.d);
 	}
 
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	private enum ExampleEnum {
 		A,
 		B,
@@ -328,6 +357,9 @@ public class TestBitStructConnection {
 
 		@BitField(optional = true)
 		Nested2 nested;
+
+		@BitField(optional = true)
+		String b;
 	}
 
 	@Test
@@ -355,7 +387,35 @@ public class TestBitStructConnection {
 		assertNull(connection1.state.nested);
 		tracker.applyChanges(connection2);
 		assertNull(connection2.state.nested);
+	}
 
-		// TODO Edge case where struct is null on 1 connection
+	@Test
+	public void testHandleOptionalNestedHazard() throws IOException {
+		Bitser bitser = new Bitser(true);
+		CombinedChangeTracker tracker1 = new CombinedChangeTracker();
+		ChangeTracker tracker2 = new ChangeTracker(1);
+
+		BitStructConnection<OptionalRoot> connection1 = bitser.createStructConnection(new OptionalRoot(), tracker1);
+		BitStructConnection<OptionalRoot> connection2 = bitser.createStructConnection(new OptionalRoot(), tracker2);
+
+		connection1.state.nested = new Nested2();
+		connection1.state.nested.a = 321;
+		connection1.checkForChanges();
+		tracker1.applyChanges(connection2, connection1);
+		BitStructConnection<Nested2> nested1 = connection1.getChildStruct("nested");
+
+		assertEquals(321, connection2.state.nested.a);
+		connection2.state.nested = null;
+		connection2.checkForChanges();
+
+		nested1.state.a = 5;
+		nested1.checkForChanges();
+
+		tracker2.applyChanges(connection1);
+		tracker2.applyChanges(connection2);
+		tracker1.applyChanges(connection1, connection2);
+
+		assertNull(connection1.state.nested);
+		assertNull(connection2.state.nested);
 	}
 }

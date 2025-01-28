@@ -3,10 +3,12 @@ package com.github.knokko.bitser.connection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
-import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +32,7 @@ public class BitStructConnection<T> extends BitConnection {
 		this.bitser = bitser;
 		this.fields = fields;
 		this.nameToChildMapping = nameToChildMapping;
-		this.referenceState = bitser.shallowCopy(state);
+		this.referenceState = state != null ? bitser.shallowCopy(state) : null;
 		this.state = state;
 		this.reportChanges = reportChanges;
 		this.childConnections = new BitConnection[fields.size()];
@@ -39,8 +41,7 @@ public class BitStructConnection<T> extends BitConnection {
 
 	@Override
 	public void checkForChanges() {
-		synchronized (state) {
-			// TODO What about the with?
+		synchronized (getLock()) {
 			try {
 				if (findAndWriteChanges(null) == 0) return;
 			} catch (IOException shouldNotHappen) {
@@ -50,29 +51,33 @@ public class BitStructConnection<T> extends BitConnection {
 				output.write(false);
 				return findAndWriteChanges(output);
 			});
+			assert state != null;
 			referenceState = bitser.shallowCopy(state);
 		}
 	}
 
+	private Object getLock() {
+		return state != null ? state : this;
+	}
+
 	@Override
 	public void handleChanges(BitInputStream input) throws IOException {
-		synchronized (state) {
-			// TODO What about the with?
+		synchronized (getLock()) {
 			if (input.read()) {
 				int index = (int) decodeUniformInteger(0, fields.size() - 1, input);
-				updateChildConnection(fields.get(index), index);
+				BitFieldWrapper field = fields.get(index);
+				updateChildConnection(field, index);
 				if (childConnections[index] != null) childConnections[index].handleChanges(input);
-				else throw new IllegalArgumentException("Unexpected child index " + index);
+				else bitser.createChildConnection(field.field.getValue.apply(state), field, null).handleChanges(input);
 			} else {
 				for (BitFieldWrapper fieldWrapper : fields) {
 					if (input.read()) {
-						fieldWrapper.read(
-								input, bitser.cache, null,
-								value -> fieldWrapper.field.setValue.accept(state, value)
-						);
+						fieldWrapper.read(new ReadJob(input, bitser.cache, null, new HashMap<>(), false),value -> {
+							if (state != null) fieldWrapper.field.setValue.accept(state, value);
+						});
 					}
 				}
-				referenceState = bitser.shallowCopy(state);
+				referenceState = state != null ? bitser.shallowCopy(state) : null;
 			}
 		}
 	}
@@ -83,7 +88,7 @@ public class BitStructConnection<T> extends BitConnection {
 	}
 
 	private void writeNestedChange(Object actualChild, int index, ChangeListener listener) {
-		synchronized (state) {
+		synchronized (getLock()) {
 			BitConnection childConnection = updateChildConnection(fields.get(index), index);
 			if (childConnection == null || childConnection.getState() != actualChild) return;
 			reportChanges.accept(output -> {
@@ -115,8 +120,7 @@ public class BitStructConnection<T> extends BitConnection {
 				numChanges += 1;
 
 				if (output != null) {
-					// TODO Test (reference fields)
-					fieldWrapper.write(state, output, bitser.cache, null);
+					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, new HashMap<>(), null));
 					updateChildConnection(fieldWrapper, index);
 				}
 			}
@@ -142,27 +146,17 @@ public class BitStructConnection<T> extends BitConnection {
 	}
 
 	private BitConnection updateChildConnection(BitFieldWrapper fieldWrapper, int index) {
-		boolean isStruct = fieldWrapper instanceof StructFieldWrapper;
-		boolean isList = List.class.isAssignableFrom(fieldWrapper.field.type);
-		if (isStruct || isList) {
-
-			synchronized (state) {
+		if (bitser.needsChildConnection(fieldWrapper)) {
+			synchronized (getLock()) {
 				BitConnection oldConnection = childConnections[index];
 				BitConnection newConnection = oldConnection;
-				Object currentState = fieldWrapper.field.getValue.apply(state);
+				Object currentState = state != null ? fieldWrapper.field.getValue.apply(state) : null;
 				if (currentState == null) {
 					newConnection = null;
 				} else if (oldConnection == null || oldConnection.getState() != currentState) {
-					if (isStruct) {
-						newConnection = bitser.createStructConnection(
-								currentState, listener -> writeNestedChange(currentState, index, listener)
-						);
-					} else {
-						newConnection = new BitListConnection<>(
-								bitser, (List<?>) currentState, fields.get(index).getChildWrapper(),
-								listener -> writeNestedChange(currentState, index, listener)
-						);
-					}
+					newConnection = bitser.createChildConnection(
+							currentState, fieldWrapper, listener -> writeNestedChange(currentState, index, listener)
+					);
 				}
 				childConnections[index] = newConnection;
 				return newConnection;

@@ -1,44 +1,44 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.serialize.LabelCollection;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.util.Set;
 
-class StableReferenceFieldWrapper extends BitFieldWrapper {
-
-	private final String label;
+@BitStruct(backwardCompatible = false)
+class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 
 	StableReferenceFieldWrapper(VirtualField field, String label) {
-		super(field);
-		this.label = label;
+		super(field, label);
+	}
+
+	@SuppressWarnings("unused")
+	private StableReferenceFieldWrapper() {
+		super();
 	}
 
 	@Override
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
-	) {
-		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
-		stableLabels.add(label);
+	public void collectReferenceLabels(LabelCollection labels) {
+		super.collectReferenceLabels(labels);
+		labels.stable.add(label);
 	}
 
 	@Override
-	void writeValue(
-			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException {
-		idMapper.encodeStableId(label, value, output, cache);
+	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
+		super.collectReferenceLabels(labels);
+		if (value != null) labels.stable.add(label);
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		idLoader.getStable(label, setValue, input);
+	void writeValue(Object value, WriteJob write) throws IOException {
+		write.idMapper.encodeStableId(label, value, write.output, write.cache);
+	}
+
+	@Override
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
+		read.idLoader.getStable(label, setValue, read.input);
 	}
 }

@@ -1,21 +1,25 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.backward.*;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.serialize.LabelCollection;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static com.github.knokko.bitser.wrapper.WrapperFactory.createComplexWrapper;
+import static java.lang.Math.max;
 
 class SingleClassWrapper {
 
@@ -37,25 +41,26 @@ class SingleClassWrapper {
 		}
 	};
 
-	private final Class<?> myClass;
-	private final boolean backwardCompatible;
+	final Class<?> myClass;
 	final List<FieldWrapper> fields = new ArrayList<>();
+	final List<FieldWrapper> fieldsSortedById;
+	final List<FunctionWrapper> functions = new ArrayList<>();
 
 	SingleClassWrapper(Class<?> myClass, boolean backwardCompatible) {
 		this.myClass = myClass;
-		this.backwardCompatible = backwardCompatible;
+
+		Class<?>[] otherFields = {
+				ClassField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
+				NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
+				StableReferenceFieldId.class, StringField.class, EnumField.class
+		};
 
 		Set<Integer> IDs = new HashSet<>();
-		Field[] classFields = myClass.getDeclaredFields();
-		for (Field classField : classFields) {
+		for (Field classField : myClass.getDeclaredFields()) {
 			if (Modifier.isStatic(classField.getModifiers())) continue;
 			BitField bitField = classField.getAnnotation(BitField.class);
 			if (bitField == null) {
-				Class<?>[] otherFields = {
-						ClassField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
-						NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
-						StableReferenceFieldId.class, StringField.class
-				};
+
 
 				for (Class<?> otherField : otherFields) {
 					//noinspection unchecked
@@ -106,16 +111,73 @@ class SingleClassWrapper {
 			}
 		}
 
-		if (backwardCompatible) fields.sort(Comparator.comparingInt(a -> a.id));
-		else fields.sort(Comparator.comparing(a -> a.classField.getName()));
+		fields.sort(Comparator.comparing(a -> a.classField.getName()));
+		this.fieldsSortedById = new ArrayList<>(fields);
+		fieldsSortedById.sort(Comparator.comparingInt(a -> a.id));
+
+		IDs.clear();
+		for (Method classMethod : myClass.getDeclaredMethods()) {
+			BitField bitField = classMethod.getAnnotation(BitField.class);
+			if (bitField == null) continue;
+			if (Modifier.isStatic(classMethod.getModifiers())) {
+				throw new InvalidBitFieldException("BitField methods must not be static: " + classMethod);
+			}
+			Parameter[] parameters = classMethod.getParameters();
+			if (parameters.length > 1) {
+				throw new InvalidBitFieldException("BitField methods can have at most 1 parameter: " + classMethod);
+			}
+			if (parameters.length == 1 && parameters[0].getType() != FunctionContext.class) {
+				throw new InvalidBitFieldException("BitField method parameter type must be FunctionContext: " + classMethod);
+			}
+			if (bitField.id() < 0) {
+				throw new InvalidBitFieldException("BitField method IDs must be non-negative: " + classMethod);
+			}
+			if (IDs.contains(bitField.id())) {
+				throw new InvalidBitFieldException(myClass + " has multiple @BitField methods with id " + bitField.id());
+			}
+			IDs.add(bitField.id());
+			if (!Modifier.isPublic(classMethod.getModifiers())) classMethod.setAccessible(true);
+			VirtualField field = new VirtualField(
+					classMethod.toString(),
+					classMethod.getReturnType(),
+					bitField.optional(),
+					new VirtualField.MethodAnnotations(classMethod),
+					null, null
+			);
+
+			BitFieldWrapper bitFieldWrapper = createComplexWrapper(
+					myClass, field.annotations, field, classMethod.getGenericReturnType(), "", false
+			);
+			functions.add(new FunctionWrapper(bitField.id(), classMethod, bitFieldWrapper));
+		}
+
+		functions.sort(Comparator.comparingInt(a -> a.id));
 	}
 
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedStructs
-	) {
-		for (FieldWrapper field : fields) {
-			field.bitField.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
+	private List<FieldWrapper> getFields(boolean backwardCompatible) {
+		return backwardCompatible ? fieldsSortedById : fields;
+	}
+
+	@Override
+	public String toString() {
+		return myClass.getName();
+	}
+
+	public void collectReferenceLabels(LabelCollection labels) {
+		for (FieldWrapper field : getFields(labels.backwardCompatible)) {
+			field.bitField.collectReferenceLabels(labels);
+		}
+		for (FunctionWrapper function : functions) {
+			function.bitField.collectReferenceLabels(labels);
+		}
+	}
+
+	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
+		for (FieldWrapper field : getFields(labels.backwardCompatible)) {
+			field.bitField.collectUsedReferenceLabels(labels, field.bitField.field.getValue.apply(value));
+		}
+		for (FunctionWrapper function : functions) {
+			function.bitField.collectUsedReferenceLabels(labels, function.computeValue(value, labels.functionContext));
 		}
 	}
 
@@ -125,20 +187,110 @@ class SingleClassWrapper {
 		}
 	}
 
-	void write(
-			Object object, BitOutputStream output, BitserCache cache,
-			ReferenceIdMapper idMapper, boolean backwardCompatible
-	) throws IOException {
-		if (backwardCompatible) throw new UnsupportedOperationException("TODO");
-		for (FieldWrapper field : fields) field.bitField.write(object, output, cache, idMapper);
+	LegacyClass register(Object object, LegacyClasses legacy) {
+		LegacyClass legacyClass = legacy.addClass(myClass);
+
+		for (int index = 0; index < fieldsSortedById.size(); index++) {
+			FieldWrapper field = fieldsSortedById.get(index);
+			if (legacyClass.fields.size() == index) {
+				legacyClass.fields.add(new LegacyField(field.id, field.bitField));
+			}
+			field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), legacy);
+		}
+
+		for (int index = 0; index < functions.size(); index++) {
+			FunctionWrapper function = functions.get(index);
+			if (legacyClass.functions.size() == index) {
+				legacyClass.functions.add(new LegacyField(function.id, function.bitField));
+			}
+			function.bitField.registerLegacyClasses(function.computeValue(object, legacy.functionContext), legacy);
+		}
+
+		return legacyClass;
 	}
 
-	void read(
-			Object target, BitInputStream input, BitserCache cache,
-			ReferenceIdLoader idLoader, boolean backwardCompatible
-	) throws IOException {
-		if (backwardCompatible) throw new UnsupportedOperationException("TODO");
-		for (FieldWrapper field : fields) field.bitField.readField(target, input, cache, idLoader);
+	void write(Object object, WriteJob write) throws IOException {
+		for (FieldWrapper field : getFields(write.legacy != null)) {
+			field.bitField.write(object, write);
+		}
+		FunctionContext functionContext = new FunctionContext(write.withParameters);
+		for (FunctionWrapper function : functions) {
+			function.bitField.writeValue(function.computeValue(object, functionContext), write);
+		}
+	}
+
+	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
+		int maxFieldId = -1;
+		for (FieldWrapper field : fields) maxFieldId = max(maxFieldId, field.id);
+		for (FieldWrapper field : fieldsSortedById) {
+			if (field.id < legacy.values.length && legacy.hadValues[field.id] &&
+					legacy.hadReferenceValues[field.id] == field.bitField.isReference()
+			) {
+				field.bitField.setLegacyValue(read, legacy.values[field.id], newValue ->
+						field.bitField.field.setValue.accept(target, newValue)
+				);
+			}
+		}
+		int maxFunctionId = -1;
+		for (FunctionWrapper function : functions) maxFunctionId = max(maxFunctionId, function.id);
+		legacy.convertedFunctionValues = new Object[max(maxFunctionId + 1, legacy.storedFunctionValues.length)];
+		for (FunctionWrapper function : functions) {
+			if (legacy.hadFunctionValues.length > function.id && legacy.hadFunctionValues[function.id]) {
+				function.bitField.setLegacyValue(
+						read, legacy.storedFunctionValues[function.id],
+						newValue -> legacy.convertedFunctionValues[function.id] = newValue
+				);
+			}
+		}
+	}
+
+	Object[] read(Object target, ReadJob read) throws IOException {
+		Object[] functionValues;
+		if (functions.isEmpty()) functionValues = new Object[0];
+		else functionValues = new Object[functions.get(functions.size() - 1).id + 1];
+
+		for (FieldWrapper field : getFields(read.backwardCompatible)) field.bitField.readField(target, read);
+		for (FunctionWrapper function : functions) {
+			function.bitField.readValue(read, result -> functionValues[function.id] = result);
+		}
+		return functionValues;
+	}
+
+	private void checkReferenceMigration(
+			boolean wasReference, BitFieldWrapper bitField,
+			Object value, Supplier<String> fieldDescription
+	) {
+		if (!bitField.field.optional) {
+			if (wasReference && !bitField.isReference()) {
+				throw new InvalidBitValueException(
+						"Can't store legacy reference in non-reference field " + fieldDescription.get()
+				);
+			}
+			if (!wasReference && bitField.isReference()) {
+				throw new InvalidBitValueException(
+						"Can't store legacy non-reference " + value + " in " + fieldDescription.get()
+				);
+			}
+		}
+	}
+
+	public void fixLegacyTypes(ReadJob read, LegacyValues legacyValues) {
+		for (FieldWrapper field : fields) {
+			if (field.id >= legacyValues.values.length) continue;
+			checkReferenceMigration(
+					legacyValues.hadReferenceValues[field.id], field.bitField,
+					legacyValues.values[field.id], field.classField::toString
+			);
+			field.bitField.fixLegacyTypes(read, legacyValues.values[field.id]);
+		}
+		for (FunctionWrapper function : functions) {
+			if (function.id >= legacyValues.storedFunctionValues.length) continue;
+			checkReferenceMigration(
+					legacyValues.hadReferenceFunctions[function.id], function.bitField,
+					legacyValues.storedFunctionValues[function.id], function.classMethod::toString
+			);
+			function.bitField.fixLegacyTypes(read, legacyValues.storedFunctionValues[function.id]);
+		}
 	}
 
 	void shallowCopy(Object original, Object target) {
@@ -157,6 +309,32 @@ class SingleClassWrapper {
 			this.id = id;
 			this.classField = classField;
 			this.bitField = bitField;
+		}
+	}
+
+	static class FunctionWrapper {
+
+		final int id;
+		final Method classMethod;
+		final BitFieldWrapper bitField;
+
+		FunctionWrapper(int id, Method classMethod, BitFieldWrapper bitField) {
+			this.id = id;
+			this.classMethod = classMethod;
+			this.bitField = bitField;
+		}
+
+		Object computeValue(Object object, FunctionContext context) {
+			try {
+				if (classMethod.getParameterCount() == 0) return classMethod.invoke(object);
+				else return classMethod.invoke(object, context);
+			} catch (IllegalAccessException e) {
+				throw new Error(e);
+			} catch (InvocationTargetException e) {
+				if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
+				if (e.getCause() instanceof Error) throw (Error) e.getCause();
+				throw new RuntimeException(e.getCause());
+			}
 		}
 	}
 }

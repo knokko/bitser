@@ -19,12 +19,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBitCollectionField {
 
-	@BitStruct(backwardCompatible = false)
+	@BitStruct(backwardCompatible = true)
 	private static class Strings {
 
+		@BitField(id = 1)
 		@NestedFieldSetting(path = "c", optional = true)
 		private String[] array;
 
+		@BitField(id = 0)
 		@NestedFieldSetting(path = "", optional = true)
 		private ArrayList<String> list;
 	}

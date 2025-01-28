@@ -1,14 +1,14 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.*;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.Bitser;
-import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.BitPostInit;
+import com.github.knokko.bitser.serialize.*;
 import com.github.knokko.bitser.util.VirtualField;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
@@ -68,14 +68,20 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedStructs
-	) {
-		if (visitedStructs.contains(this)) return;
-		visitedStructs.add(this);
+	public void collectReferenceLabels(LabelCollection labels) {
+		if (labels.visitedStructs.contains(this)) return;
+		labels.visitedStructs.add(this);
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
+			currentClass.collectReferenceLabels(labels);
+		}
+	}
+
+	@Override
+	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
+		if (labels.visitedStructs.contains(this)) return;
+		labels.visitedStructs.add(this);
+		for (SingleClassWrapper currentClass : classHierarchy) {
+			currentClass.collectUsedReferenceLabels(labels, value);
 		}
 	}
 
@@ -87,17 +93,34 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
+	public LegacyStruct registerClasses(Object object, LegacyClasses legacy) {
+		if (!this.bitStruct.backwardCompatible()) {
+			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
+		}
+		LegacyStruct legacyStruct = legacy.addStruct(constructor.getDeclaringClass());
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			SingleClassWrapper currentClass = classHierarchy.get(index);
+			LegacyClass registered = currentClass.register(object, legacy);
+			if (legacyStruct.classHierarchy.size() == index) {
+				legacyStruct.classHierarchy.add(registered);
+			}
+		}
+		return legacyStruct;
+	}
+
+	@Override
 	public UUID getStableId(Object target) {
 		if (stableIdField == null) throw new InvalidBitFieldException(target + " doesn't have an @StableReferenceFieldId");
 		return (UUID) stableIdField.getValue.apply(target);
 	}
 
 	@Override
-	public void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
-		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+	public void write(Object object, WriteJob write) throws IOException {
+		if (write.legacy != null && !bitStruct.backwardCompatible()) {
+			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
+		}
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			// TODO Backward compatible?
-			currentClass.write(object, output, cache, idMapper, false);
+			currentClass.write(object, write);
 		}
 	}
 
@@ -114,15 +137,59 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void read(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+	public void read(ReadJob read, ValueConsumer setValue) throws IOException {
 		T object = createEmptyInstance();
+		Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.read(object, input, cache, idLoader, false);
+			serializedFunctionValues.put(currentClass.myClass, currentClass.read(object, read));
+		}
+		if (object instanceof BitPostInit) {
+			read.idLoader.addPostResolveCallback(() -> ((BitPostInit) object).postInit(
+					new BitPostInit.Context(
+							serializedFunctionValues, null,
+							null, read.withParameters
+					)
+			));
 		}
 		setValue.consume(object);
+	}
+
+	@Override
+	public T setLegacyValues(ReadJob read, LegacyStructInstance legacy) {
+		if (legacy.valuesHierarchy.size() != classHierarchy.size()) {
+			throw new InvalidBitFieldException("Inconsistent class hierarchy");
+		}
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			classHierarchy.get(index).setLegacyValues(read, legacy.newInstance, legacy.valuesHierarchy.get(index));
+		}
+
+		if (legacy.newInstance instanceof BitPostInit) {
+			read.idLoader.addPostResolveCallback(() -> {
+				Map<Class<?>, Object[]> functionValues = new HashMap<>();
+				Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
+				Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
+				for (int index = 0; index < classHierarchy.size(); index++) {
+					LegacyValues classLegacy = legacy.valuesHierarchy.get(index);
+					functionValues.put(classHierarchy.get(index).myClass, classLegacy.convertedFunctionValues);
+					legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
+					legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
+				}
+				((BitPostInit) legacy.newInstance).postInit(
+						new BitPostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
+				);
+			});
+		}
+
+		//noinspection unchecked
+		return (T) legacy.newInstance;
+	}
+
+	@Override
+	public void fixLegacyTypes(ReadJob read, LegacyStructInstance legacyInstance) {
+		legacyInstance.newInstance = createEmptyInstance();
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			classHierarchy.get(index).fixLegacyTypes(read, legacyInstance.valuesHierarchy.get(index));
+		}
 	}
 
 	@Override

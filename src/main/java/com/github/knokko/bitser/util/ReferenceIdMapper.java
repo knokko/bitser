@@ -1,9 +1,11 @@
 package com.github.knokko.bitser.util;
 
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 
 import java.io.IOException;
 import java.util.*;
@@ -14,6 +16,11 @@ public class ReferenceIdMapper {
 
 	static UUID extractStableId(Object target, BitserCache cache) {
 		try {
+			if (target instanceof LegacyStructInstance) {
+				UUID id = ((LegacyStructInstance) target).stableID;
+				if (id == null) throw new InvalidBitValueException("Will get better error message when more context is available");
+				return id;
+			}
 			UUID id = cache.getWrapper(target.getClass()).getStableId(target);
 			if (id == null) throw new InvalidBitValueException("Stable UUID of " + target + " is null, which is forbidden");
 			return id;
@@ -30,10 +37,10 @@ public class ReferenceIdMapper {
 
 	private boolean readOnly;
 
-	public ReferenceIdMapper(Set<String> declaredTargetLabels, Set<String> stableLabels, Set<String> unstableLabels) {
-		this.labelMappings = new HashMap<>(declaredTargetLabels.size());
-		for (String label : declaredTargetLabels) {
-			this.labelMappings.put(label, new Mappings(stableLabels.contains(label), unstableLabels.contains(label)));
+	public ReferenceIdMapper(LabelCollection labels) {
+		this.labelMappings = new HashMap<>(labels.declaredTargets.size());
+		for (String label : labels.declaredTargets) {
+			this.labelMappings.put(label, new Mappings(labels.stable.contains(label), labels.unstable.contains(label)));
 		}
 	}
 
@@ -116,7 +123,7 @@ public class ReferenceIdMapper {
 		}
 	}
 
-	private static class IdWrapper {
+	static class IdWrapper {
 
 		final Object value;
 

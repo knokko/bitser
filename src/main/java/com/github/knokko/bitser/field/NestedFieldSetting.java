@@ -3,7 +3,7 @@ package com.github.knokko.bitser.field;
 import java.lang.annotation.*;
 
 @Repeatable(NestedFieldSettings.class)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NestedFieldSetting {
 
@@ -17,12 +17,10 @@ public @interface NestedFieldSetting {
      * When true:
      * <ul>
      *     <li>
-     *         The elements of the collection must either be primitive (<b>byte</b>, <b>int</b>, etc...), or
-     *         represent a primitive type (e.g. <b>Byte</b>).
+     *         The collection must be a primitive array (e.g. <b>byte[]</b> or <b>int[]</b>).
      *     </li>
-     *     <li>The elements of the collection must <b>not</b> be optional.</li>
      *     <li>
-     *         The contents will be converted to a <b>byte[]</b> before being written, which can improve the
+     *         The contents will be converted to a <b>byte[]</b> (if needed) before being written, which can improve the
      *         encoding speed considerably (between 10 and 100 times on my machine).
      *     </li>
      * </ul>

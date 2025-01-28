@@ -16,7 +16,9 @@ public class BitInputStream {
 	public boolean read() throws IOException {
 		if (boolIndex == 8) {
 			currentByte = byteStream.read();
-			if (currentByte == -1) throw new IOException("End of stream reached");
+			if (currentByte == -1) {
+				throw new IOException("End of stream reached");
+			}
 			boolIndex = 0;
 		}
 

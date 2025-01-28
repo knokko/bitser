@@ -6,12 +6,15 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.wrapper.AbstractCollectionFieldWrapper;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -24,7 +27,7 @@ public class BitListConnection<T> extends BitConnection {
 	private final BitFieldWrapper elementWrapper;
 	private final Consumer<BitStructConnection.ChangeListener> reportChanges;
 
-	BitListConnection(
+	public BitListConnection(
 			Bitser bitser, List<T> list, BitFieldWrapper elementWrapper,
 			Consumer<BitStructConnection.ChangeListener> reportChanges
 	) {
@@ -34,24 +37,16 @@ public class BitListConnection<T> extends BitConnection {
 		this.elementWrapper = elementWrapper;
 		this.reportChanges = reportChanges;
 
-		if (elementWrapper instanceof StructFieldWrapper || List.class.isAssignableFrom(elementWrapper.field.type)) {
+		if (bitser.needsChildConnection(elementWrapper)) {
 			connectionList = new ArrayList<>(myList.size());
 			for (T element : myList) connectionList.add(createChildConnection(element));
 		} else connectionList = null;
 	}
 
 	private BitConnection createChildConnection(T element) {
-		if (elementWrapper instanceof StructFieldWrapper) {
-			return bitser.createStructConnection(element, listener -> reportNestedChanges(listener, element));
-		}
-		if (List.class.isAssignableFrom(elementWrapper.field.type)) {
-			//noinspection unchecked
-			return new BitListConnection<>(
-					bitser, (List<T>) element, elementWrapper.getChildWrapper(),
-					listener -> reportNestedChanges(listener, element)
-			);
-		}
-		throw new Error("Unexpected wrapper " + elementWrapper);
+		return bitser.createChildConnection(
+				element, elementWrapper, listener -> reportNestedChanges(listener, element)
+		);
 	}
 
 	private void reportNestedChanges(BitStructConnection.ChangeListener listener, T element) {
@@ -69,7 +64,8 @@ public class BitListConnection<T> extends BitConnection {
 				modification.changeListener.report(output);
 			} else if (modification.action != Action.REMOVE) {
 				AbstractCollectionFieldWrapper.writeElement(
-						modification.element, elementWrapper, output, bitser.cache, null,
+						modification.element, elementWrapper,
+						new WriteJob(output, bitser.cache, null, new HashMap<>(), null),
 						"This BitListConnection must not contain null values"
 				);
 			}
@@ -110,8 +106,7 @@ public class BitListConnection<T> extends BitConnection {
 				if (modification.index < myList.size()) {
 					connectionList.get(modification.index).handleChanges(input);
 				} else {
-					System.out.println("BitList edit failed");
-					// TODO Figure out a way to discard the changes
+					bitser.createChildConnection(null, elementWrapper, null).handleChanges(input);
 				}
 			}
 		} else if (modification.action == Action.REMOVE) {
@@ -120,10 +115,10 @@ public class BitListConnection<T> extends BitConnection {
 					myList.remove(modification.index);
 					list.remove(modification.index);
 					if (connectionList != null) connectionList.remove(modification.index);
-				} else System.out.println("BitList removal failed");
+				}
 			}
 		} else {
-			elementWrapper.read(input, bitser.cache, null, rawElement -> {
+			elementWrapper.read(new ReadJob(input, bitser.cache, null, new HashMap<>(), false), rawElement -> {
 				@SuppressWarnings("unchecked") T element = (T) rawElement;
 				synchronized (list) {
 					if (modification.action == Action.ADD) {
@@ -147,7 +142,7 @@ public class BitListConnection<T> extends BitConnection {
 							if (connectionList != null) {
 								connectionList.set(modification.index, createChildConnection(element));
 							}
-						} else System.out.println("A replacement failed");
+						}
 					} else throw new Error("Unexpected action " + modification.action);
 				}
 			});
@@ -175,7 +170,7 @@ public class BitListConnection<T> extends BitConnection {
 		return (BitListConnection<C>) connectionList.get(index);
 	}
 
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	private enum Action {
 		ADD,
 		REPLACE,

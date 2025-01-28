@@ -32,7 +32,6 @@ public class TestSimpleConnection {
 		double y = 2.5;
 	}
 
-	// TODO Add proper acknowledgement logic
 	static void waitUntil(BooleanSupplier isFinished) {
 		for (int counter = 0; counter < 100; counter++) {
 			if (isFinished.getAsBoolean()) return;
