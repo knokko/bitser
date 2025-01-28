@@ -1,11 +1,8 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.field.StableReferenceFieldId;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
@@ -24,19 +21,17 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object rawValue, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	void writeValue(Object rawValue, WriteJob write) throws IOException {
 		UUID value = (UUID) rawValue;
-		encodeUniformInteger(value.getMostSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
-		encodeUniformInteger(value.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
+		encodeUniformInteger(value.getMostSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
+		encodeUniformInteger(value.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		setValue.consume(new UUID(
-				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input),
-				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input)
+				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input),
+				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input)
 		));
 	}
 }

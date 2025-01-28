@@ -2,10 +2,9 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
@@ -38,12 +37,10 @@ class SingleClassWrapper {
 	};
 
 	private final Class<?> myClass;
-	private final boolean backwardCompatible;
 	final List<FieldWrapper> fields = new ArrayList<>();
 
 	SingleClassWrapper(Class<?> myClass, boolean backwardCompatible) {
 		this.myClass = myClass;
-		this.backwardCompatible = backwardCompatible;
 
 		Set<Integer> IDs = new HashSet<>();
 		Field[] classFields = myClass.getDeclaredFields();
@@ -110,9 +107,14 @@ class SingleClassWrapper {
 		else fields.sort(Comparator.comparing(a -> a.classField.getName()));
 	}
 
+	@Override
+	public String toString() {
+		return myClass.getName();
+	}
+
 	void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedStructs
+			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
 	) {
 		for (FieldWrapper field : fields) {
 			field.bitField.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
@@ -125,20 +127,13 @@ class SingleClassWrapper {
 		}
 	}
 
-	void write(
-			Object object, BitOutputStream output, BitserCache cache,
-			ReferenceIdMapper idMapper, boolean backwardCompatible
-	) throws IOException {
-		if (backwardCompatible) throw new UnsupportedOperationException("TODO");
-		for (FieldWrapper field : fields) field.bitField.write(object, output, cache, idMapper);
+	void write(Object object, WriteJob write) throws IOException {
+		for (FieldWrapper field : fields) field.bitField.write(object, write);
 	}
 
-	void read(
-			Object target, BitInputStream input, BitserCache cache,
-			ReferenceIdLoader idLoader, boolean backwardCompatible
-	) throws IOException {
-		if (backwardCompatible) throw new UnsupportedOperationException("TODO");
-		for (FieldWrapper field : fields) field.bitField.readField(target, input, cache, idLoader);
+	void read(Object target, ReadJob read) throws IOException {
+		// TODO Check backwardCompatible
+		for (FieldWrapper field : fields) field.bitField.readField(target, read);
 	}
 
 	void shallowCopy(Object original, Object target) {

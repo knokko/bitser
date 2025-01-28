@@ -1,11 +1,8 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
@@ -24,19 +21,17 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object fatValue, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	void writeValue(Object fatValue, WriteJob write) throws IOException {
 		long value = ((Number) fatValue).longValue();
-		if (intField.expectUniform()) encodeUniformInteger(value, getMinValue(), getMaxValue(), output);
-		else encodeVariableInteger(value, getMinValue(), getMaxValue(), output);
+		if (intField.expectUniform()) encodeUniformInteger(value, getMinValue(), getMaxValue(), write.output);
+		else encodeVariableInteger(value, getMinValue(), getMaxValue(), write.output);
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		long longValue;
-		if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), input);
-		else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), input);
+		if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), read.input);
+		else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), read.input);
 
 		Class<?> type = field.type;
 		if (type == byte.class || type == Byte.class) setValue.consume((byte) longValue);

@@ -2,10 +2,8 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
@@ -19,12 +17,10 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void writeValue(
-			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException {
-		if (value instanceof boolean[]) output.write(toByteArray((boolean[]) value));
-		else if (value instanceof byte[]) output.write((byte[]) value);
-		else if (value instanceof int[]) output.write(toByteArray((int[]) value));
+	void writeValue(Object value, int size, WriteJob write) throws IOException {
+		if (value instanceof boolean[]) write.output.write(toByteArray((boolean[]) value));
+		else if (value instanceof byte[]) write.output.write((byte[]) value);
+		else if (value instanceof int[]) write.output.write(toByteArray((int[]) value));
 		else throw new UnsupportedOperationException("Can't encode " + value.getClass() + " as bytes");
 	}
 
@@ -53,10 +49,10 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void readValue(Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader) throws IOException {
-		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, input);
-		else if (value instanceof byte[]) input.read((byte[]) value);
-		else if (value instanceof int[]) backToIntArray((int[]) value, input);
+	void readValue(Object value, int size, ReadJob read) throws IOException {
+		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, read.input);
+		else if (value instanceof byte[]) read.input.read((byte[]) value);
+		else if (value instanceof int[]) backToIntArray((int[]) value, read.input);
 		else throw new UnsupportedOperationException("Can't decode " + value.getClass() + " from bytes");
 	}
 

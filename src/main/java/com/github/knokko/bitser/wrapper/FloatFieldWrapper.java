@@ -3,12 +3,9 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.IntegerBitser;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
@@ -32,7 +29,7 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	void writeValue(Object value, WriteJob write) throws IOException {
 		if (floatField.expectMultipleOf() != 0.0) {
 			double doubleValue = ((Number) value).doubleValue();
 			long count = Math.round(doubleValue / floatField.expectMultipleOf());
@@ -43,28 +40,26 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 				IntegerBitser.encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
 
 				if ((value instanceof Float && counter.getCounter() < 32) || (value instanceof Double && counter.getCounter() < 64)) {
-					output.write(true);
-					IntegerBitser.encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, output);
+					write.output.write(true);
+					IntegerBitser.encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, write.output);
 					return;
 				}
 			}
 
-			output.write(false);
+			write.output.write(false);
 		}
 
 		if (value instanceof Float) {
-			encodeUniformInteger(Float.floatToRawIntBits((Float) value), Integer.MIN_VALUE, Integer.MAX_VALUE, output);
+			encodeUniformInteger(Float.floatToRawIntBits((Float) value), Integer.MIN_VALUE, Integer.MAX_VALUE, write.output);
 		} else {
-			encodeUniformInteger(Double.doubleToRawLongBits((Double) value), Long.MIN_VALUE, Long.MAX_VALUE, output);
+			encodeUniformInteger(Double.doubleToRawLongBits((Double) value), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
 		}
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		if (floatField.expectMultipleOf() != 0.0 && input.read()) {
-			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, input);
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
+		if (floatField.expectMultipleOf() != 0.0 && read.input.read()) {
+			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input);
 			double result = count * floatField.expectMultipleOf();
 			if (field.type == float.class || field.type == Float.class) setValue.consume((float) result);
 			else setValue.consume(result);
@@ -72,9 +67,9 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 		}
 
 		if (field.type == float.class || field.type == Float.class) {
-			setValue.consume(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, input)));
+			setValue.consume(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, read.input)));
 		} else {
-			setValue.consume(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input)));
+			setValue.consume(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input)));
 		}
 	}
 }

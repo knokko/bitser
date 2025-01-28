@@ -15,13 +15,15 @@ import java.util.function.Consumer;
 
 public class Bitser {
 
+	public static final Object BACKWARD_COMPATIBLE = new Object();
+
 	public final BitserCache cache;
 
 	public Bitser(boolean threadSafe) {
 		this.cache = new BitserCache(threadSafe);
 	}
 
-	public void serialize(Object object, BitOutputStream output, Object... with) throws IOException {
+	public void serialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
 		BitserWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		Set<String> declaredTargetLabels = new HashSet<>();
@@ -29,28 +31,39 @@ public class Bitser {
 		Set<String> unstableLabels = new HashSet<>();
 		wrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, new HashSet<>());
 
-		for (Object withObject : with) {
+		boolean backwardCompatible = false;
+		Set<BitserWrapper<?>> visitedStructs = new HashSet<>();
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) {
+				backwardCompatible = true;
+				continue;
+			}
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
-					cache, declaredTargetLabels, new HashSet<>(), new HashSet<>(), new HashSet<>()
+					cache, declaredTargetLabels, new HashSet<>(), new HashSet<>(), visitedStructs
 			);
+		}
+
+		if (backwardCompatible) {
+			// TODO Save stuff
 		}
 
 		ReferenceIdMapper idMapper = new ReferenceIdMapper(declaredTargetLabels, stableLabels, unstableLabels);
 		wrapper.registerReferenceTargets(object, cache, idMapper);
-		for (Object withObject : with) {
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) continue;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
 		}
 
 		idMapper.save(output);
 
-		wrapper.write(object, output, cache, idMapper);
+		wrapper.write(object, new WriteJob(output, cache, idMapper, backwardCompatible));
 	}
 
-	public byte[] serializeToBytes(Object object, Object... with) {
+	public byte[] serializeToBytes(Object object, Object... withAndOptions) {
 		try {
 			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
-			serialize(object, bitOutput, with);
+			serialize(object, bitOutput, withAndOptions);
 			bitOutput.finish();
 			return byteOutput.toByteArray();
 		} catch (IOException shouldNotHappen) {
@@ -58,7 +71,7 @@ public class Bitser {
 		}
 	}
 
-	public <T> T deserialize(Class<T> objectClass, BitInputStream input, Object... with) throws IOException {
+	public <T> T deserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
 		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
 
 		Set<String> declaredTargetLabels = new HashSet<>();
@@ -66,14 +79,20 @@ public class Bitser {
 		Set<String> unstableLabels = new HashSet<>();
 		wrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, new HashSet<>());
 
-		for (Object withObject : with) {
+		boolean backwardCompatible = false;
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) {
+				backwardCompatible = true;
+				continue;
+			}
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
 					cache, declaredTargetLabels, new HashSet<>(), new HashSet<>(), new HashSet<>()
 			);
 		}
 
 		ReferenceIdMapper withMapper = new ReferenceIdMapper(declaredTargetLabels, stableLabels, unstableLabels);
-		for (Object withObject : with) {
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) continue;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, withMapper);
 		}
 
@@ -81,7 +100,7 @@ public class Bitser {
 
 		List<T> result = new ArrayList<>(1);
 		//noinspection unchecked
-		wrapper.read(input, cache, idLoader, element -> result.add((T) element));
+		wrapper.read(new ReadJob(input, cache, idLoader, backwardCompatible), element -> result.add((T) element));
 
 		withMapper.shareWith(idLoader);
 		idLoader.resolve();
@@ -89,9 +108,9 @@ public class Bitser {
 		return result.get(0);
 	}
 
-	public <T> T deserializeFromBytes(Class<T> objectClass, byte[] bytes, Object... with) {
+	public <T> T deserializeFromBytes(Class<T> objectClass, byte[] bytes, Object... withAndOptions) {
 		try {
-			return deserialize(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), with);
+			return deserialize(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), withAndOptions);
 		} catch (IOException shouldNotHappen) {
 			throw new Error(shouldNotHappen);
 		}

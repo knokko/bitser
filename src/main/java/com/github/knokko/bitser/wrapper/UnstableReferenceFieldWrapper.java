@@ -1,10 +1,8 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
@@ -22,23 +20,19 @@ class UnstableReferenceFieldWrapper extends BitFieldWrapper {
 	@Override
 	void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
 	) {
-		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
 		unstableLabels.add(label);
 	}
 
 	@Override
-	void writeValue(
-			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException {
-		idMapper.maybeEncodeUnstableId(label, value, output);
+	void writeValue(Object value, WriteJob write) throws IOException {
+		write.idMapper.maybeEncodeUnstableId(label, value, write.output);
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		idLoader.getUnstable(label, setValue, input);
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
+		read.idLoader.getUnstable(label, setValue, read.input);
 	}
 }

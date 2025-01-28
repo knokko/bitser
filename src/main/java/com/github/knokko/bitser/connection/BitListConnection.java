@@ -6,6 +6,8 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.wrapper.AbstractCollectionFieldWrapper;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 import com.github.knokko.bitser.wrapper.StructFieldWrapper;
@@ -69,7 +71,8 @@ public class BitListConnection<T> extends BitConnection {
 				modification.changeListener.report(output);
 			} else if (modification.action != Action.REMOVE) {
 				AbstractCollectionFieldWrapper.writeElement(
-						modification.element, elementWrapper, output, bitser.cache, null,
+						modification.element, elementWrapper,
+						new WriteJob(output, bitser.cache, null, false),
 						"This BitListConnection must not contain null values"
 				);
 			}
@@ -123,7 +126,7 @@ public class BitListConnection<T> extends BitConnection {
 				} else System.out.println("BitList removal failed");
 			}
 		} else {
-			elementWrapper.read(input, bitser.cache, null, rawElement -> {
+			elementWrapper.read(new ReadJob(input, bitser.cache, null, false), rawElement -> {
 				@SuppressWarnings("unchecked") T element = (T) rawElement;
 				synchronized (list) {
 					if (modification.action == Action.ADD) {

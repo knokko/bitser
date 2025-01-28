@@ -3,12 +3,11 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 
 import java.io.IOException;
@@ -70,7 +69,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	@Override
 	public void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedStructs
+			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
 	) {
 		if (visitedStructs.contains(this)) return;
 		visitedStructs.add(this);
@@ -93,11 +92,12 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
-		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+	public void write(Object object, WriteJob write) throws IOException {
+		if (write.backwardCompatible && !bitStruct.backwardCompatible()) {
+			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
+		}
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			// TODO Backward compatible?
-			currentClass.write(object, output, cache, idMapper, false);
+			currentClass.write(object, write);
 		}
 	}
 
@@ -114,13 +114,13 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void read(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		if (bitStruct.backwardCompatible()) throw new UnsupportedOperationException("TODO");
+	public void read(ReadJob read, ValueConsumer setValue) throws IOException {
+		if (read.backwardCompatible && !bitStruct.backwardCompatible()) {
+			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
+		}
 		T object = createEmptyInstance();
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.read(object, input, cache, idLoader, false);
+			currentClass.read(object, read);
 		}
 		setValue.consume(object);
 	}

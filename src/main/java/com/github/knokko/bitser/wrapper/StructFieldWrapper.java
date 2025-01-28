@@ -3,10 +3,9 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.ClassField;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
@@ -43,7 +42,7 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	@Override
 	void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedObjects
 	) {
 		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
 
@@ -61,11 +60,11 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	void writeValue(Object value, WriteJob write) throws IOException {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
-				encodeUniformInteger(index, 0, allowed.length - 1, output);
-				cache.getWrapper(value.getClass()).write(value, output, cache, idMapper);
+				encodeUniformInteger(index, 0, allowed.length - 1, write.output);
+				write.cache.getWrapper(value.getClass()).write(value, write);
 				return;
 			}
 		}
@@ -76,10 +75,8 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		int index = (int) decodeUniformInteger(0, allowed.length - 1, input);
-		cache.getWrapper(allowed[index]).read(input, cache, idLoader, setValue);
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
+		int index = (int) decodeUniformInteger(0, allowed.length - 1, read.input);
+		read.cache.getWrapper(allowed[index]).read(read, setValue);
 	}
 }

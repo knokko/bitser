@@ -2,10 +2,9 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
@@ -29,7 +28,7 @@ public abstract class BitFieldWrapper {
 
 	void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedObjects
 	) {
 		if (field.referenceTargetLabel != null) declaredTargetLabels.add(field.referenceTargetLabel);
 	}
@@ -40,62 +39,50 @@ public abstract class BitFieldWrapper {
 		}
 	}
 
-	public final void write(Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper) throws IOException {
+	public final void write(Object object, WriteJob write) throws IOException {
 		try {
-			writeField(object, output, cache, idMapper);
+			writeField(object, write);
 		} catch (InvalidBitValueException invalidValue) {
 			throw new InvalidBitValueException(invalidValue.getMessage() + " for " + field);
 		}
 	}
 
-	void writeField(
-			Object object, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException {
+	void writeField(Object object, WriteJob write) throws IOException {
 		Object value = field.getValue.apply(object);
-		if (field.optional) output.write(value != null);
+		if (field.optional) write.output.write(value != null);
 		if (value == null) {
 			if (!field.optional) {
 				throw new InvalidBitValueException("Field " + field + " of " + object + " must not be null");
 			}
 		} else {
-			writeValue(value, output, cache, idMapper);
+			writeValue(value, write);
 			if (field.referenceTargetLabel != null) {
-				idMapper.maybeEncodeUnstableId(field.referenceTargetLabel, value, output);
+				write.idMapper.maybeEncodeUnstableId(field.referenceTargetLabel, value, write.output);
 			}
 		}
 	}
 
-	abstract void writeValue(
-			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException;
+	abstract void writeValue(Object value, WriteJob write) throws IOException;
 
-	public final void read(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		readField(input, cache, idLoader, setValue);
+	public final void read(ReadJob read, ValueConsumer setValue) throws IOException {
+		readField(read, setValue);
 	}
 
-	final void readField(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
-		if (field.optional && !input.read()) setValue.consume(null);
+	final void readField(ReadJob read, ValueConsumer setValue) throws IOException {
+		if (field.optional && !read.input.read()) setValue.consume(null);
 		else {
-			readValue(input, cache, idLoader, value -> {
+			readValue(read, value -> {
 				setValue.consume(value);
 				if (field.referenceTargetLabel != null) {
-					idLoader.register(field.referenceTargetLabel, value, input, cache);
+					read.idLoader.register(field.referenceTargetLabel, value, read.input, read.cache);
 				}
 			});
 		}
 	}
 
-	final void readField(
-			Object object, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
-	) throws IOException {
-		readField(input, cache, idLoader, value -> field.setValue.accept(object, value));
+	final void readField(Object object, ReadJob read) throws IOException {
+		readField(read, value -> field.setValue.accept(object, value));
 	}
 
-	abstract void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException;
+	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
 }

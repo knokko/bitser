@@ -1,10 +1,9 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
@@ -32,7 +31,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	void collectReferenceTargetLabels(
 			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<Object> visitedObjects
+			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedObjects
 	) {
 		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
 		valuesWrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
@@ -53,28 +52,24 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void writeValue(
-			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException {
+	void writeValue(Object value, int size, WriteJob write) throws IOException {
 		String nullErrorMessage = "Field " + field + " must not have null elements";
 		if (field.type.isArray()) {
 			for (int index = 0; index < size; index++) {
-				writeElement(Array.get(value, index), valuesWrapper, output, cache, idMapper, nullErrorMessage);
+				writeElement(Array.get(value, index), valuesWrapper, write, nullErrorMessage);
 			}
 		} else {
 			for (Object element : (Collection<?>) value) {
-				writeElement(element, valuesWrapper, output, cache, idMapper, nullErrorMessage);
+				writeElement(element, valuesWrapper, write, nullErrorMessage);
 			}
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	void readValue(
-			Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
-	) throws IOException {
+	void readValue(Object value, int size, ReadJob read) throws IOException {
 		for (int index = 0; index < size; index++) {
-			if (valuesWrapper.field.optional && !input.read()) {
+			if (valuesWrapper.field.optional && !read.input.read()) {
 				if (value instanceof Collection<?>) {
 					((Collection<Object>) value).add(null);
 				} else {
@@ -83,7 +78,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			} else {
 				final int rememberIndex = index;
 				List<Object> rememberElement = new ArrayList<>(1);
-				valuesWrapper.readValue(input, cache, idLoader, element -> {
+				valuesWrapper.readValue(read, element -> {
 					rememberElement.add(element);
 					if (value instanceof Collection<?>) {
 						((Collection<Object>) value).add(element);
@@ -93,7 +88,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				});
 
 				if (valuesWrapper.field.referenceTargetLabel != null) {
-					idLoader.register(valuesWrapper.field.referenceTargetLabel, rememberElement.get(0), input, cache);
+					read.idLoader.register(valuesWrapper.field.referenceTargetLabel, rememberElement.get(0), read.input, read.cache);
 				}
 			}
 		}

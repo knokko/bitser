@@ -3,6 +3,8 @@ package com.github.knokko.bitser.connection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
@@ -67,7 +69,7 @@ public class BitStructConnection<T> extends BitConnection {
 				for (BitFieldWrapper fieldWrapper : fields) {
 					if (input.read()) {
 						fieldWrapper.read(
-								input, bitser.cache, null,
+								new ReadJob(input, bitser.cache, null, false),
 								value -> fieldWrapper.field.setValue.accept(state, value)
 						);
 					}
@@ -116,7 +118,7 @@ public class BitStructConnection<T> extends BitConnection {
 
 				if (output != null) {
 					// TODO Test (reference fields)
-					fieldWrapper.write(state, output, bitser.cache, null);
+					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, false));
 					updateChildConnection(fieldWrapper, index);
 				}
 			}

@@ -3,11 +3,8 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.util.ReferenceIdLoader;
-import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
@@ -23,15 +20,14 @@ import static java.lang.Math.min;
 public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	public static void writeElement(
-			Object element, BitFieldWrapper wrapper, BitOutputStream output,
-			BitserCache cache, ReferenceIdMapper idMapper, String nullErrorMessage
+			Object element, BitFieldWrapper wrapper, WriteJob write, String nullErrorMessage
 	) throws IOException {
-		if (wrapper.field.optional) output.write(element != null);
+		if (wrapper.field.optional) write.output.write(element != null);
 		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
 		if (element != null) {
-			wrapper.writeValue(element, output, cache, idMapper);
+			wrapper.writeValue(element, write);
 			if (wrapper.field.referenceTargetLabel != null) {
-				idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, output);
+				write.idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, write.output);
 			}
 		}
 	}
@@ -62,36 +58,28 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(
-			Object value, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException {
+	void writeValue(Object value, WriteJob write) throws IOException {
 		int size = getCollectionSize(value);
-		if (sizeField.expectUniform()) encodeUniformInteger(size, getMinSize(), getMaxSize(), output);
-		else encodeVariableInteger(size, getMinSize(), getMaxSize(), output);
+		if (sizeField.expectUniform()) encodeUniformInteger(size, getMinSize(), getMaxSize(), write.output);
+		else encodeVariableInteger(size, getMinSize(), getMaxSize(), write.output);
 
-		writeValue(value, size, output, cache, idMapper);
+		writeValue(value, size, write);
 	}
 
 	@Override
-	void readValue(
-			BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader, ValueConsumer setValue
-	) throws IOException {
+	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		int size;
-		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), input);
-		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), input);
+		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
+		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
 		Object value = constructCollectionWithSize(size);
-		readValue(value, size, input, cache, idLoader);
+		readValue(value, size, read);
 		setValue.consume(value);
 	}
 
-	abstract void writeValue(
-			Object value, int size, BitOutputStream output, BitserCache cache, ReferenceIdMapper idMapper
-	) throws IOException;
+	abstract void writeValue(Object value, int size, WriteJob write) throws IOException;
 
-	abstract void readValue(
-			Object value, int size, BitInputStream input, BitserCache cache, ReferenceIdLoader idLoader
-	) throws IOException;
+	abstract void readValue(Object value, int size, ReadJob read) throws IOException;
 
 	private int getCollectionSize(Object object) {
 		if (object instanceof Collection<?>) return ((Collection<?>) object).size();
