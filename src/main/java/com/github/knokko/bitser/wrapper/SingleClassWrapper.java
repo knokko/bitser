@@ -144,9 +144,38 @@ class SingleClassWrapper {
 	}
 
 	void read(Object target, ReadJob read, LegacyClass legacy) throws IOException {
-		// TODO Check backwardCompatible
-		if (legacy != null) System.out.println("Legacy class is " + legacy);
-		for (FieldWrapper field : fields) field.bitField.readField(target, read);
+		if (legacy != null) {
+			int maxId = -1;
+			for (LegacyField field : legacy.fields) {
+				if (field.id > maxId) maxId = field.id;
+			}
+			Object[] legacyProperties = new Object[maxId + 1];
+
+			maxId = -1;
+			for (FieldWrapper field : fields) {
+				if (field.id > maxId) maxId = field.id;
+			}
+			FieldWrapper[] newFields = new FieldWrapper[maxId + 1];
+			for (FieldWrapper field : fields) newFields[field.id] = field;
+
+			int[] counter = new int[1];
+			for (LegacyField field : legacy.fields) {
+				field.bitField.readField(read, legacyValue -> {
+					if (field.id < newFields.length) {
+						FieldWrapper newField = newFields[field.id];
+						if (newField != null) newField.bitField.setLegacyValue(target, legacyValue);
+					}
+					legacyProperties[field.id] = legacyValue;
+					counter[0] += 1;
+					if (counter[0] == legacy.fields.size()) {
+						// TODO Call postInit method
+						System.out.println("Legacy properties are " + Arrays.toString(legacyProperties));
+					}
+				});
+			}
+		} else {
+			for (FieldWrapper field : fields) field.bitField.readField(target, read);
+		}
 	}
 
 	void shallowCopy(Object original, Object target) {

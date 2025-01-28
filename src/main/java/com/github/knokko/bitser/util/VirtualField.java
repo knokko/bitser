@@ -40,8 +40,7 @@ public class VirtualField {
 		this.setValue = setValue;
 	}
 
-	@SuppressWarnings("unused")
-	private VirtualField() {
+	public VirtualField() {
 		this.source = null;
 		this.type = null;
 		this.optional = false;

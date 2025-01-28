@@ -35,7 +35,7 @@ public abstract class BitFieldWrapper {
 	}
 
 	BitFieldWrapper() {
-		this.field = null;
+		this.field = new VirtualField();
 	}
 
 	public BitFieldWrapper getChildWrapper() {
@@ -100,4 +100,8 @@ public abstract class BitFieldWrapper {
 	}
 
 	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
+
+	void setLegacyValue(Object target, Object value) {
+		field.setValue.accept(target, value);
+	}
 }

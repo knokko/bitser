@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -74,5 +75,25 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		if (type == int.class || type == Integer.class) classMaxValue = Integer.MAX_VALUE;
 
 		return min(maxValue, classMaxValue);
+	}
+
+	@Override
+	void setLegacyValue(Object target, Object value) {
+		// TODO Test and handle null
+		if (value instanceof Long) {
+			long l = (long) value;
+			if (l < getMinValue() || l > getMaxValue()) {
+				// TODO Test this
+				throw new InvalidBitValueException("Legacy value " + value + " is out of range for field " + field);
+			}
+
+			Class<?> type = field.type;
+			if (type == byte.class || type == Byte.class) super.setLegacyValue(target, (byte) l);
+			else if (type == short.class || type == Short.class) super.setLegacyValue(target, (short) l);
+			else if (type == int.class || type == Integer.class) super.setLegacyValue(target, (int) l);
+			else super.setLegacyValue(target, l);
+		} else {
+			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
+		}
 	}
 }

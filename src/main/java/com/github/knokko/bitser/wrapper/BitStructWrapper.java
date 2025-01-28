@@ -71,7 +71,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		if (labels.visitedStructs.contains(this)) return;
 		labels.visitedStructs.add(this);
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			// TODO Add "structs"?
+			if (labels.backwardCompatible) labels.unstable.add("structs");
 			currentClass.collectReferenceTargetLabels(labels);
 		}
 	}
