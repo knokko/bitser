@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -10,6 +11,7 @@ import java.io.IOException;
 
 import static java.lang.Byte.toUnsignedInt;
 
+@BitStruct(backwardCompatible = false)
 class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	ByteCollectionFieldWrapper(VirtualField field, IntegerField sizeField) {

@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
@@ -11,26 +13,28 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 
+@BitStruct(backwardCompatible = false)
 public class IntegerFieldWrapper extends BitFieldWrapper {
 
-	private final IntegerField intField;
+	@BitField
+	private final IntegerField.Properties intField;
 
 	IntegerFieldWrapper(VirtualField field, IntegerField intField) {
 		super(field);
-		this.intField = intField;
+		this.intField = new IntegerField.Properties(intField);
 	}
 
 	@Override
 	void writeValue(Object fatValue, WriteJob write) throws IOException {
 		long value = ((Number) fatValue).longValue();
-		if (intField.expectUniform()) encodeUniformInteger(value, getMinValue(), getMaxValue(), write.output);
+		if (intField.expectUniform) encodeUniformInteger(value, getMinValue(), getMaxValue(), write.output);
 		else encodeVariableInteger(value, getMinValue(), getMaxValue(), write.output);
 	}
 
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		long longValue;
-		if (intField.expectUniform()) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), read.input);
+		if (intField.expectUniform) longValue = decodeUniformInteger(getMinValue(), getMaxValue(), read.input);
 		else longValue = decodeVariableInteger(getMinValue(), getMaxValue(), read.input);
 
 		Class<?> type = field.type;
@@ -41,7 +45,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	private long getMinValue() {
-		long minValue = intField.minValue();
+		long minValue = intField.minValue;
 
 		long classMinValue = Long.MIN_VALUE;
 
@@ -54,7 +58,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	private long getMaxValue() {
-		long maxValue = intField.maxValue();
+		long maxValue = intField.maxValue;
 
 		long classMaxValue = Long.MAX_VALUE;
 

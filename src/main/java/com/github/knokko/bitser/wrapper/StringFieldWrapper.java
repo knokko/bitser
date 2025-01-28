@@ -1,5 +1,8 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
@@ -12,20 +15,22 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
+@BitStruct(backwardCompatible = false)
 public class StringFieldWrapper extends BitFieldWrapper {
 
-	private final StringField stringField;
+	@BitField(optional = true)
+	private final IntegerField.Properties lengthField;
 
 	StringFieldWrapper(VirtualField field, StringField stringField) {
 		super(field);
-		this.stringField = stringField;
+		this.lengthField = stringField != null ? new IntegerField.Properties(stringField.length()) : null;
 	}
 
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
-		if (stringField != null && stringField.length().expectUniform()) {
+		if (lengthField != null && lengthField.expectUniform) {
 			encodeUniformInteger(bytes.length, minLength(), maxLength(), write.output);
 		} else encodeVariableInteger(bytes.length, minLength(), maxLength(), write.output);
 
@@ -35,7 +40,7 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		int length;
-		if (stringField != null && stringField.length().expectUniform()) {
+		if (lengthField != null && lengthField.expectUniform) {
 			length = (int) decodeUniformInteger(minLength(), maxLength(), read.input);
 		} else length = (int) decodeVariableInteger(minLength(), maxLength(), read.input);
 
@@ -47,12 +52,12 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	private int minLength() {
-		if (stringField == null) return 0;
-		return (int) max(0, stringField.length().minValue());
+		if (lengthField == null) return 0;
+		return (int) max(0, lengthField.minValue);
 	}
 
 	private int maxLength() {
-		if (stringField == null) return Integer.MAX_VALUE;
-		return (int) min(Integer.MAX_VALUE, stringField.length().maxValue());
+		if (lengthField == null) return Integer.MAX_VALUE;
+		return (int) min(Integer.MAX_VALUE, lengthField.maxValue);
 	}
 }

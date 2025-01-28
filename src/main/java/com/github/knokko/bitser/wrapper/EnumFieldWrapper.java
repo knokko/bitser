@@ -1,45 +1,48 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
+import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 
+@BitStruct(backwardCompatible = false)
 class EnumFieldWrapper extends BitFieldWrapper {
 
-	private final BitEnum bitEnum;
+	@BitField
+	private final BitEnum.Mode mode;
 
 	EnumFieldWrapper(VirtualField field, BitEnum bitEnum) {
 		super(field);
-		this.bitEnum = Objects.requireNonNull(bitEnum);
+		this.mode = bitEnum.mode();
 		if (!field.type.isEnum()) throw new InvalidBitFieldException("BitEnum can only be used on enums, but got " + field);
 	}
 
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		Enum<?> enumValue = (Enum<?>) value;
-		if (bitEnum.mode() == BitEnum.Mode.Name) {
+		if (mode == BitEnum.Mode.Name) {
 			byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
 			encodeVariableInteger(bytes.length, 1, Integer.MAX_VALUE, write.output);
 			for (byte stringByte : bytes) encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
-		} else if (bitEnum.mode() == BitEnum.Mode.UniformOrdinal) {
+		} else if (mode == BitEnum.Mode.UniformOrdinal) {
 			int maxOrdinal = field.type.getEnumConstants().length - 1;
 			encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, write.output);
-		} else if (bitEnum.mode() == BitEnum.Mode.VariableIntOrdinal) {
+		} else if (mode == BitEnum.Mode.VariableIntOrdinal) {
 			encodeVariableInteger(enumValue.ordinal(), 0, 65535, write.output);
-		} else throw new Error("Unknown enum mode: " + bitEnum.mode());
+		} else throw new Error("Unknown enum mode: " + mode);
 	}
 
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		if (bitEnum.mode() == BitEnum.Mode.Name) {
+		if (mode == BitEnum.Mode.Name) {
 			int numBytes = (int) decodeVariableInteger(1, Integer.MAX_VALUE, read.input);
 			byte[] stringBytes = new byte[numBytes];
 			for (int index = 0; index < numBytes; index++) {
@@ -57,12 +60,12 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		}
 
 		int ordinal;
-		if (bitEnum.mode() == BitEnum.Mode.UniformOrdinal) {
+		if (mode == BitEnum.Mode.UniformOrdinal) {
 			int maxOrdinal = field.type.getEnumConstants().length - 1;
 			ordinal = (int) decodeUniformInteger(0, maxOrdinal, read.input);
-		} else if (bitEnum.mode() == BitEnum.Mode.VariableIntOrdinal) {
+		} else if (mode == BitEnum.Mode.VariableIntOrdinal) {
 			ordinal = (int) decodeVariableInteger(0, 65535, read.input);
-		} else throw new Error("Unknown BitEnum mode: " + bitEnum.mode());
+		} else throw new Error("Unknown BitEnum mode: " + mode);
 
 		Object[] constants = field.type.getEnumConstants();
 		if (ordinal >= constants.length) {

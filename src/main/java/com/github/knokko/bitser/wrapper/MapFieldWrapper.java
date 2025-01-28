@@ -1,6 +1,8 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -19,10 +21,17 @@ import static com.github.knokko.bitser.wrapper.AbstractCollectionFieldWrapper.wr
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
+@BitStruct(backwardCompatible = false)
 class MapFieldWrapper extends BitFieldWrapper {
 
-	private final IntegerField sizeField;
-	private final BitFieldWrapper keysWrapper, valuesWrapper;
+	@BitField
+	private final IntegerField.Properties sizeField;
+
+	@BitField
+	private final BitFieldWrapper keysWrapper;
+
+	@BitField
+	private final BitFieldWrapper valuesWrapper;
 
 	MapFieldWrapper(VirtualField field, IntegerField sizeField, BitFieldWrapper keysWrapper, BitFieldWrapper valuesWrapper) {
 		super(field);
@@ -30,7 +39,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers())) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
-		this.sizeField = sizeField;
+		this.sizeField = new IntegerField.Properties(sizeField);
 		this.keysWrapper = keysWrapper;
 		this.valuesWrapper = valuesWrapper;
 	}
@@ -59,7 +68,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(Object rawValue, WriteJob write) throws IOException {
 		Map<?, ?> map = (Map<?, ?>) rawValue;
-		if (sizeField.expectUniform()) encodeUniformInteger(map.size(), getMinSize(), getMaxSize(), write.output);
+		if (sizeField.expectUniform) encodeUniformInteger(map.size(), getMinSize(), getMaxSize(), write.output);
 		else encodeVariableInteger(map.size(), getMinSize(), getMaxSize(), write.output);
 
 		for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -71,7 +80,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		int size;
-		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
+		if (sizeField.expectUniform) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
 		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field, size);
@@ -100,11 +109,11 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	private int getMinSize() {
-		return (int) max(0, sizeField.minValue());
+		return (int) max(0, sizeField.minValue);
 	}
 
 	private int getMaxSize() {
-		return (int) min(Integer.MAX_VALUE, sizeField.maxValue());
+		return (int) min(Integer.MAX_VALUE, sizeField.maxValue);
 	}
 
 	private static class DelayedEntry {

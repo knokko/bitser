@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -14,8 +16,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+@BitStruct(backwardCompatible = false)
 class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
+	@ClassField(root = BitFieldWrapper.class)
 	private final BitFieldWrapper valuesWrapper;
 
 	BitCollectionFieldWrapper(VirtualField field, IntegerField sizeField, BitFieldWrapper valuesWrapper) {

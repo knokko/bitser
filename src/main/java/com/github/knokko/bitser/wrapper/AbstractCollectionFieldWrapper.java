@@ -46,7 +46,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		}
 	}
 
-	private final IntegerField sizeField;
+	private final IntegerField.Properties sizeField;
 
 	AbstractCollectionFieldWrapper(VirtualField field, IntegerField sizeField) {
 		super(field);
@@ -54,13 +54,13 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (!field.type.isArray() && (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers()))) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
-		this.sizeField = sizeField;
+		this.sizeField = new IntegerField.Properties(sizeField);
 	}
 
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		int size = getCollectionSize(value);
-		if (sizeField.expectUniform()) encodeUniformInteger(size, getMinSize(), getMaxSize(), write.output);
+		if (sizeField.expectUniform) encodeUniformInteger(size, getMinSize(), getMaxSize(), write.output);
 		else encodeVariableInteger(size, getMinSize(), getMaxSize(), write.output);
 
 		writeValue(value, size, write);
@@ -69,7 +69,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		int size;
-		if (sizeField.expectUniform()) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
+		if (sizeField.expectUniform) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
 		Object value = constructCollectionWithSize(size);
@@ -95,10 +95,10 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	private int getMinSize() {
-		return (int) max(0, sizeField.minValue());
+		return (int) max(0, sizeField.minValue);
 	}
 
 	private int getMaxSize() {
-		return (int) min(Integer.MAX_VALUE, sizeField.maxValue());
+		return (int) min(Integer.MAX_VALUE, sizeField.maxValue);
 	}
 }

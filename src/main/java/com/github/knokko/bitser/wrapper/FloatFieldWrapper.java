@@ -1,6 +1,8 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.IntegerBitser;
@@ -14,13 +16,15 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInte
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
 import static java.lang.Math.abs;
 
+@BitStruct(backwardCompatible = false)
 public class FloatFieldWrapper extends BitFieldWrapper {
 
-	private final FloatField floatField;
+	@BitField
+	private final FloatField.Properties floatField;
 
 	FloatFieldWrapper(VirtualField field, FloatField floatField) {
 		super(field);
-		this.floatField = floatField;
+		this.floatField = new FloatField.Properties(floatField);
 
 		Class<?> type = field.type;
 		if (type != float.class && type != double.class && type != Float.class && type != Double.class) {
@@ -30,12 +34,12 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
-		if (floatField.expectMultipleOf() != 0.0) {
+		if (floatField.expectMultipleOf != 0.0) {
 			double doubleValue = ((Number) value).doubleValue();
-			long count = Math.round(doubleValue / floatField.expectMultipleOf());
-			double recoveredValue = count * floatField.expectMultipleOf();
+			long count = Math.round(doubleValue / floatField.expectMultipleOf);
+			double recoveredValue = count * floatField.expectMultipleOf;
 
-			if (abs(recoveredValue - doubleValue) <= floatField.errorTolerance()) {
+			if (abs(recoveredValue - doubleValue) <= floatField.errorTolerance) {
 				BitCountStream counter = new BitCountStream();
 				IntegerBitser.encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
 
@@ -58,9 +62,9 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		if (floatField.expectMultipleOf() != 0.0 && read.input.read()) {
+		if (floatField.expectMultipleOf != 0.0 && read.input.read()) {
 			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input);
-			double result = count * floatField.expectMultipleOf();
+			double result = count * floatField.expectMultipleOf;
 			if (field.type == float.class || field.type == Float.class) setValue.consume((float) result);
 			else setValue.consume(result);
 			return;

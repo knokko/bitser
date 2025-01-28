@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.StableReferenceFieldId;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
@@ -11,8 +13,10 @@ import java.util.UUID;
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
 
+@BitStruct(backwardCompatible = false)
 class UUIDFieldWrapper extends BitFieldWrapper {
 
+	@BitField
 	final boolean isStableReferenceId;
 
 	UUIDFieldWrapper(VirtualField field) {

@@ -11,6 +11,7 @@ public @interface BitEnum {
 
 	Mode mode();
 
+	@BitEnum(mode = Mode.UniformOrdinal)
 	enum Mode {
 		Name,
 		UniformOrdinal,

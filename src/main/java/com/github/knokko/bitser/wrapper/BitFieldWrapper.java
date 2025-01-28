@@ -13,6 +13,15 @@ import java.util.Set;
 
 public abstract class BitFieldWrapper {
 
+	@SuppressWarnings("unused")
+	private static final Class<?>[] BITSER_HIERARCHY = {
+			BooleanFieldWrapper.class, IntegerFieldWrapper.class, FloatFieldWrapper.class,
+			StringFieldWrapper.class, UUIDFieldWrapper.class, EnumFieldWrapper.class,
+			StructFieldWrapper.class,
+			BitCollectionFieldWrapper.class, ByteCollectionFieldWrapper.class, MapFieldWrapper.class,
+			StableReferenceFieldWrapper.class, UnstableReferenceFieldWrapper.class
+	};
+
 	public final VirtualField field;
 
 	BitFieldWrapper(VirtualField field) {
