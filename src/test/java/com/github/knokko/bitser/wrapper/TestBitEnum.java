@@ -5,12 +5,10 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 @BitStruct(backwardCompatible = false)
@@ -43,27 +41,27 @@ public class TestBitEnum {
 		EARTH
 	}
 
-	@BitField(ordering = 0)
+	@BitField
 	private Season seasons;
 
-	@BitField(ordering = 2)
+	@BitField
 	private Direction direction;
 
-	@BitField(ordering = 1, optional = true)
+	@BitField(optional = true)
 	private Element element;
 
 	@Test
-	public void test() throws IOException {
+	public void test() {
 		this.seasons = Season.WINTER;
 		this.direction = Direction.UP;
 
-		TestBitEnum loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
+		TestBitEnum loaded = new Bitser(true).deepCopy(this);
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertNull(loaded.element);
 
 		this.element = Element.WATER;
-		loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
+		loaded = new Bitser(false).deepCopy(this);
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertEquals(Element.WATER, loaded.element);
@@ -75,20 +73,17 @@ public class TestBitEnum {
 	@BitStruct(backwardCompatible = false)
 	private static class NonEnumStruct {
 
-		@BitField(ordering = 0)
+		@BitField
 		@SuppressWarnings("unused")
 		NonEnumClass nope;
 	}
 
 	@Test
 	public void testNonEnumClass() {
-		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
 				() -> new Bitser(false).serialize(new NonEnumStruct(), new BitCountStream())
-		);
-		assertTrue(
-				invalid.getMessage().contains("BitEnum can only be used on enums"),
-				"Expected " + invalid.getMessage() + " to contain \"BitEnum can only be used on enums\""
-		);
+		).getMessage();
+		assertContains(errorMessage, "BitEnum can only be used on enums");
 	}
 
 	@SuppressWarnings("unused")
@@ -101,7 +96,7 @@ public class TestBitEnum {
 	@BitStruct(backwardCompatible = false)
 	private static class SeasonStruct {
 
-		@BitField(ordering = 0)
+		@BitField
 		@SuppressWarnings("unused")
 		final Season season = Season.AUTUMN;
 	}
@@ -109,7 +104,7 @@ public class TestBitEnum {
 	@BitStruct(backwardCompatible = false)
 	private static class MissingSeasonStruct {
 
-		@BitField(ordering = 0)
+		@BitField
 		@SuppressWarnings("unused")
 		MissingSeason season;
 	}
@@ -119,13 +114,10 @@ public class TestBitEnum {
 		Bitser bitser = new Bitser(false);
 		byte[] bytes = bitser.serializeToBytes(new SeasonStruct());
 
-		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
 				MissingSeasonStruct.class, bytes
-		));
-		assertTrue(
-				invalid.getMessage().contains("Missing enum constant AUTUMN"),
-				"Expected " + invalid.getMessage() + " to contain \"Missing enum constant AUTUMN\""
-		);
+		)).getMessage();
+		assertContains(errorMessage, "Missing enum constant AUTUMN");
 	}
 
 	@SuppressWarnings("unused")
@@ -139,7 +131,7 @@ public class TestBitEnum {
 	@BitStruct(backwardCompatible = false)
 	private static class DirectionStruct {
 
-		@BitField(ordering = 0)
+		@BitField
 		@SuppressWarnings("unused")
 		final Direction direction = Direction.DOWN;
 	}
@@ -147,7 +139,7 @@ public class TestBitEnum {
 	@BitStruct(backwardCompatible = false)
 	private static class MissingDirectionStruct {
 
-		@BitField(ordering = 0)
+		@BitField
 		@SuppressWarnings("unused")
 		MissingDirection direction;
 	}
@@ -157,12 +149,9 @@ public class TestBitEnum {
 		Bitser bitser = new Bitser(false);
 		byte[] bytes = bitser.serializeToBytes(new DirectionStruct());
 
-		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
 				MissingDirectionStruct.class, bytes
-		));
-		assertTrue(
-				invalid.getMessage().contains("Missing enum ordinal 3"),
-				"Expected " + invalid.getMessage() + " to contain \"Missing enum ordinal 3\""
-		);
+		)).getMessage();
+		assertContains(errorMessage, "Missing enum ordinal 3");
 	}
 }

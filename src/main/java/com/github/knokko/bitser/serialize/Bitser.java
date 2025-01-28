@@ -104,7 +104,7 @@ public class Bitser {
 
 	public <T> T deepCopy(T object, Object... with) {
 		//noinspection unchecked
-		return (T) deserializeFromBytes(object.getClass(), serializeToBytes(object, with));
+		return (T) deserializeFromBytes(object.getClass(), serializeToBytes(object, with), with);
 	}
 
 	public <T> BitStructConnection<T> createStructConnection(

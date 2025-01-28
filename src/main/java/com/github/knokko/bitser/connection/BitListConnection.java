@@ -190,11 +190,11 @@ public class BitListConnection<T> extends BitConnection {
 		final T element;
 		final BitStructConnection.ChangeListener changeListener;
 
-		@BitField(ordering = 0)
+		@BitField
 		@IntegerField(expectUniform = false, minValue = -1)
 		final int index;
 
-		@BitField(ordering = 1)
+		@BitField
 		final Action action;
 
 		Modification(T element, int index, Action action) {

@@ -22,15 +22,14 @@ public class TestBitListConnection {
 	private static class Root {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
+		@BitField
 		String hello = "world";
 
-		@BitField(ordering = 1)
 		@IntegerField(expectUniform = false)
 		@NestedFieldSetting(path = "c", optional = true)
 		ArrayList<Integer> integers = new ArrayList<>();
 
-		@BitField(ordering = 2)
+		@BitField
 		ArrayList<String> strings = new ArrayList<>();
 	}
 
@@ -103,7 +102,6 @@ public class TestBitListConnection {
 
 	@BitStruct(backwardCompatible = false)
 	private static class Mini {
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		int x;
 
@@ -121,7 +119,7 @@ public class TestBitListConnection {
 	private static class StructList {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
+		@BitField
 		LinkedList<Mini> list = new LinkedList<>();
 	}
 
@@ -159,7 +157,6 @@ public class TestBitListConnection {
 	private static class NestedList {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@FloatField
 		ArrayList<LinkedList<Double>> outerList = new ArrayList<>();
 	}

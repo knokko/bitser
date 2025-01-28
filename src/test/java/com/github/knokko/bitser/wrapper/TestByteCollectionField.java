@@ -6,12 +6,10 @@ import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.NestedFieldSetting;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestByteCollectionField {
@@ -19,56 +17,54 @@ public class TestByteCollectionField {
 	@BitStruct(backwardCompatible = false)
 	private static class BooleanArray {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		boolean[] data;
 	}
 
 	@Test
-	public void testBooleanArrayMultipleOf8() throws IOException {
+	public void testBooleanArrayMultipleOf8() {
 		BooleanArray array = new BooleanArray();
 		array.data = new boolean[] {true, false, true, true, true, false, true, false};
 
-		BooleanArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), array);
-		assertArrayEquals(new boolean[] {true, false, true, true, true, false, true, false}, loaded.data);
+		array = new Bitser(true).deepCopy(array);
+		assertArrayEquals(new boolean[] {true, false, true, true, true, false, true, false}, array.data);
 	}
 
 	@Test
-	public void testBooleanArrayNoMultipleOf8() throws IOException {
+	public void testBooleanArrayNoMultipleOf8() {
 		BooleanArray array = new BooleanArray();
 		array.data = new boolean[] {true, false, true, true};
 
-		BooleanArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
-		assertArrayEquals(new boolean[] {true, false, true, true}, loaded.data);
+		array = new Bitser(false).deepCopy(array);
+		assertArrayEquals(new boolean[] {true, false, true, true}, array.data);
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class ByteArray {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", optional = true, writeAsBytes = true)
 		byte[] data;
 	}
 
 	@Test
-	public void testByteArray() throws IOException {
+	public void testByteArray() {
 		ByteArray array = new ByteArray();
-		ByteArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
+		Bitser bitser = new Bitser(false);
+		ByteArray loaded = bitser.deepCopy(array);
 		assertNull(loaded.data);
 
 		array.data = new byte[0];
-		loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
+		loaded = bitser.deepCopy(array);
 		assertEquals(0, loaded.data.length);
 
 		array.data = new byte[]{-128, -1, 0, 1, 127};
-		loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), array);
+		loaded = bitser.deepCopy(array);
 		assertArrayEquals(new byte[]{-128, -1, 0, 1, 127}, loaded.data);
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class IntArray {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final int[] data;
 
@@ -83,24 +79,21 @@ public class TestByteCollectionField {
 	}
 
 	@Test
-	public void testIntArray() throws IOException {
+	public void testIntArray() {
+		Bitser bitser = new Bitser(true);
 		IntArray nullArray = new IntArray(null);
-		InvalidBitValueException failed = assertThrows(
-				InvalidBitValueException.class,
-				() -> BitserHelper.serializeAndDeserialize(new Bitser(false), nullArray)
-		);
-		assertTrue(
-				failed.getMessage().contains("must not be null"),
-				"Expected " + failed.getMessage() + " to contain \"must not be null\""
-		);
+		String errorMessage = assertThrows(
+				InvalidBitValueException.class, () -> bitser.serializeToBytes(nullArray)
+		).getMessage();
+		assertContains(errorMessage, "must not be null");
 
 		IntArray empty = new IntArray(new int[0]);
-		IntArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), empty);
+		IntArray loaded = bitser.deepCopy(empty);
 		assert loaded.data != null;
 		assertEquals(0, loaded.data.length);
 
 		IntArray filled = new IntArray(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE});
-		loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), filled);
+		loaded = bitser.deepCopy(filled);
 		assert loaded.data != null;
 		assertArrayEquals(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE}, loaded.data);
 	}
@@ -109,7 +102,6 @@ public class TestByteCollectionField {
 	private static class InvalidOptional {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		@NestedFieldSetting(path = "c", optional = true)
 		byte[] data = new byte[10];
@@ -118,19 +110,15 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidOptional() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> BitserHelper.serializeAndDeserialize(new Bitser(true), new InvalidOptional())
+				() -> new Bitser(true).deepCopy(new InvalidOptional())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("NestedFieldSetting's on writeAsBytes targets is forbidden:"),
-				"Expected " + errorMessage + " to contain \"NestedFieldSetting's on writeAsBytes targets is forbidden:\""
-		);
+		assertContains(errorMessage, "NestedFieldSetting's on writeAsBytes targets is forbidden:");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class InvalidAnnotations {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		byte[] data = new byte[10];
@@ -138,12 +126,9 @@ public class TestByteCollectionField {
 
 	@Test
 	public void testInvalidAnnotations() {
-		InvalidBitFieldException failed = assertThrows(InvalidBitFieldException.class,
-				() -> BitserHelper.serializeAndDeserialize(new Bitser(true), new InvalidAnnotations())
-		);
-		assertTrue(
-				failed.getMessage().contains("Value annotations are forbidden when writeAsBytes is true"),
-				"Expected " + failed.getMessage() + " to contain \"Value annotations are forbidden when writeAsBytes is true\""
-		);
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).deepCopy(new InvalidAnnotations())
+		).getMessage();
+		assertContains(errorMessage, "Value annotations are forbidden when writeAsBytes is true");
 	}
 }

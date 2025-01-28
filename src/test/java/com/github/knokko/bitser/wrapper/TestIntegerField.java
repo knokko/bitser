@@ -5,41 +5,37 @@ import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @BitStruct(backwardCompatible = false)
 public class TestIntegerField {
 
-	@BitField(ordering = 0)
 	@IntegerField(expectUniform = false, minValue = 10, maxValue = 100_000)
 	private int varInt;
 
-	@BitField(ordering = 1)
 	@IntegerField(expectUniform = true, maxValue = 100)
 	private int uniformInt;
 
 	@Test
-	public void testZero() throws IOException {
+	public void testZero() {
 		this.varInt = 10;
-		TestIntegerField loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), this);
+		TestIntegerField loaded = new Bitser(false).deepCopy(this);
 		assertEquals(10, loaded.varInt);
 		assertEquals(0, loaded.uniformInt);
 	}
 
 	@Test
-	public void testNonZero() throws IOException {
+	public void testNonZero() {
 		this.varInt = 12345;
 		this.uniformInt = -123456;
-		TestIntegerField loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), this);
+		TestIntegerField loaded = new Bitser(true).deepCopy(this);
 		assertEquals(12345, loaded.varInt);
 		assertEquals(-123456, loaded.uniformInt);
 	}
@@ -47,17 +43,16 @@ public class TestIntegerField {
 	@Test
 	public void testOutOfRange() {
 		this.varInt = 9;
-		InvalidBitValueException failed = assertThrows(InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(this, new BitOutputStream(new ByteArrayOutputStream()))
-		);
-		assertEquals("9 is out of range [10, 100000] for " +
-				"private int com.github.knokko.bitser.wrapper.TestIntegerField.varInt", failed.getMessage());
+		String errorMessage = assertThrows(InvalidBitValueException.class,
+				() -> new Bitser(true).deepCopy(this)
+		).getMessage();
+		assertContains(errorMessage, "9 is out of range [10, 100000]");
+		assertContains(errorMessage, "TestIntegerField.varInt");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class SingleShort {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true)
 		Short value;
 	}

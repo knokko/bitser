@@ -24,25 +24,21 @@ public class TestBitStructConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class Primitives {
 
-		@BitField(ordering = 0)
+		@BitField
 		boolean b1;
 
-		@BitField(ordering = 1)
+		@BitField
 		boolean b2;
 
-		@BitField(ordering = 2)
 		@IntegerField(expectUniform = false)
 		int i;
 
-		@BitField(ordering = 3)
 		@IntegerField(expectUniform = false)
 		int j;
 
-		@BitField(ordering = 4)
 		@FloatField
 		float f;
 
-		@BitField(ordering = 5)
 		@FloatField
 		double d;
 	}
@@ -106,25 +102,23 @@ public class TestBitStructConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class PrimitiveWrappers {
 
-		@BitField(ordering = 0)
+		@BitField
 		Boolean b1;
 
-		@BitField(ordering = 1, optional = true)
+		@BitField(optional = true)
 		Boolean b2;
 
-		@BitField(ordering = 2)
 		@IntegerField(expectUniform = false)
 		Integer i;
 
-		@BitField(ordering = 3, optional = true)
+		@BitField(optional = true)
 		@IntegerField(expectUniform = false)
 		Integer j;
 
-		@BitField(ordering = 4)
 		@FloatField
 		Float f;
 
-		@BitField(ordering = 5, optional = true)
+		@BitField(optional = true)
 		@FloatField
 		Double d;
 	}
@@ -175,22 +169,22 @@ public class TestBitStructConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class NoNesting {
 
-		@BitField(ordering = 0, optional = true)
+		@BitField(optional = true)
 		String s1;
 
-		@BitField(ordering = 1)
+		@BitField
 		String s2;
 
-		@BitField(ordering = 2, optional = true)
+		@BitField(optional = true)
 		UUID id1;
 
-		@BitField(ordering = 3)
+		@BitField
 		UUID id2;
 
-		@BitField(ordering = 4, optional = true)
+		@BitField(optional = true)
 		ExampleEnum example1;
 
-		@BitField(ordering = 5)
+		@BitField
 		ExampleEnum example2;
 	}
 
@@ -229,11 +223,9 @@ public class TestBitStructConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class Nested3 {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		int x;
 
-		@BitField(ordering = 1)
 		@IntegerField(expectUniform = false)
 		int y;
 	}
@@ -241,21 +233,19 @@ public class TestBitStructConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class Nested2 {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		int a;
 
-		@BitField(ordering = 1)
+		@BitField
 		Nested3 deeper = new Nested3();
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class Nested1 {
 
-		@BitField(ordering = 0)
+		@BitField
 		Nested2 deeper = new Nested2();
 
-		@BitField(ordering = 1)
 		@FloatField
 		float f;
 	}
@@ -336,7 +326,7 @@ public class TestBitStructConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class OptionalRoot {
 
-		@BitField(ordering = 0, optional = true)
+		@BitField(optional = true)
 		Nested2 nested;
 	}
 

@@ -12,7 +12,6 @@ public class TestBitStructCopy {
 	@BitStruct(backwardCompatible = false)
 	private static class ChildStruct {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		final int x;
 
@@ -29,35 +28,30 @@ public class TestBitStructCopy {
 	@BitStruct(backwardCompatible = false)
 	private static class Root {
 
-		@BitField(ordering = 0)
+		@BitField
 		boolean b;
 
-		@BitField(ordering = 1)
+		@BitField
 		ChildStruct c = new ChildStruct(15);
 
-		@BitField(ordering = 2)
 		@FloatField
 		double d = 1.25;
 
-		@BitField(ordering = 3)
 		@IntegerField(expectUniform = false)
 		int i = 12;
 
-		@BitField(ordering = 4)
 		@IntegerField(expectUniform = false)
 		long[] l = { 1 };
 
-		@BitField(ordering = 5)
 		@ReferenceFieldTarget(label = "children")
 		ChildStruct target = new ChildStruct(20);
 
-		@BitField(ordering = 6)
 		@ReferenceField(stable = false, label = "children")
 		ChildStruct reference = target;
 	}
 
 	@Test
-	public void testShallowCopy() {
+	public void testShallowCopyAndDeepCopy() {
 		Root root = new Root();
 		root.b = true;
 		root.c = new ChildStruct(16);
@@ -67,7 +61,7 @@ public class TestBitStructCopy {
 		root.target = new ChildStruct(-123);
 		root.reference = root.target;
 
-		Root copied = new Bitser(false).cache.getWrapper(root.getClass()).shallowCopy(root);
+		Root copied = new Bitser(false).shallowCopy(root);
 		assertNotSame(root, copied);
 		assertTrue(copied.b);
 		assertEquals(16, copied.c.x);
@@ -77,5 +71,14 @@ public class TestBitStructCopy {
 		assertSame(root.l, copied.l);
 		assertSame(root.target, copied.target);
 		assertSame(copied.reference, copied.target);
+
+		Root deepCopy = new Bitser(false).deepCopy(root);
+		assertNotSame(root, deepCopy);
+		assertNotSame(root.c, deepCopy.c);
+		assertTrue(deepCopy.b);
+		assertNotSame(root.l, deepCopy.l);
+		assertArrayEquals(root.l, deepCopy.l);
+		assertNotSame(root.target, deepCopy.target);
+		assertSame(deepCopy.reference, deepCopy.target);
 	}
 }

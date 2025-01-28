@@ -12,7 +12,7 @@ import com.github.knokko.bitser.util.VirtualField;
 import java.io.IOException;
 import java.util.Set;
 
-public abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
+public abstract class BitFieldWrapper {
 
 	public final VirtualField field;
 
@@ -21,15 +21,6 @@ public abstract class BitFieldWrapper implements Comparable<BitFieldWrapper> {
 		if (field.optional && field.type.isPrimitive()) {
 			throw new InvalidBitFieldException("Primitive field " + field + " can't be optional");
 		}
-	}
-
-	@Override
-	public int compareTo(BitFieldWrapper other) {
-		return Integer.compare(this.field.ordering, other.field.ordering);
-	}
-
-	public String getFieldName() {
-		return field.annotations.getFieldName();
 	}
 
 	public BitFieldWrapper getChildWrapper() {

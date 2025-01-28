@@ -5,14 +5,13 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUnstableReferences {
@@ -20,7 +19,6 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	private static class ItemType {
 
-		@BitField(ordering = 0)
 		@StringField
 		final String name;
 
@@ -37,11 +35,9 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	private static class Item {
 
-		@BitField(ordering = 0)
 		@StringField
 		final String name;
 
-		@BitField(ordering = 1)
 		@ReferenceField(stable = false, label = "item types")
 		final ItemType type;
 
@@ -59,16 +55,15 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	private static class ItemRoot {
 
-		@BitField(ordering = 0)
+		@BitField
 		final ArrayList<Item> items = new ArrayList<>();
 
-		@BitField(ordering = 1)
 		@ReferenceFieldTarget(label = "item types")
 		final ArrayList<ItemType> types = new ArrayList<>();
 	}
 
 	@Test
-	public void testItems() throws IOException {
+	public void testItems() {
 
 		ItemRoot root = new ItemRoot();
 		ItemType sword = new ItemType("sword");
@@ -81,7 +76,7 @@ public class TestUnstableReferences {
 		root.items.add(new Item("cold shield", shield));
 		root.items.add(new Item("spiky shield", shield));
 
-		ItemRoot loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), root);
+		ItemRoot loaded = new Bitser(false).deepCopy(root);
 
 		assertEquals(2, loaded.types.size());
 		assertEquals("sword", loaded.types.get(0).name);
@@ -98,15 +93,13 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	static class Node {
 
-		@BitField(ordering = 0)
 		@IntegerField(minValue = 1, expectUniform = false)
 		final int score;
 
-		@BitField(ordering = 1)
 		@ReferenceField(stable = false, label = "nodes")
 		final ArrayList<Node> neighbours = new ArrayList<>();
 
-		@BitField(ordering = 2, optional = true)
+		@BitField(optional = true)
 		DeepNodeReference bestFriend;
 
 		Node(int score) {
@@ -122,7 +115,6 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	static class DeepNodeReference {
 
-		@BitField(ordering = 0)
 		@ReferenceField(stable = false, label = "nodes")
 		final Node node;
 
@@ -139,7 +131,6 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	static class DeepNodeTarget {
 
-		@BitField(ordering = 0)
 		@ReferenceFieldTarget(label = "nodes")
 		final Node node;
 
@@ -156,19 +147,18 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	static class Graph {
 
-		@BitField(ordering = 0)
 		@ReferenceFieldTarget(label = "nodes")
 		final ArrayList<Node> mostNodes = new ArrayList<>();
 
-		@BitField(ordering = 1)
+		@BitField
 		DeepNodeReference champion;
 
-		@BitField(ordering = 2)
+		@BitField
 		DeepNodeTarget loser;
 	}
 
 	@Test
-	public void testGraph() throws IOException {
+	public void testGraph() {
 		Graph graph = new Graph();
 
 		Node champion = new Node(100);
@@ -191,7 +181,7 @@ public class TestUnstableReferences {
 		node3.bestFriend = new DeepNodeReference(node2);
 		node3.neighbours.add(node1);
 
-		Graph loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), graph);
+		Graph loaded = new Bitser(false).deepCopy(graph);
 		assertEquals(4, loaded.mostNodes.size());
 
 		Node loaded1 = loaded.mostNodes.get(0);
@@ -227,12 +217,10 @@ public class TestUnstableReferences {
 	@BitStruct(backwardCompatible = false)
 	static class NonStructReferences {
 
-		@BitField(ordering = 0)
 		@ReferenceFieldTarget(label = "no struct")
 		final String hello;
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 1)
 		@ReferenceField(stable = false, label = "no struct")
 		final String hi;
 
@@ -248,10 +236,8 @@ public class TestUnstableReferences {
 	}
 
 	@Test
-	public void testNonBitStructReferences() throws IOException {
-		NonStructReferences loaded = BitserHelper.serializeAndDeserialize(
-				new Bitser(true), new NonStructReferences("world")
-		);
+	public void testNonBitStructReferences() {
+		NonStructReferences loaded = new Bitser(true).deepCopy(new NonStructReferences("world"));
 		assertEquals("world", loaded.hello);
 		assertSame(loaded.hello, loaded.hi);
 	}
@@ -266,17 +252,13 @@ public class TestUnstableReferences {
 				() -> new Bitser(false).serialize(root, new BitCountStream())
 		).getMessage();
 
-		assertTrue(
-				errorMessage.contains("Can't find unstable reference target with label item types"),
-				"Expected " + errorMessage + " to contain \"Can't find unstable reference target with label item types\""
-		);
+		assertContains(errorMessage, "Can't find unstable reference target with label item types");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class MissingTargetLabel {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@ReferenceField(stable = false, label = "nope")
 		final String reference = "hello";
 	}
@@ -288,17 +270,13 @@ public class TestUnstableReferences {
 				() -> new Bitser(false).serialize(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
-		assertTrue(
-				errorMessage.contains("Can't find @ReferenceFieldTarget with label nope"),
-				"Expected " + errorMessage + " to contain \"Can't find @ReferenceFieldTarget with label nope\""
-		);
+		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class BothReferenceAndTarget {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@ReferenceField(stable = false, label = "test")
 		@ReferenceFieldTarget(label = "test")
 		final JustAnId id = new JustAnId();
@@ -308,7 +286,7 @@ public class TestUnstableReferences {
 	static class JustAnId {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
+		@BitField
 		final UUID id = UUID.randomUUID();
 	}
 
@@ -318,17 +296,13 @@ public class TestUnstableReferences {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serialize(new BothReferenceAndTarget(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("is both a reference field and a reference target"),
-				"Expected " + errorMessage + " to contain \"is both a reference field and a reference target\""
-		);
+		assertContains(errorMessage, "is both a reference field and a reference target");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class WithPrimitiveTarget {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		@ReferenceFieldTarget(label = "invalid")
 		final int test = 1234;
@@ -340,10 +314,7 @@ public class TestUnstableReferences {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serialize(new WithPrimitiveTarget(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("is primitive, which is forbidden"),
-				"Expected " + errorMessage + " to contain \"is primitive, which is forbidden\""
-		);
+		assertContains(errorMessage, "is primitive, which is forbidden");
 	}
 
 	@Test
@@ -357,50 +328,41 @@ public class TestUnstableReferences {
 				InvalidBitValueException.class,
 				() -> new Bitser(false).serialize(root, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("Multiple unstable targets have identity"),
-				"Expected " + errorMessage + " to contain \"Multiple unstable targets have identity\""
-		);
+		assertContains(errorMessage, "Multiple unstable targets have identity");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class StableTarget {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@StableReferenceFieldId
 		final UUID id = UUID.randomUUID();
 
-		@BitField(ordering = 1)
+		@BitField
 		String hello;
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class Mixed {
 
-		@BitField(ordering = 0)
 		@ReferenceFieldTarget(label = "hi")
 		StableTarget target1;
 
-		@BitField(ordering = 1)
 		@ReferenceFieldTarget(label = "hi")
 		StableTarget target2;
 
-		@BitField(ordering = 2)
 		@ReferenceField(stable = true, label = "hi")
 		StableTarget stableReference;
 
-		@BitField(ordering = 3)
 		@ReferenceField(stable = false, label = "hi")
 		StableTarget unstableReference1;
 
-		@BitField(ordering = 4)
 		@ReferenceField(stable = false, label = "hi")
 		StableTarget unstableReference2;
 	}
 
 	@Test
-	public void testMixStableAndUnstableReferences() throws IOException {
+	public void testMixStableAndUnstableReferences() {
 		Mixed mixed = new Mixed();
 		mixed.target1 = new StableTarget();
 		mixed.target1.hello = "world";
@@ -411,7 +373,7 @@ public class TestUnstableReferences {
 		mixed.unstableReference1 = mixed.target1;
 		mixed.unstableReference2 = mixed.target2;
 
-		Mixed loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), mixed);
+		Mixed loaded = new Bitser(false).deepCopy(mixed);
 		assertEquals("world", loaded.target1.hello);
 		assertEquals("triangle", loaded.target2.hello);
 		assertSame(loaded.target1, loaded.unstableReference1);

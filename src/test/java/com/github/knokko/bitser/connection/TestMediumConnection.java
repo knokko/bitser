@@ -16,11 +16,9 @@ public class TestMediumConnection {
 
 	@BitStruct(backwardCompatible = false)
 	private static class Point {
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		int x;
 
-		@BitField(ordering = 1)
 		@IntegerField(expectUniform = false)
 		int y;
 
@@ -42,11 +40,11 @@ public class TestMediumConnection {
 
 	@BitStruct(backwardCompatible = false)
 	private static class Root {
-		@BitField(ordering = 0)
+		@BitField
 		Point origin;
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 1)
+		@BitField
 		ArrayList<Point> points = new ArrayList<>();
 	}
 

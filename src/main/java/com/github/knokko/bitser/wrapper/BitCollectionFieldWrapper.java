@@ -25,11 +25,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	public String getFieldName() {
-		return valuesWrapper.getFieldName();
-	}
-
-	@Override
 	public BitFieldWrapper getChildWrapper() {
 		return valuesWrapper;
 	}

@@ -65,7 +65,7 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class SlowBooleanArray {
 
-		@BitField(ordering = 0)
+		@BitField
 		final boolean[] data = new boolean[80_000_000];
 
 		@SuppressWarnings("unused")
@@ -80,7 +80,6 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class FastBooleanArray {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final boolean[] data = new boolean[80_000_000];
 
@@ -96,7 +95,6 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class SlowByteArray {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true)
 		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
 		final byte[] data = new byte[10_000_000];
@@ -112,7 +110,6 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class FastByteArray {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final byte[] data = new byte[10_000_000];
 
@@ -127,7 +124,6 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class SlowIntArray {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true)
 		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 2_500_000, maxValue = 2_500_000, expectUniform = true))
 		final int[] data = new int[2_500_000];
@@ -144,7 +140,6 @@ public class ArrayBenchmark {
 	@BitStruct(backwardCompatible = false)
 	private static class FastIntArray {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final int[] data = new int[2_500_000];
 

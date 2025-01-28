@@ -5,12 +5,10 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
-
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBitStruct {
@@ -18,46 +16,42 @@ public class TestBitStruct {
 	@BitStruct(backwardCompatible = false)
 	private static class WandCooldowns {
 
-		@BitField(ordering = 1)
 		@IntegerField(minValue = 1, expectUniform = true)
 		public int cooldown;
 
-		@BitField(ordering = 0)
 		@IntegerField(minValue = 1, expectUniform = true)
 		private int maxCharges = 3;
 
-		@BitField(ordering = 2)
 		@IntegerField(minValue = 0, expectUniform = true)
 		public Integer rechargeTime;
 	}
 
 	@Test
-	public void testWandCooldowns() throws IOException {
+	public void testWandCooldowns() {
 		WandCooldowns wandCooldowns = new WandCooldowns();
 		wandCooldowns.cooldown = 5;
 		wandCooldowns.maxCharges = 4;
 		wandCooldowns.rechargeTime = 20;
 
-		WandCooldowns loadedCooldowns = BitserHelper.serializeAndDeserialize(new Bitser(true), wandCooldowns);
-
-		assertEquals(5, loadedCooldowns.cooldown);
-		assertEquals(4, loadedCooldowns.maxCharges);
-		assertEquals(20, loadedCooldowns.rechargeTime);
+		wandCooldowns = new Bitser(true).deepCopy(wandCooldowns);
+		assertEquals(5, wandCooldowns.cooldown);
+		assertEquals(4, wandCooldowns.maxCharges);
+		assertEquals(20, wandCooldowns.rechargeTime);
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class Chain {
 
-		@BitField(ordering = 0, optional = true)
+		@BitField(optional = true)
 		public Chain next;
 
-		@BitField(ordering = 1)
+		@BitField
 		public Properties properties;
 
 		@BitStruct(backwardCompatible = false)
 		public static class Properties {
 
-			@BitField(ordering = 0)
+			@BitField
 			@IntegerField(expectUniform = false)
 			public int strength;
 
@@ -73,47 +67,42 @@ public class TestBitStruct {
 	}
 
 	@Test
-	public void testChain() throws IOException {
+	public void testChain() {
 		Chain root = new Chain();
 		root.properties = new Chain.Properties(10);
 		root.next = new Chain();
 		root.next.properties = new Chain.Properties(2);
 
-		Chain loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), root);
-		assertEquals(10, loaded.properties.strength);
-		assertEquals(2, loaded.next.properties.strength);
-		assertNull(loaded.next.next);
+		root = new Bitser(true).deepCopy(root);
+		assertEquals(10, root.properties.strength);
+		assertEquals(2, root.next.properties.strength);
+		assertNull(root.next.next);
 	}
 
 	@BitStruct(backwardCompatible = false)
 	private static class NoAnnotations {
 
-		@BitField(ordering = 0)
+		@BitField
 		@SuppressWarnings("unused")
 		int nope;
 	}
 
 	@Test
 	public void testNoAnnotationsError() {
-		InvalidBitFieldException invalid = assertThrows(InvalidBitFieldException.class,
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
 				() -> new Bitser(false).serialize(new NoAnnotations(), new BitCountStream())
-		);
-		assertTrue(
-				invalid.getMessage().contains("Missing annotations for"),
-				"Expected " + invalid.getMessage() + " to contain \"Missing annotations for\""
-		);
+		).getMessage();
+		assertContains(errorMessage, "Missing annotations for");
 	}
 
 	private static class Entity {
 
-		@BitField(ordering = 1)
 		@IntegerField(expectUniform = false)
 		int x;
 
 		@SuppressWarnings("unused")
 		long tempStuff;
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true)
 		int y;
 	}
@@ -123,11 +112,9 @@ public class TestBitStruct {
 		@SuppressWarnings("unused")
 		boolean temporary;
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false, minValue = 1)
 		int width;
 
-		@BitField(ordering = 1)
 		@IntegerField(expectUniform = true, minValue = 1)
 		int height;
 	}
@@ -135,12 +122,12 @@ public class TestBitStruct {
 	@BitStruct(backwardCompatible = false)
 	private static class ColoredRectangle extends Rectangle {
 
-		@BitField(ordering = 0)
+		@BitField
 		String color;
 	}
 
 	@Test
-	public void testInheritance() throws IOException {
+	public void testInheritance() {
 		ColoredRectangle rectangle = new ColoredRectangle();
 		rectangle.x = -12;
 		rectangle.y = -34;
@@ -148,12 +135,12 @@ public class TestBitStruct {
 		rectangle.height = 789;
 		rectangle.color = "red";
 
-		ColoredRectangle loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), rectangle);
-		assertEquals(-12, loaded.x);
-		assertEquals(-34, loaded.y);
-		assertEquals(56, loaded.width);
-		assertEquals(789, loaded.height);
-		assertEquals("red", loaded.color);
+		rectangle = new Bitser(false).deepCopy(rectangle);
+		assertEquals(-12, rectangle.x);
+		assertEquals(-34, rectangle.y);
+		assertEquals(56, rectangle.width);
+		assertEquals(789, rectangle.height);
+		assertEquals("red", rectangle.color);
 	}
 
 	static class SubWandCooldowns extends WandCooldowns {}
@@ -164,23 +151,30 @@ public class TestBitStruct {
 				InvalidBitFieldException.class,
 				() -> new Bitser(false).serialize(new SubWandCooldowns(), new BitCountStream())
 		).getMessage();
-		assertEquals(errorMessage, "class com.github.knokko.bitser.wrapper.TestBitStruct$SubWandCooldowns is not a BitStruct");
+		assertContains(errorMessage, "SubWandCooldowns is not a BitStruct");
 	}
 
+	@SuppressWarnings("unused")
 	@BitStruct(backwardCompatible = false)
-	static class StaticBitField {
+	private static class DuplicateIDs {
 
-		@BitField(ordering = 0)
-		public static int test = 1;
+		@BitField(id = 0)
+		String test1 = "hello";
+
+		@BitField(id = 1, optional = true)
+		String test2;
+
+		@BitField(id = 1)
+		String test3 = "world";
 	}
 
 	@Test
-	public void testForbidStaticBitFields() {
-		@SuppressWarnings("InstantiationOfUtilityClass")
+	public void testDuplicateIDs() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new StaticBitField(), new BitCountStream())
+				InvalidBitFieldException.class, () -> new Bitser(false).deepCopy(new DuplicateIDs())
 		).getMessage();
-		assertEquals("@BitField is not allowed on static fields", errorMessage);
+		assertContains(errorMessage, "DuplicateIDs");
+		assertContains(errorMessage, "multiple @BitField");
+		assertContains(errorMessage, "id 1");
 	}
 }

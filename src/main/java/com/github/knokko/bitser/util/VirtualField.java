@@ -11,7 +11,6 @@ public class VirtualField {
 
 	private final String source;
 	public final Class<?> type;
-	public final int ordering;
 	public final boolean optional;
 	public final String referenceTargetLabel;
 
@@ -20,12 +19,11 @@ public class VirtualField {
 	public final BiConsumer<Object, Object> setValue;
 
 	public VirtualField(
-			String source, Class<?> type, int ordering, boolean optional,
-			AnnotationHolder annotations, Function<Object, Object> getValue, BiConsumer<Object, Object> setValue
+			String source, Class<?> type, boolean optional, AnnotationHolder annotations,
+			Function<Object, Object> getValue, BiConsumer<Object, Object> setValue
 	) {
 		this.source = source;
 		this.type = type;
-		this.ordering = ordering;
 		this.optional = optional;
 		ReferenceFieldTarget referenceFieldTarget = annotations.get(ReferenceFieldTarget.class);
 		this.referenceTargetLabel = referenceFieldTarget != null ? referenceFieldTarget.label() : null;

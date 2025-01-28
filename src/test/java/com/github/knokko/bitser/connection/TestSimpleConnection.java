@@ -19,17 +19,15 @@ public class TestSimpleConnection {
 	@BitStruct(backwardCompatible = false)
 	private static class ExampleStruct {
 
-		@BitField(ordering = 0)
+		@BitField
 		String a = "a";
 
-		@BitField(ordering = 1)
+		@BitField
 		boolean b = true;
 
-		@BitField(ordering = 2)
 		@IntegerField(expectUniform = false)
 		int x = 1;
 
-		@BitField(ordering = 3)
 		@FloatField
 		double y = 2.5;
 	}

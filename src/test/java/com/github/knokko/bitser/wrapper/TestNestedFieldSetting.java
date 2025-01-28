@@ -5,7 +5,6 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Objects;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestNestedFieldSetting {
@@ -22,19 +22,18 @@ public class TestNestedFieldSetting {
 	@BitStruct(backwardCompatible = false)
 	static class AlternatingOptionalCollection {
 
-		@BitField(ordering = 0)
 		@FloatField(expectMultipleOf = 0.5)
 		@NestedFieldSetting(path = "cc", optional = true)
 		@NestedFieldSetting(path = "ccc", optional = true)
 		ArrayList<HashSet<HashSet<LinkedList<Float>>>> nested = new ArrayList<>();
 
-		@BitField(ordering = 1)
+		@BitField
 		String test;
 	}
 
 	@Test
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	public void testAlternatingDepthOptionalCollection() throws IOException {
+	public void testAlternatingDepthOptionalCollection() {
 		LinkedList<Float> floatList = new LinkedList<>();
 		floatList.add(1f);
 		floatList.add(5f);
@@ -52,7 +51,7 @@ public class TestNestedFieldSetting {
 		alternating.nested.add(hashSet);
 		alternating.test = "test1234";
 
-		AlternatingOptionalCollection loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), alternating);
+		AlternatingOptionalCollection loaded = new Bitser(true).deepCopy(alternating);
 		assertEquals("test1234", loaded.test);
 		assertEquals(1, loaded.nested.size());
 
@@ -73,18 +72,17 @@ public class TestNestedFieldSetting {
 	@BitStruct(backwardCompatible = false)
 	static class AlternatingOptionalArray {
 
-		@BitField(ordering = 0)
 		@FloatField(expectMultipleOf = 0.5)
 		@NestedFieldSetting(path = "cc", optional = true)
 		@NestedFieldSetting(path = "ccc", optional = true)
 		float[][][][] nested;
 
-		@BitField(ordering = 1)
+		@BitField
 		String test;
 	}
 
 	@Test
-	public void testAlternatingOptionalArray() throws IOException {
+	public void testAlternatingOptionalArray() {
 		AlternatingOptionalArray alternating = new AlternatingOptionalArray();
 		float[][][][] nested = {
 				{
@@ -98,7 +96,7 @@ public class TestNestedFieldSetting {
 		alternating.nested = nested;
 		alternating.test = "ok";
 
-		AlternatingOptionalArray loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), alternating);
+		AlternatingOptionalArray loaded = new Bitser(false).deepCopy(alternating);
 		assertNotSame(nested, loaded.nested);
 		assertEquals(1, loaded.nested.length);
 		assertEquals(2, loaded.nested[0].length);
@@ -112,7 +110,6 @@ public class TestNestedFieldSetting {
 	@BitStruct(backwardCompatible = false)
 	static class AlternatingMadness {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true, minValue = 10, maxValue = 15)
 		@NestedFieldSetting(path = "", optional = true)
 		@NestedFieldSetting(path = "c", optional = true)
@@ -120,12 +117,12 @@ public class TestNestedFieldSetting {
 	}
 
 	@Test
-	public void testAlternatingMadnessNull() throws IOException {
-		assertNull(BitserHelper.serializeAndDeserialize(new Bitser(true), new AlternatingMadness()).nested);
+	public void testAlternatingMadnessNull() {
+		assertNull(new Bitser(true).deepCopy(new AlternatingMadness()).nested);
 	}
 
 	@Test
-	public void testAlternatingMadness() throws IOException {
+	public void testAlternatingMadness() {
 		LinkedList<int[]> list = new LinkedList<>();
 		list.add(new int[] { 11, 12 });
 
@@ -140,7 +137,7 @@ public class TestNestedFieldSetting {
 		alternating.nested.add(null);
 		alternating.nested.add(setArray);
 
-		AlternatingMadness loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), alternating);
+		AlternatingMadness loaded = new Bitser(true).deepCopy(alternating);
 		assertEquals(2, loaded.nested.size());
 		assertNull(loaded.nested.get(0));
 		assertEquals(1, loaded.nested.get(1).length);
@@ -156,7 +153,6 @@ public class TestNestedFieldSetting {
 	@BitStruct(backwardCompatible = false)
 	static class WithCustomSizes {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", sizeField = @IntegerField(expectUniform = true, minValue = 1, maxValue = 2))
 		@NestedFieldSetting(path = "c", sizeField = @IntegerField(expectUniform = true, minValue = 0, maxValue = 15))
 		final ArrayList<LinkedList<Boolean>> list = new ArrayList<>();
@@ -170,7 +166,7 @@ public class TestNestedFieldSetting {
 		WithCustomSizes sizes = new WithCustomSizes();
 		sizes.list.add(innerList);
 
-		WithCustomSizes loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), sizes);
+		WithCustomSizes loaded = new Bitser(false).deepCopy(sizes);
 		assertEquals(1, loaded.list.size());
 		LinkedList<Boolean> loadedList = loaded.list.get(0);
 		assertEquals(2, loadedList.size());
@@ -196,17 +192,15 @@ public class TestNestedFieldSetting {
 		@ReferenceField(stable = false, label = "test")
 		private static final boolean REFERENCE_LIST = false;
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "c", fieldName = "TARGET_LIST")
 		final LinkedList<LinkedList<String>> targetList = new LinkedList<>();
 
-		@BitField(ordering = 1)
 		@NestedFieldSetting(path = "", fieldName = "REFERENCE_LIST")
 		LinkedList<String> referenceList;
 	}
 
 	@Test
-	public void testReferenceLists1() throws IOException {
+	public void testReferenceLists1() {
 		LinkedList<String> list1 = new LinkedList<>();
 		list1.add("hello");
 
@@ -218,7 +212,7 @@ public class TestNestedFieldSetting {
 		referenceLists.targetList.add(list2);
 		referenceLists.referenceList = list2;
 
-		ReferenceLists1 loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), referenceLists);
+		ReferenceLists1 loaded = new Bitser(true).deepCopy(referenceLists);
 		assertEquals(2, loaded.targetList.size());
 		assertEquals(1, loaded.targetList.get(0).size());
 		assertEquals("hello", loaded.targetList.get(0).get(0));
@@ -238,22 +232,20 @@ public class TestNestedFieldSetting {
 		@ReferenceField(stable = false, label = "test")
 		private static final boolean REFERENCE_LIST = false;
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", fieldName = "TARGET_LIST")
 		final LinkedList<String> targetList = new LinkedList<>();
 
-		@BitField(ordering = 1)
 		@NestedFieldSetting(path = "c", fieldName = "REFERENCE_LIST")
 		final LinkedList<LinkedList<String>> referenceList = new LinkedList<>();
 	}
 
 	@Test
-	public void testReferenceLists2() throws IOException {
+	public void testReferenceLists2() {
 		ReferenceLists2 referenceLists = new ReferenceLists2();
 		referenceLists.targetList.add("hello");
 		referenceLists.referenceList.add(referenceLists.targetList);
 
-		ReferenceLists2 loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), referenceLists);
+		ReferenceLists2 loaded = new Bitser(true).deepCopy(referenceLists);
 		assertEquals(1, loaded.targetList.size());
 		assertEquals("hello", loaded.targetList.get(0));
 
@@ -272,25 +264,21 @@ public class TestNestedFieldSetting {
 		@ReferenceField(stable = false, label = "test")
 		private static final boolean REFERENCE = false;
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "c", fieldName = "TARGET")
 		final LinkedList<String> targetList1 = new LinkedList<>();
 
-		@BitField(ordering = 1)
 		@ReferenceFieldTarget(label = "test")
 		final LinkedList<String> targetList2 = new LinkedList<>();
 
-		@BitField(ordering = 2)
 		@NestedFieldSetting(path = "cc", fieldName = "REFERENCE")
 		final LinkedList<LinkedList<String>> referenceList1 = new LinkedList<>();
 
-		@BitField(ordering = 3)
 		@ReferenceField(stable = false, label = "test")
 		final LinkedList<String> referenceList2 = new LinkedList<>();
 	}
 
 	@Test
-	public void testReferenceLists3() throws IOException {
+	public void testReferenceLists3() {
 		ReferenceLists3 referenceLists = new ReferenceLists3();
 		referenceLists.targetList1.add("hello");
 		referenceLists.targetList2.add("world");
@@ -299,7 +287,7 @@ public class TestNestedFieldSetting {
 		referenceLists.referenceList1.get(0).add(referenceLists.targetList2.get(0));
 		referenceLists.referenceList2.add(referenceLists.targetList1.get(0));
 
-		ReferenceLists3 loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), referenceLists);
+		ReferenceLists3 loaded = new Bitser(false).deepCopy(referenceLists);
 		assertEquals(1, loaded.targetList1.size());
 		assertEquals("hello", loaded.targetList1.get(0));
 		assertEquals(1, loaded.targetList2.size());
@@ -318,7 +306,6 @@ public class TestNestedFieldSetting {
 	static class DuplicateNestedFieldSettings1 {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "")
 		@NestedFieldSetting(path = "")
 		final ArrayList<LinkedList<String>> badList = new ArrayList<>();
@@ -330,17 +317,13 @@ public class TestNestedFieldSetting {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serialize(new DuplicateNestedFieldSettings1(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("Multiple NestedFieldSetting's for path "),
-				"Expected " + errorMessage + " to contain \"Multiple NestedFieldSetting's for path \""
-		);
+		assertContains(errorMessage, "Multiple NestedFieldSetting's for path ");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class DuplicateNestedFieldSettings2 {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "c", writeAsBytes = true)
 		@NestedFieldSetting(path = "cc")
 		@NestedFieldSetting(path = "cc")
@@ -353,17 +336,14 @@ public class TestNestedFieldSetting {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serialize(new DuplicateNestedFieldSettings2(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("Multiple NestedFieldSetting's for path cc"),
-				"Expected " + errorMessage + " to contain \"Multiple NestedFieldSetting's for path cc\""
-		);
+		assertContains(errorMessage, "Multiple NestedFieldSetting's for path cc");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class OptionalBitField {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0, optional = true)
+		@BitField(optional = true)
 		final ArrayList<String> test = new ArrayList<>();
 	}
 
@@ -373,14 +353,8 @@ public class TestNestedFieldSetting {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serialize(new OptionalBitField(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("optional BitField is not allowed on collection field"),
-				"Expected " + errorMessage + " to contain \"optional BitField is not allowed on collection field\""
-		);
-		assertTrue(
-				errorMessage.contains("use @NestedFieldSetting instead"),
-				"Expected " + errorMessage + " to contain \"use @NestedFieldSetting instead\""
-		);
+		assertContains(errorMessage, "optional BitField is not allowed on collection field");
+		assertContains(errorMessage, "use @NestedFieldSetting instead");
 	}
 
 	@Test
@@ -392,10 +366,7 @@ public class TestNestedFieldSetting {
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				error1.contains("must not have null elements"),
-				"Expected " + error1 + " to contain \"must not have null elements\""
-		);
+		assertContains(error1, "must not have null elements");
 
 		LinkedList<Float> floatList = new LinkedList<>();
 		floatList.add(null);
@@ -414,20 +385,14 @@ public class TestNestedFieldSetting {
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				error2.contains("must not have null elements"),
-				"Expected " + error2 + " to contain \"must not have null elements\""
-		);
+		assertContains(error2, "must not have null elements");
 
 		alternating.nested = null;
 		String error3 = assertThrows(
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				error3.contains("must not be null"),
-				"Expected " + error3 + " to contain \"must not be null\""
-		);
+		assertContains(error3, "must not be null");
 	}
 
 	@Test
@@ -441,20 +406,14 @@ public class TestNestedFieldSetting {
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				error1.contains("must not have null elements"),
-				"Expected " + error1 + " to contain \"must not have null elements\""
-		);
+		assertContains(error1, "must not have null elements");
 
 		alternating.nested = null;
 		String error2 = assertThrows(
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				error2.contains("must not be null"),
-				"Expected " + error2 + " to contain \"must not be null\""
-		);
+		assertContains(error2, "must not be null");
 	}
 
 	// TODO Monster test with nested maps, arrays, and collections

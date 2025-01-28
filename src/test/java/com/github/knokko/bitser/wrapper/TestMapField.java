@@ -5,7 +5,6 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitserHelper;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +14,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMapField {
@@ -22,19 +22,20 @@ public class TestMapField {
 	@BitStruct(backwardCompatible = false)
 	static class StringMap {
 
-		@BitField(ordering = 0)
+		@BitField
 		final ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
 	}
 
 	@Test
-	public void testStringMap() throws IOException {
-		assertEquals(0, BitserHelper.serializeAndDeserialize(new Bitser(false), new StringMap()).map.size());
+	public void testStringMap() {
+		Bitser bitser = new Bitser(false);
+		assertEquals(0, bitser.deepCopy(new StringMap()).map.size());
 
 		StringMap stringMap = new StringMap();
 		stringMap.map.put("hello", "world");
 		stringMap.map.put("hi", "triangle");
 
-		StringMap loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), stringMap);
+		StringMap loaded = bitser.deepCopy(stringMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals("world", loaded.map.get("hello"));
 		assertEquals("triangle", loaded.map.get("hi"));
@@ -47,7 +48,6 @@ public class TestMapField {
 		@IntegerField(expectUniform = true, minValue = 10, maxValue = 20)
 		private static final boolean KEY = false;
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true, minValue = 50, maxValue = 60)
 		@NestedFieldSetting(path = "", sizeField = @IntegerField(expectUniform = true, minValue = 0, maxValue = 3))
 		@NestedFieldSetting(path = "k", fieldName = "KEY")
@@ -56,11 +56,12 @@ public class TestMapField {
 
 	@Test
 	public void testIntMap() throws IOException {
+		Bitser bitser = new Bitser(true);
 		IntMap intMap = new IntMap();
 		intMap.map = new TreeMap<>();
 		intMap.map.put(10, (byte) 50);
 
-		IntMap loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), intMap);
+		IntMap loaded = bitser.deepCopy(intMap);
 		assertEquals(1, loaded.map.size());
 		assertEquals((byte) 50, loaded.map.get(10));
 
@@ -68,7 +69,7 @@ public class TestMapField {
 		// 4 bits for the key
 		// 4 bits for the value
 		BitCountStream counter = new BitCountStream();
-		new Bitser(true).serialize(intMap, counter);
+		bitser.serialize(intMap, counter);
 		assertEquals(10, counter.getCounter());
 	}
 
@@ -79,18 +80,17 @@ public class TestMapField {
 		@IntegerField(expectUniform = false, minValue = 100)
 		private static final boolean KEY = false;
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "k", optional = true, fieldName = "KEY")
 		final HashMap<Integer, String> map = new HashMap<>();
 	}
 
 	@Test
-	public void testKeyFieldMap() throws IOException {
+	public void testKeyFieldMap() {
 		KeyFieldMap keyMap = new KeyFieldMap();
 		keyMap.map.put(null, "hello");
 		keyMap.map.put(150, "world");
 
-		KeyFieldMap loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), keyMap);
+		KeyFieldMap loaded = new Bitser(false).deepCopy(keyMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals("hello", loaded.map.get(null));
 		assertEquals("world", loaded.map.get(150));
@@ -99,18 +99,17 @@ public class TestMapField {
 	@BitStruct(backwardCompatible = false)
 	static class ImplicitValueFieldMap {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = true, minValue = 10, maxValue = 11)
 		final HashMap<String, Integer> map = new HashMap<>();
 	}
 
 	@Test
-	public void testImplicitValueFieldMap() throws IOException {
+	public void testImplicitValueFieldMap() {
 		ImplicitValueFieldMap valueMap = new ImplicitValueFieldMap();
 		valueMap.map.put("price", 11);
 		valueMap.map.put("weight", 10);
 
-		ImplicitValueFieldMap loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), valueMap);
+		ImplicitValueFieldMap loaded = new Bitser(false).deepCopy(valueMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals(11, loaded.map.get("price"));
 		assertEquals(10, loaded.map.get("weight"));
@@ -123,18 +122,17 @@ public class TestMapField {
 		@IntegerField(expectUniform = true, minValue = 10, maxValue = 11)
 		private static final boolean VALUE = false;
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "v", fieldName = "VALUE", optional = true)
 		final TreeMap<String, Integer> map = new TreeMap<>();
 	}
 
 	@Test
-	public void testExplicitValueFieldMap() throws IOException {
+	public void testExplicitValueFieldMap() {
 		ExplicitValueFieldMap valueMap = new ExplicitValueFieldMap();
 		valueMap.map.put("knokko", 10);
 		valueMap.map.put("knok", null);
 
-		ExplicitValueFieldMap loaded = BitserHelper.serializeAndDeserialize(new Bitser(true), valueMap);
+		ExplicitValueFieldMap loaded = new Bitser(false).deepCopy(valueMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals(10, loaded.map.get("knokko"));
 		assertTrue(loaded.map.containsKey("knok"));
@@ -144,14 +142,13 @@ public class TestMapField {
 	@BitStruct(backwardCompatible = false)
 	static class OptionalMap {
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", optional = true)
 		TreeMap<String, String> map;
 	}
 
 	@Test
-	public void testOptionalMap() throws IOException {
-		assertNull(BitserHelper.serializeAndDeserialize(new Bitser(true), new OptionalMap()).map);
+	public void testOptionalMap() {
+		assertNull(new Bitser(true).deepCopy(new OptionalMap()).map);
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -169,23 +166,20 @@ public class TestMapField {
 		@ReferenceField(stable = true, label = "test")
 		private static final boolean VALUE = true;
 
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "k", fieldName = "KEY1")
 		@NestedFieldSetting(path = "v", fieldName = "VALUE")
 		final ConcurrentHashMap<ReferenceMaps, ReferenceMaps> map1 = new ConcurrentHashMap<>();
 
-		@BitField(ordering = 1)
 		@NestedFieldSetting(path = "k", fieldName = "KEY2")
 		@ReferenceFieldTarget(label = "test")
 		final ConcurrentHashMap<ReferenceMaps, ReferenceMaps> map2 = new ConcurrentHashMap<>();
 
-		@BitField(ordering = 2)
 		@StableReferenceFieldId
 		final UUID id = UUID.randomUUID();
 	}
 
 	@Test
-	public void testReferenceMaps() throws IOException {
+	public void testReferenceMaps() {
 		ReferenceMaps inner1 = new ReferenceMaps();
 		ReferenceMaps inner2 = new ReferenceMaps();
 		ReferenceMaps inner3 = new ReferenceMaps();
@@ -195,7 +189,7 @@ public class TestMapField {
 		ReferenceMaps outer = new ReferenceMaps();
 		outer.map2.put(inner1, inner2);
 
-		ReferenceMaps loaded = BitserHelper.serializeAndDeserialize(new Bitser(false), outer);
+		ReferenceMaps loaded = new Bitser(false).deepCopy(outer);
 		assertEquals(0, loaded.map1.size());
 		assertEquals(1, loaded.map2.size());
 
@@ -220,7 +214,6 @@ public class TestMapField {
 	static class WriteAsBytesMap {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0)
 		@NestedFieldSetting(path = "", writeAsBytes = true)
 		final TreeMap<Byte, Byte> map = new TreeMap<>();
 	}
@@ -231,10 +224,7 @@ public class TestMapField {
 				InvalidBitFieldException.class,
 				() -> new Bitser(false).serialize(new WriteAsBytesMap(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("writeAsBytes is not allowed on Maps"),
-				"Expected " + errorMessage + " to contain \"writeAsBytes is not allowed on Maps\""
-		);
+		assertContains(errorMessage, "writeAsBytes is not allowed on Maps");
 	}
 
 	@Test
@@ -246,9 +236,7 @@ public class TestMapField {
 				InvalidBitValueException.class,
 				() -> new Bitser(false).serialize(valueMap, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("must not have null keys")
-		);
+		assertContains(errorMessage, "must not have null keys");
 	}
 
 	@Test
@@ -260,10 +248,7 @@ public class TestMapField {
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(keyMap, new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("must not have null values"),
-				"Expected " + errorMessage + " to contain \"must not have null values\""
-		);
+		assertContains(errorMessage, "must not have null values");
 	}
 
 	@Test
@@ -272,17 +257,14 @@ public class TestMapField {
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serialize(new IntMap(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("must not be null"),
-				"Expected " + errorMessage + " to contain \"must not be null\""
-		);
+		assertContains(errorMessage, "must not be null");
 	}
 
 	@BitStruct(backwardCompatible = false)
 	static class BadOptionalMap {
 
 		@SuppressWarnings("unused")
-		@BitField(ordering = 0, optional = true)
+		@BitField(optional = true)
 		HashMap<String, String> map;
 	}
 
@@ -292,13 +274,7 @@ public class TestMapField {
 				InvalidBitFieldException.class,
 				() -> new Bitser(false).serialize(new BadOptionalMap(), new BitCountStream())
 		).getMessage();
-		assertTrue(
-				errorMessage.contains("optional BitField is not allowed"),
-				"Expected " + errorMessage + " to contain \"optional BitField is not allowed\""
-		);
-		assertTrue(
-				errorMessage.contains("use @NestedFieldSetting instead"),
-				"Expected " + errorMessage + " to contain \"use @NestedFieldSetting instead\""
-		);
+		assertContains(errorMessage, "optional BitField is not allowed");
+		assertContains(errorMessage, "use @NestedFieldSetting instead");
 	}
 }

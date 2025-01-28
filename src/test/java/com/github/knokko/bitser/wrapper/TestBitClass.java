@@ -23,25 +23,22 @@ public class TestBitClass {
 	@BitStruct(backwardCompatible = false)
 	private static class Boat extends Entity {
 
-		@BitField(ordering = 0)
 		@FloatField
 		float speed;
 	}
 
 	private static class LivingEntity extends Entity {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		int maxHealth;
 	}
 
 	private static abstract class Enemy extends LivingEntity {
 
-		@BitField(ordering = 0)
 		@IntegerField(expectUniform = false)
 		int attackDamage;
 
-		@BitField(ordering = 1, optional = true)
+		@BitField(optional = true)
 		@ReferenceField(stable = false, label = "entities")
 		LivingEntity target;
 	}
@@ -49,10 +46,9 @@ public class TestBitClass {
 	@BitStruct(backwardCompatible = false)
 	private static class Zombie extends Enemy {
 
-		@BitField(ordering = 0)
+		@BitField
 		boolean wasVillager;
 
-		@BitField(ordering = 1)
 		@ReferenceField(stable = false, label = "positions")
 		String targetPosition;
 	}
@@ -60,7 +56,7 @@ public class TestBitClass {
 	@BitStruct(backwardCompatible = false)
 	private static class PigZombie extends Zombie {
 
-		@BitField(ordering = 0)
+		@BitField
 		boolean isAngry;
 	}
 
@@ -70,10 +66,9 @@ public class TestBitClass {
 	@BitStruct(backwardCompatible = false)
 	private static class Player extends LivingEntity {
 
-		@BitField(ordering = 0)
+		@BitField
 		String name;
 
-		@BitField(ordering = 1)
 		@ReferenceFieldTarget(label = "positions")
 		String lastPosition;
 	}
@@ -81,7 +76,6 @@ public class TestBitClass {
 	@BitStruct(backwardCompatible = false)
 	private static class World {
 
-		@BitField(ordering = 0)
 		@ClassField(root = Entity.class)
 		@ReferenceFieldTarget(label = "entities")
 		final ArrayList<Entity> entities = new ArrayList<>();
@@ -123,8 +117,7 @@ public class TestBitClass {
 			world.entities.add(creeper);
 		}
 
-		Bitser bitser = new Bitser(false);
-		world = bitser.deserializeFromBytes(World.class, bitser.serializeToBytes(world));
+		world = new Bitser(false).deepCopy(world);
 		assertEquals(5, world.entities.size());
 
 		Boat boat = (Boat) world.entities.get(0);
