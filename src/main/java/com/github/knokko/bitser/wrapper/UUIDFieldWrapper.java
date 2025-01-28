@@ -24,6 +24,12 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 		this.isStableReferenceId = field.annotations.has(StableReferenceFieldId.class);
 	}
 
+	@SuppressWarnings("unused")
+	private UUIDFieldWrapper() {
+		super();
+		this.isStableReferenceId = false;
+	}
+
 	@Override
 	void writeValue(Object rawValue, WriteJob write) throws IOException {
 		UUID value = (UUID) rawValue;

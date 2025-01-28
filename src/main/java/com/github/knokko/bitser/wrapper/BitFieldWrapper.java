@@ -1,15 +1,17 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.util.Set;
 
 public abstract class BitFieldWrapper {
 
@@ -22,6 +24,7 @@ public abstract class BitFieldWrapper {
 			StableReferenceFieldWrapper.class, UnstableReferenceFieldWrapper.class
 	};
 
+	@BitField
 	public final VirtualField field;
 
 	BitFieldWrapper(VirtualField field) {
@@ -31,15 +34,16 @@ public abstract class BitFieldWrapper {
 		}
 	}
 
+	BitFieldWrapper() {
+		this.field = null;
+	}
+
 	public BitFieldWrapper getChildWrapper() {
 		throw new UnsupportedOperationException("getChildWrapper only works on collection types, but this is " + getClass());
 	}
 
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedObjects
-	) {
-		if (field.referenceTargetLabel != null) declaredTargetLabels.add(field.referenceTargetLabel);
+	void collectReferenceTargetLabels(LabelCollection labels) {
+		if (field.referenceTargetLabel != null) labels.declaredTargets.add(field.referenceTargetLabel);
 	}
 
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
@@ -47,6 +51,8 @@ public abstract class BitFieldWrapper {
 			idMapper.register(field.referenceTargetLabel, value, cache);
 		}
 	}
+
+	void registerLegacyClasses(LegacyClasses legacy) {} // TODO Override this
 
 	public final void write(Object object, WriteJob write) throws IOException {
 		try {

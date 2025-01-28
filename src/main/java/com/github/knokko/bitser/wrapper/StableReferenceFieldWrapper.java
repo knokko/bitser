@@ -2,13 +2,12 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
-import java.util.Set;
 
 @BitStruct(backwardCompatible = false)
 class StableReferenceFieldWrapper extends BitFieldWrapper {
@@ -21,13 +20,16 @@ class StableReferenceFieldWrapper extends BitFieldWrapper {
 		this.label = label;
 	}
 
+	@SuppressWarnings("unused")
+	private StableReferenceFieldWrapper() {
+		super();
+		this.label = "";
+	}
+
 	@Override
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
-	) {
-		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
-		stableLabels.add(label);
+	void collectReferenceTargetLabels(LabelCollection labels) {
+		super.collectReferenceTargetLabels(labels);
+		labels.stable.add(label);
 	}
 
 	@Override

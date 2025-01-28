@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
@@ -46,6 +47,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		}
 	}
 
+	@BitField
 	private final IntegerField.Properties sizeField;
 
 	AbstractCollectionFieldWrapper(VirtualField field, IntegerField sizeField) {
@@ -55,6 +57,11 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
 		this.sizeField = new IntegerField.Properties(sizeField);
+	}
+
+	AbstractCollectionFieldWrapper() {
+		super();
+		this.sizeField = new IntegerField.Properties();
 	}
 
 	@Override

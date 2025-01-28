@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.util;
 
+import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 
 import java.lang.annotation.Annotation;
@@ -7,11 +9,17 @@ import java.lang.reflect.Field;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+@BitStruct(backwardCompatible = false)
 public class VirtualField {
 
+	@BitField
 	private final String source;
 	public final Class<?> type;
+
+	@BitField
 	public final boolean optional;
+
+	@BitField(optional = true)
 	public final String referenceTargetLabel;
 
 	public final AnnotationHolder annotations;
@@ -30,6 +38,17 @@ public class VirtualField {
 		this.annotations = annotations;
 		this.getValue = getValue;
 		this.setValue = setValue;
+	}
+
+	@SuppressWarnings("unused")
+	private VirtualField() {
+		this.source = null;
+		this.type = null;
+		this.optional = false;
+		this.referenceTargetLabel = null;
+		this.annotations = null;
+		this.getValue = null;
+		this.setValue = null;
 	}
 
 	@Override

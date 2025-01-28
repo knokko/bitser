@@ -4,6 +4,7 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -14,7 +15,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 @BitStruct(backwardCompatible = false)
 class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
@@ -27,18 +27,21 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		this.valuesWrapper = valuesWrapper;
 	}
 
+	@SuppressWarnings("unused")
+	private BitCollectionFieldWrapper() {
+		super();
+		this.valuesWrapper = null;
+	}
+
 	@Override
 	public BitFieldWrapper getChildWrapper() {
 		return valuesWrapper;
 	}
 
 	@Override
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedObjects
-	) {
-		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
-		valuesWrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+	void collectReferenceTargetLabels(LabelCollection labels) {
+		super.collectReferenceTargetLabels(labels);
+		valuesWrapper.collectReferenceTargetLabels(labels);
 	}
 
 	@Override

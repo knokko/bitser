@@ -14,6 +14,11 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 		super(field);
 	}
 
+	@SuppressWarnings("unused")
+	private BooleanFieldWrapper() {
+		super();
+	}
+
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		write.output.write((Boolean) value);

@@ -25,6 +25,12 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		if (!field.type.isEnum()) throw new InvalidBitFieldException("BitEnum can only be used on enums, but got " + field);
 	}
 
+	@SuppressWarnings("unused")
+	private EnumFieldWrapper() {
+		super();
+		this.mode = BitEnum.Mode.Name;
+	}
+
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		Enum<?> enumValue = (Enum<?>) value;

@@ -24,6 +24,12 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		this.intField = new IntegerField.Properties(intField);
 	}
 
+	@SuppressWarnings("unused")
+	private IntegerFieldWrapper() {
+		super();
+		this.intField = new IntegerField.Properties();
+	}
+
 	@Override
 	void writeValue(Object fatValue, WriteJob write) throws IOException {
 		long value = ((Number) fatValue).longValue();

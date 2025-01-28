@@ -39,8 +39,7 @@ public @interface IntegerField {
 			this(field.minValue(), field.maxValue(), field.expectUniform());
 		}
 
-		@SuppressWarnings("unused")
-		private Properties() {
+		public Properties() {
 			this(0, 0, false);
 		}
 	}

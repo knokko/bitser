@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.serialize;
 
+import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -25,38 +26,39 @@ public class Bitser {
 
 	public void serialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
 		BitserWrapper<?> wrapper = cache.getWrapper(object.getClass());
-
-		Set<String> declaredTargetLabels = new HashSet<>();
-		Set<String> stableLabels = new HashSet<>();
-		Set<String> unstableLabels = new HashSet<>();
-		wrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, new HashSet<>());
-
 		boolean backwardCompatible = false;
-		Set<BitserWrapper<?>> visitedStructs = new HashSet<>();
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) {
 				backwardCompatible = true;
-				continue;
+				break;
 			}
-			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
-					cache, declaredTargetLabels, new HashSet<>(), new HashSet<>(), visitedStructs
-			);
 		}
-
+		LegacyClasses legacy = null;
 		if (backwardCompatible) {
-			// TODO Save stuff
+			legacy = new LegacyClasses();
+			// TODO Delete setRoot?
+			legacy.setRoot(wrapper.registerClasses(legacy));
+			serialize(legacy, output);
 		}
 
-		ReferenceIdMapper idMapper = new ReferenceIdMapper(declaredTargetLabels, stableLabels, unstableLabels);
+		LabelCollection labels = new LabelCollection(cache, new HashSet<>());
+		wrapper.collectReferenceTargetLabels(labels);
+
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(new LabelCollection(cache, labels.declaredTargets));
+		}
+
+		ReferenceIdMapper idMapper = new ReferenceIdMapper(labels);
 		wrapper.registerReferenceTargets(object, cache, idMapper);
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
 		}
 
 		idMapper.save(output);
 
-		wrapper.write(object, new WriteJob(output, cache, idMapper, backwardCompatible));
+		wrapper.write(object, new WriteJob(output, cache, idMapper, legacy));
 	}
 
 	public byte[] serializeToBytes(Object object, Object... withAndOptions) {
@@ -72,31 +74,35 @@ public class Bitser {
 	}
 
 	public <T> T deserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
-		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
-
-		Set<String> declaredTargetLabels = new HashSet<>();
-		Set<String> stableLabels = new HashSet<>();
-		Set<String> unstableLabels = new HashSet<>();
-		wrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, new HashSet<>());
-
 		boolean backwardCompatible = false;
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) {
 				backwardCompatible = true;
-				continue;
+				break;
 			}
+		}
+		LegacyClasses legacy = null;
+		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input);
+
+		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
+
+		LabelCollection labels = new LabelCollection(cache, new HashSet<>());
+		wrapper.collectReferenceTargetLabels(labels);
+
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
-					cache, declaredTargetLabels, new HashSet<>(), new HashSet<>(), new HashSet<>()
+					new LabelCollection(cache, labels.declaredTargets)
 			);
 		}
 
-		ReferenceIdMapper withMapper = new ReferenceIdMapper(declaredTargetLabels, stableLabels, unstableLabels);
+		ReferenceIdMapper withMapper = new ReferenceIdMapper(labels);
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, withMapper);
 		}
 
-		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, declaredTargetLabels, stableLabels, unstableLabels);
+		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels);
 
 		List<T> result = new ArrayList<>(1);
 		//noinspection unchecked

@@ -72,7 +72,7 @@ public class BitListConnection<T> extends BitConnection {
 			} else if (modification.action != Action.REMOVE) {
 				AbstractCollectionFieldWrapper.writeElement(
 						modification.element, elementWrapper,
-						new WriteJob(output, bitser.cache, null, false),
+						new WriteJob(output, bitser.cache, null, null),
 						"This BitListConnection must not contain null values"
 				);
 			}

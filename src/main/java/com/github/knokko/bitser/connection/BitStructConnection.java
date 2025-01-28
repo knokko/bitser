@@ -118,7 +118,7 @@ public class BitStructConnection<T> extends BitConnection {
 
 				if (output != null) {
 					// TODO Test (reference fields)
-					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, false));
+					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, null));
 					updateChildConnection(fieldWrapper, index);
 				}
 			}

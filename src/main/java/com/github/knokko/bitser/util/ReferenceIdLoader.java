@@ -2,6 +2,7 @@ package com.github.knokko.bitser.util;
 
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.wrapper.ValueConsumer;
 
 import java.io.IOException;
@@ -13,22 +14,20 @@ import static com.github.knokko.bitser.util.ReferenceIdMapper.extractStableId;
 
 public class ReferenceIdLoader {
 
-	public static ReferenceIdLoader load(
-			BitInputStream input, Set<String> declaredTargetLabels, Set<String> stableLabels, Set<String> unstableLabels
-	) throws IOException {
-		String[] sortedLabels = new String[declaredTargetLabels.size()];
+	public static ReferenceIdLoader load(BitInputStream input, LabelCollection labels) throws IOException {
+		String[] sortedLabels = new String[labels.declaredTargets.size()];
 		int index = 0;
-		for (String label : declaredTargetLabels) {
+		for (String label : labels.declaredTargets) {
 			sortedLabels[index] = label;
 			index += 1;
 		}
 		Arrays.sort(sortedLabels);
 
-		Map<String, Mappings> labelMappings = new HashMap<>(declaredTargetLabels.size());
+		Map<String, Mappings> labelMappings = new HashMap<>(labels.declaredTargets.size());
 		for (String label : sortedLabels) {
 			int unstableSize = 0;
-			if (unstableLabels.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
-			labelMappings.put(label, new Mappings(unstableSize, stableLabels.contains(label)));
+			if (labels.unstable.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+			labelMappings.put(label, new Mappings(unstableSize, labels.stable.contains(label)));
 		}
 
 		return new ReferenceIdLoader(labelMappings);

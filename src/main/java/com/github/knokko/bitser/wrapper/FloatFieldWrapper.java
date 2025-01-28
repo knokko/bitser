@@ -32,6 +32,12 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 		}
 	}
 
+	@SuppressWarnings("unused")
+	private FloatFieldWrapper() {
+		super();
+		this.floatField = new FloatField.Properties();
+	}
+
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		if (floatField.expectMultipleOf != 0.0) {

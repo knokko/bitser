@@ -26,6 +26,12 @@ public class StringFieldWrapper extends BitFieldWrapper {
 		this.lengthField = stringField != null ? new IntegerField.Properties(stringField.length()) : null;
 	}
 
+	@SuppressWarnings("unused")
+	private StringFieldWrapper() {
+		super();
+		this.lengthField = new IntegerField.Properties();
+	}
+
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		String string = (String) value;

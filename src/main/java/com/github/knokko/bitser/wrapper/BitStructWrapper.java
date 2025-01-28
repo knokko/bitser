@@ -1,12 +1,12 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.serialize.Bitser;
-import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.serialize.*;
 import com.github.knokko.bitser.util.VirtualField;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 
@@ -67,14 +67,12 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
-	) {
-		if (visitedStructs.contains(this)) return;
-		visitedStructs.add(this);
+	public void collectReferenceTargetLabels(LabelCollection labels) {
+		if (labels.visitedStructs.contains(this)) return;
+		labels.visitedStructs.add(this);
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
+			// TODO Add "structs"?
+			currentClass.collectReferenceTargetLabels(labels);
 		}
 	}
 
@@ -86,6 +84,14 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
+	public LegacyStruct registerClasses(LegacyClasses legacy) {
+		LegacyStruct legacyStruct = new LegacyStruct();
+		for (SingleClassWrapper currentClass : classHierarchy) legacyStruct.classHierarchy.add(currentClass.register(legacy));
+		legacy.add(constructor.getDeclaringClass(), legacyStruct);
+		return legacyStruct;
+	}
+
+	@Override
 	public UUID getStableId(Object target) {
 		if (stableIdField == null) throw new InvalidBitFieldException(target + " doesn't have an @StableReferenceFieldId");
 		return (UUID) stableIdField.getValue.apply(target);
@@ -93,8 +99,11 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 	@Override
 	public void write(Object object, WriteJob write) throws IOException {
-		if (write.backwardCompatible && !bitStruct.backwardCompatible()) {
+		if (write.legacy != null && !bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
+		}
+		if (write.legacy != null) {
+			write.idMapper.maybeEncodeUnstableId("structs", write.legacy.getStruct(constructor.getDeclaringClass()), write.output);
 		}
 		for (SingleClassWrapper currentClass : classHierarchy) {
 			currentClass.write(object, write);
@@ -119,9 +128,25 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
 		T object = createEmptyInstance();
-		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.read(object, read);
+		if (read.backwardCompatible) {
+			read.idLoader.getUnstable("structs", legacyStructObject -> {
+				LegacyStruct legacyStruct = (LegacyStruct) legacyStructObject;
+				System.out.println("Found legacy struct " + legacyStruct);
+
+				if (classHierarchy.size() != legacyStruct.classHierarchy.size()) {
+					throw new InvalidBitValueException(
+							constructor.getDeclaringClass() + " expected " + classHierarchy.size() +
+									" (super)classes, but found " + legacyStruct.classHierarchy.size()
+					);
+				}
+				for (int index = 0; index < classHierarchy.size(); index++) {
+					classHierarchy.get(index).read(object, read, legacyStruct.classHierarchy.get(index));
+				}
+			}, read.input);
+		} else {
+			for (SingleClassWrapper currentClass : classHierarchy) currentClass.read(object, read, null);
 		}
+
 		setValue.consume(object);
 	}
 

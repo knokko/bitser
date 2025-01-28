@@ -3,8 +3,10 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -27,10 +29,10 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@BitField
 	private final IntegerField.Properties sizeField;
 
-	@BitField
+	@ClassField(root = BitFieldWrapper.class)
 	private final BitFieldWrapper keysWrapper;
 
-	@BitField
+	@ClassField(root = BitFieldWrapper.class)
 	private final BitFieldWrapper valuesWrapper;
 
 	MapFieldWrapper(VirtualField field, IntegerField sizeField, BitFieldWrapper keysWrapper, BitFieldWrapper valuesWrapper) {
@@ -44,14 +46,19 @@ class MapFieldWrapper extends BitFieldWrapper {
 		this.valuesWrapper = valuesWrapper;
 	}
 
+	@SuppressWarnings("unused")
+	private MapFieldWrapper() {
+		super();
+		this.sizeField = new IntegerField.Properties();
+		this.keysWrapper = null;
+		this.valuesWrapper = null;
+	}
+
 	@Override
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
-	) {
-		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
-		keysWrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
-		valuesWrapper.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
+	void collectReferenceTargetLabels(LabelCollection labels) {
+		super.collectReferenceTargetLabels(labels);
+		keysWrapper.collectReferenceTargetLabels(labels);
+		valuesWrapper.collectReferenceTargetLabels(labels);
 	}
 
 	@Override

@@ -1,8 +1,12 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.backward.LegacyClass;
+import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.backward.LegacyField;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -112,12 +116,9 @@ class SingleClassWrapper {
 		return myClass.getName();
 	}
 
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedStructs
-	) {
+	void collectReferenceTargetLabels(LabelCollection labels) {
 		for (FieldWrapper field : fields) {
-			field.bitField.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedStructs);
+			field.bitField.collectReferenceTargetLabels(labels);
 		}
 	}
 
@@ -127,12 +128,24 @@ class SingleClassWrapper {
 		}
 	}
 
+	LegacyClass register(LegacyClasses legacy) {
+		LegacyClass legacyClass = new LegacyClass();
+		legacy.add(myClass, legacyClass);
+
+		for (FieldWrapper field : fields) {
+			legacyClass.fields.add(new LegacyField(field.id, field.bitField));
+			field.bitField.registerLegacyClasses(legacy);
+		}
+		return legacyClass;
+	}
+
 	void write(Object object, WriteJob write) throws IOException {
 		for (FieldWrapper field : fields) field.bitField.write(object, write);
 	}
 
-	void read(Object target, ReadJob read) throws IOException {
+	void read(Object target, ReadJob read, LegacyClass legacy) throws IOException {
 		// TODO Check backwardCompatible
+		if (legacy != null) System.out.println("Legacy class is " + legacy);
 		for (FieldWrapper field : fields) field.bitField.readField(target, read);
 	}
 

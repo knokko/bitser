@@ -18,6 +18,11 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		super(field, sizeField);
 	}
 
+	@SuppressWarnings("unused")
+	private ByteCollectionFieldWrapper() {
+		super();
+	}
+
 	@Override
 	void writeValue(Object value, int size, WriteJob write) throws IOException {
 		if (value instanceof boolean[]) write.output.write(toByteArray((boolean[]) value));

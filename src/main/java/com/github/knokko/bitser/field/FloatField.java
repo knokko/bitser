@@ -33,8 +33,7 @@ public @interface FloatField {
 			this(field.expectMultipleOf(), field.errorTolerance());
 		}
 
-		@SuppressWarnings("unused")
-		private Properties() {
+		public Properties() {
 			this(0.0, 0.0);
 		}
 	}

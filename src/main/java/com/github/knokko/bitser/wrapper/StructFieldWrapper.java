@@ -1,9 +1,11 @@
 package com.github.knokko.bitser.wrapper;
 
+import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -13,13 +15,14 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Set;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
 
+@BitStruct(backwardCompatible = false)
 public class StructFieldWrapper extends BitFieldWrapper {
 
+	// TODO How do I deserialize this?
 	private final Class<?>[] allowed;
 
 	StructFieldWrapper(VirtualField field, ClassField classField) {
@@ -39,17 +42,18 @@ public class StructFieldWrapper extends BitFieldWrapper {
 		} else this.allowed = new Class<?>[] { field.type };
 	}
 
+	@SuppressWarnings("unused")
+	private StructFieldWrapper() {
+		super();
+		this.allowed = new Class[]{};
+	}
+
 	@Override
-	void collectReferenceTargetLabels(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			Set<String> stableLabels, Set<String> unstableLabels, Set<BitserWrapper<?>> visitedObjects
-	) {
-		super.collectReferenceTargetLabels(cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects);
+	void collectReferenceTargetLabels(LabelCollection labels) {
+		super.collectReferenceTargetLabels(labels);
 
 		for (Class<?> structClass : allowed) {
-			cache.getWrapper(structClass).collectReferenceTargetLabels(
-					cache, declaredTargetLabels, stableLabels, unstableLabels, visitedObjects
-			);
+			labels.cache.getWrapper(structClass).collectReferenceTargetLabels(labels);
 		}
 	}
 

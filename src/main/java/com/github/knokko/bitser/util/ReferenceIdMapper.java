@@ -4,6 +4,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 
 import java.io.IOException;
 import java.util.*;
@@ -30,10 +31,10 @@ public class ReferenceIdMapper {
 
 	private boolean readOnly;
 
-	public ReferenceIdMapper(Set<String> declaredTargetLabels, Set<String> stableLabels, Set<String> unstableLabels) {
-		this.labelMappings = new HashMap<>(declaredTargetLabels.size());
-		for (String label : declaredTargetLabels) {
-			this.labelMappings.put(label, new Mappings(stableLabels.contains(label), unstableLabels.contains(label)));
+	public ReferenceIdMapper(LabelCollection labels) {
+		this.labelMappings = new HashMap<>(labels.declaredTargets.size());
+		for (String label : labels.declaredTargets) {
+			this.labelMappings.put(label, new Mappings(labels.stable.contains(label), labels.unstable.contains(label)));
 		}
 	}
 
