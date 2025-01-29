@@ -33,8 +33,10 @@ public class LegacyClass {
 		}
 		Object[] artificial = new Object[maxId + 1];
 
+		System.out.println("maxId is " + maxId);
 		for (LegacyField field : fields) {
 			field.bitField.read(read, child -> artificial[field.id] = child);
+			System.out.println("Legacy read " + artificial[field.id]);
 		}
 
 		return artificial;
