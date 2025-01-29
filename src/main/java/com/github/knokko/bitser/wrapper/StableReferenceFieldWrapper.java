@@ -27,7 +27,7 @@ class StableReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceTargetLabels(LabelCollection labels) {
+	public void collectReferenceTargetLabels(LabelCollection labels) {
 		super.collectReferenceTargetLabels(labels);
 		labels.stable.add(label);
 	}

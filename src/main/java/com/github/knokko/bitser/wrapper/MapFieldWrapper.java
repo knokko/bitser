@@ -55,7 +55,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceTargetLabels(LabelCollection labels) {
+	public void collectReferenceTargetLabels(LabelCollection labels) {
 		super.collectReferenceTargetLabels(labels);
 		keysWrapper.collectReferenceTargetLabels(labels);
 		valuesWrapper.collectReferenceTargetLabels(labels);

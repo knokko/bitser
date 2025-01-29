@@ -39,7 +39,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceTargetLabels(LabelCollection labels) {
+	public void collectReferenceTargetLabels(LabelCollection labels) {
 		super.collectReferenceTargetLabels(labels);
 		valuesWrapper.collectReferenceTargetLabels(labels);
 	}

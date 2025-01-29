@@ -116,7 +116,7 @@ class SingleClassWrapper {
 		return myClass.getName();
 	}
 
-	void collectReferenceTargetLabels(LabelCollection labels) {
+	public void collectReferenceTargetLabels(LabelCollection labels) {
 		for (FieldWrapper field : fields) {
 			field.bitField.collectReferenceTargetLabels(labels);
 		}

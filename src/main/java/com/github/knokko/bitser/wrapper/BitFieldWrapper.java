@@ -42,7 +42,7 @@ public abstract class BitFieldWrapper {
 		throw new UnsupportedOperationException("getChildWrapper only works on collection types, but this is " + getClass());
 	}
 
-	void collectReferenceTargetLabels(LabelCollection labels) {
+	public void collectReferenceTargetLabels(LabelCollection labels) {
 		if (field.referenceTargetLabel != null) labels.declaredTargets.add(field.referenceTargetLabel);
 	}
 
