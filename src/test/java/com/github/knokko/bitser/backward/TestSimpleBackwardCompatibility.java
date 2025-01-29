@@ -107,12 +107,12 @@ public class TestSimpleBackwardCompatibility {
 		NestedAfter after = bitser.deserializeFromBytes(NestedAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(99, after.nested.weirdChance);
 		assertEquals(0.025f, after.nested.dummyFraction);
-		assertEquals(23, after.test);
+		assertEquals(46, after.test);
 
 		byte[] bytes2 = bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE);
 		NestedBefore back = bitser.deserializeFromBytes(NestedBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(99, back.nested.dummyChance);
 		assertEquals(0.025f, back.nested.dummyFraction);
-		assertEquals(23, back.test);
+		assertEquals(46, back.test);
 	}
 }
