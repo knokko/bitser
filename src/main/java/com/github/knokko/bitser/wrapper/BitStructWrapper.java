@@ -103,7 +103,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
 		if (write.legacy != null) {
-			write.idMapper.maybeEncodeUnstableId("structs", write.legacy.getStruct(constructor.getDeclaringClass()), write.output);
+			//write.idMapper.maybeEncodeUnstableId("structs", write.legacy.getStruct(constructor.getDeclaringClass()), write.output);
 		}
 		for (SingleClassWrapper currentClass : classHierarchy) {
 			currentClass.write(object, write);
@@ -123,31 +123,20 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public void read(ReadJob read, ValueConsumer setValue) throws IOException {
+	public void read(ReadJob read, ValueConsumer setValue, LegacyStruct legacyStruct) throws IOException {
 		if (read.backwardCompatible && !bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
 		T object = createEmptyInstance();
 		if (read.backwardCompatible) {
-			read.idLoader.getUnstable("structs", legacyStructObject -> {
-				LegacyStruct legacyStruct = (LegacyStruct) legacyStructObject;
-				System.out.println("Found legacy struct " + legacyStruct);
-
-				if (classHierarchy.size() != legacyStruct.classHierarchy.size()) {
-					throw new InvalidBitValueException(
-							constructor.getDeclaringClass() + " expected " + classHierarchy.size() +
-									" (super)classes, but found " + legacyStruct.classHierarchy.size()
-					);
-				}
-				for (int index = 0; index < classHierarchy.size(); index++) {
-					classHierarchy.get(index).read(object, read, legacyStruct.classHierarchy.get(index));
-				}
-			}, read.input);
+			System.out.println("Found legacy struct " + legacyStruct);
+			legacyStruct.read(read, rawResult -> {
+				setValue.consume(setLegacyValues(read, rawResult));
+			});
 		} else {
 			for (SingleClassWrapper currentClass : classHierarchy) currentClass.read(object, read, null);
+			setValue.consume(object);
 		}
-
-		setValue.consume(object);
 	}
 
 	@Override

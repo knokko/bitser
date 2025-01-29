@@ -110,7 +110,10 @@ public class Bitser {
 
 		List<T> result = new ArrayList<>(1);
 		//noinspection unchecked
-		wrapper.read(new ReadJob(input, cache, idLoader, backwardCompatible), element -> result.add((T) element));
+		wrapper.read(
+				new ReadJob(input, cache, idLoader, backwardCompatible),
+				element -> result.add((T) element), legacy != null ? legacy.getRoot() : null
+		);
 
 		withMapper.shareWith(idLoader);
 		idLoader.resolve();

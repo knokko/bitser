@@ -1,6 +1,8 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.BitField;
+import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.serialize.BitserCache;
 
@@ -23,6 +25,7 @@ public class LegacyClasses {
 	private final Map<Class<?>, LegacyClass> classMap = new HashMap<>();
 	private final Map<Class<?>, LegacyStruct> structMap = new HashMap<>();
 
+	@ReferenceField(stable = false, label = "structs")
 	private LegacyStruct root;
 	public BitserCache cache;
 
@@ -31,8 +34,11 @@ public class LegacyClasses {
 		this.root = root;
 	}
 
+	public LegacyStruct getRoot() {
+		return root;
+	}
+
 	public LegacyClass addClass(Class<?> javaClass) {
-		System.out.println("Add legacy class for " + javaClass);
 		if (!classMap.containsKey(javaClass)) {
 			LegacyClass legacyClass = new LegacyClass();
 			classMap.put(javaClass, legacyClass);
@@ -43,7 +49,6 @@ public class LegacyClasses {
 	}
 
 	public LegacyStruct addStruct(Class<?> javaClass) {
-		System.out.println("Add legacy struct for " + javaClass);
 		if (!structMap.containsKey(javaClass)) {
 			LegacyStruct legacyStruct = new LegacyStruct();
 			structMap.put(javaClass, legacyStruct);

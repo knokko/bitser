@@ -35,7 +35,7 @@ public abstract class BitserWrapper<T> {
 
 	public abstract void write(Object object, WriteJob write) throws IOException;
 
-	public abstract void read(ReadJob read, ValueConsumer setValue) throws IOException;
+	public abstract void read(ReadJob read, ValueConsumer setValue, LegacyStruct legacyStruct) throws IOException;
 
 	public abstract T setLegacyValues(ReadJob read, Object rawLegacyValues);
 

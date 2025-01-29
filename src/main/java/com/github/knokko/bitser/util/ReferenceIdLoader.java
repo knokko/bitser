@@ -86,6 +86,7 @@ public class ReferenceIdLoader {
 	}
 
 	public void resolve() throws IOException {
+		System.out.println("Start resolving...");
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}
@@ -117,6 +118,7 @@ public class ReferenceIdLoader {
 		}
 
 		void getUnstable(String label, int unstableId, ValueConsumer setValue) {
+			System.out.println("Call getUnstable...");
 			resolveTasks.add(() -> {
 				Object value = unstable.get(unstableId);
 				if (value == null) throw new Error(

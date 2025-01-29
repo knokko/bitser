@@ -108,12 +108,12 @@ public class StructFieldWrapper extends BitFieldWrapper {
 
 		if (allowed.length == 0) {
 			System.out.println("StructFieldWrapper.readValue...");
-			read.idLoader.getUnstable("structs", element -> {
-				System.out.println("bla bla");
-			}, read.input);
+//			read.idLoader.getUnstable("structs", element -> {
+//				System.out.println("bla bla");
+//			}, read.input);
 			legacyStructs[index].read(read, setValue);
 		}
-		else read.cache.getWrapper(allowed[index]).read(read, setValue);
+		else read.cache.getWrapper(allowed[index]).read(read, setValue, null);
 	}
 
 	@Override
