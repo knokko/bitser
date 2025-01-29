@@ -101,7 +101,7 @@ public abstract class BitFieldWrapper {
 
 	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
 
-	void setLegacyValue(Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object target, Object value) {
 		field.setValue.accept(target, value);
 	}
 }

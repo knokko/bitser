@@ -151,6 +151,20 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
+	public T setLegacyValues(ReadJob read, Object rawLegacyValues) {
+		@SuppressWarnings("unchecked")
+		List<Object[]> legacyList = (List<Object[]>) rawLegacyValues;
+		if (legacyList.size() != classHierarchy.size()) {
+			throw new InvalidBitFieldException("Inconsistent class hierarchy");
+		}
+		T instance = createEmptyInstance();
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			classHierarchy.get(index).setLegacyValues(read, instance, legacyList.get(index));
+		}
+		return instance;
+	}
+
+	@Override
 	public T shallowCopy(Object original) {
 		T copy = createEmptyInstance();
 		for (SingleClassWrapper currentClass : classHierarchy) {

@@ -143,39 +143,41 @@ class SingleClassWrapper {
 		for (FieldWrapper field : fields) field.bitField.write(object, write);
 	}
 
+	void setLegacyValues(ReadJob read, Object target, Object[] values) {
+		for (FieldWrapper field : fields) {
+			if (field.id < values.length) field.bitField.setLegacyValue(read, target, values[field.id]);
+		}
+	}
+
 	void read(Object target, ReadJob read, LegacyClass legacy) throws IOException {
 		if (legacy != null) {
-			int maxId = -1;
-			for (LegacyField field : legacy.fields) {
-				if (field.id > maxId) maxId = field.id;
-			}
-			Object[] legacyProperties = new Object[maxId + 1];
+			Object[] legacyProperties = legacy.read(read);
 
-			maxId = -1;
-			for (FieldWrapper field : fields) {
-				if (field.id > maxId) maxId = field.id;
-			}
-			FieldWrapper[] newFields = new FieldWrapper[maxId + 1];
-			for (FieldWrapper field : fields) newFields[field.id] = field;
-
-			int[] counter = new int[1];
-			for (LegacyField field : legacy.fields) {
-				System.out.println("Reading legacy field " + field.bitField);
-				field.bitField.readField(read, legacyValue -> {
-					if (field.id < newFields.length) {
-						FieldWrapper newField = newFields[field.id];
-						if (newField != null) newField.bitField.setLegacyValue(target, legacyValue);
-					}
-					legacyProperties[field.id] = legacyValue;
-					counter[0] += 1;
-					if (counter[0] == legacy.fields.size()) {
-						// TODO Call postInit method
-						System.out.println("Legacy properties are " + Arrays.toString(legacyProperties));
-					}
-				});
-			}
+			setLegacyValues(read, target, legacyProperties);
+			System.out.println("legacy properties are " + Arrays.toString(legacyProperties));
+//			int maxId = -1;
+//			for (FieldWrapper field : fields) {
+//				if (field.id > maxId) maxId = field.id;
+//			}
+//			FieldWrapper[] newFields = new FieldWrapper[maxId + 1];
+//			for (FieldWrapper field : fields) newFields[field.id] = field;
+//
+//			int[] counter = new int[1];
+//			for (LegacyField field : legacy.fields) {
+//				System.out.println("Reading legacy field " + field.bitField);
+//				field.bitField.readField(read, legacyValue -> {
+//					if (field.id < newFields.length) {
+//						FieldWrapper newField = newFields[field.id];
+//						if (newField != null) newField.bitField.setLegacyValue(target, legacyValue);
+//					}
+//					counter[0] += 1;
+//					if (counter[0] == legacy.fields.size()) {
+//						// TODO Call postInit method
+//						System.out.println("Legacy properties are " + Arrays.toString(legacyProperties));
+//					}
+//				});
+//			}
 		} else {
-			System.out.println("Reading non-legacy fields");
 			for (FieldWrapper field : fields) field.bitField.readField(target, read);
 		}
 	}

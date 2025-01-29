@@ -37,6 +37,8 @@ public abstract class BitserWrapper<T> {
 
 	public abstract void read(ReadJob read, ValueConsumer setValue) throws IOException;
 
+	public abstract T setLegacyValues(ReadJob read, Object rawLegacyValues);
+
 	public abstract T shallowCopy(Object original);
 
 	public abstract <C> BitStructConnection<C> createConnection(

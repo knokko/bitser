@@ -89,12 +89,12 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object target, Object value) {
 		// TODO Test and handle null
 		if (value instanceof Number) {
 			double d = ((Number) value).doubleValue();
-			if (isFloat) super.setLegacyValue(target, (float) d);
-			else super.setLegacyValue(target, d);
+			if (isFloat) super.setLegacyValue(read, target, (float) d);
+			else super.setLegacyValue(read, target, d);
 		} else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}

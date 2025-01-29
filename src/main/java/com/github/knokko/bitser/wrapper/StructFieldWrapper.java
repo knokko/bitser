@@ -5,7 +5,6 @@ import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -111,9 +110,9 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object target, Object value) {
 		// TODO Figure out the right index
 		int index = 0;
-		field.setValue.accept(target, value);
+		field.setValue.accept(target, read.cache.getWrapper(allowed[index]).setLegacyValues(read, value));
 	}
 }

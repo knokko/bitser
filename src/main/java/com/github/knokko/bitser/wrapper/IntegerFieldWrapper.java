@@ -76,7 +76,7 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object target, Object value) {
 		// TODO Test and handle null
 		if (value instanceof Number) {
 			long l = ((Number) value).longValue();
@@ -86,10 +86,10 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 			}
 
 			Class<?> type = field.type;
-			if (type == byte.class || type == Byte.class) super.setLegacyValue(target, (byte) l);
-			else if (type == short.class || type == Short.class) super.setLegacyValue(target, (short) l);
-			else if (type == int.class || type == Integer.class) super.setLegacyValue(target, (int) l);
-			else super.setLegacyValue(target, l);
+			if (type == byte.class || type == Byte.class) super.setLegacyValue(read, target, (byte) l);
+			else if (type == short.class || type == Short.class) super.setLegacyValue(read, target, (short) l);
+			else if (type == int.class || type == Integer.class) super.setLegacyValue(read, target, (int) l);
+			else super.setLegacyValue(read, target, l);
 		} else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
