@@ -18,12 +18,20 @@ import static java.lang.Math.min;
 @BitStruct(backwardCompatible = false)
 public class StringFieldWrapper extends BitFieldWrapper {
 
-	@BitField(optional = true)
+	@BitField
 	private final IntegerField.Properties lengthField;
 
 	StringFieldWrapper(VirtualField field, StringField stringField) {
 		super(field);
-		this.lengthField = stringField != null ? new IntegerField.Properties(stringField.length()) : null;
+		long minLength = 0;
+		long maxLength = Integer.MAX_VALUE;
+		boolean expectUniform = false;
+		if (stringField != null) {
+			minLength = max(minLength, stringField.length().minValue());
+			maxLength = min(maxLength, stringField.length().maxValue());
+			expectUniform = stringField.length().expectUniform();
+		}
+		this.lengthField = new IntegerField.Properties(minLength, maxLength, expectUniform);
 	}
 
 	@SuppressWarnings("unused")
@@ -36,9 +44,9 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	void writeValue(Object value, WriteJob write) throws IOException {
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
-		if (lengthField != null && lengthField.expectUniform) {
-			encodeUniformInteger(bytes.length, minLength(), maxLength(), write.output);
-		} else encodeVariableInteger(bytes.length, minLength(), maxLength(), write.output);
+		if (lengthField.expectUniform) {
+			encodeUniformInteger(bytes.length, lengthField.minValue, lengthField.maxValue, write.output);
+		} else encodeVariableInteger(bytes.length, lengthField.minValue, lengthField.maxValue, write.output);
 
 		for (byte b : bytes) encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
 	}
@@ -46,24 +54,14 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		int length;
-		if (lengthField != null && lengthField.expectUniform) {
-			length = (int) decodeUniformInteger(minLength(), maxLength(), read.input);
-		} else length = (int) decodeVariableInteger(minLength(), maxLength(), read.input);
+		if (lengthField.expectUniform) {
+			length = (int) decodeUniformInteger(lengthField.minValue, lengthField.maxValue, read.input);
+		} else length = (int) decodeVariableInteger(lengthField.minValue, lengthField.maxValue, read.input);
 
 		byte[] bytes = new byte[length];
 		for (int index = 0; index < length; index++) {
 			bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, read.input);
 		}
 		setValue.consume(new String(bytes, StandardCharsets.UTF_8));
-	}
-
-	private int minLength() {
-		if (lengthField == null) return 0;
-		return (int) max(0, lengthField.minValue);
-	}
-
-	private int maxLength() {
-		if (lengthField == null) return Integer.MAX_VALUE;
-		return (int) min(Integer.MAX_VALUE, lengthField.maxValue);
 	}
 }

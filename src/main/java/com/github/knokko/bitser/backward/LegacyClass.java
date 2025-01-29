@@ -11,4 +11,9 @@ public class LegacyClass {
 
 	@BitField
 	public final ArrayList<LegacyField> fields = new ArrayList<>();
+
+	@Override
+	public String toString() {
+		return "LegacyClass(#fields=" + fields.size() + ")";
+	}
 }

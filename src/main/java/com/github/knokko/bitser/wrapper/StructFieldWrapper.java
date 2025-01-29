@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.ClassField;
@@ -61,6 +62,14 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
 		super.registerReferenceTargets(value, cache, idMapper);
 		if (value != null) cache.getWrapper(value.getClass()).registerReferenceTargets(value, cache, idMapper);
+	}
+
+	@Override
+	void registerLegacyClasses(LegacyClasses legacy) {
+		for (Class<?> structClass : allowed) {
+			// TODO Maybe only register the classes that are actually used?
+			legacy.cache.getWrapper(structClass).registerClasses(legacy);
+		}
 	}
 
 	@Override

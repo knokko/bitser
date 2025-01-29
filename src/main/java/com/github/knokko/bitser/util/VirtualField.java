@@ -12,8 +12,8 @@ import java.util.function.Function;
 @BitStruct(backwardCompatible = false)
 public class VirtualField {
 
-	@BitField
-	private final String source;
+	//@BitField
+	private final String source; // TODO Check whether this is really needed
 	public final Class<?> type;
 
 	@BitField
@@ -64,8 +64,6 @@ public class VirtualField {
 		default <T extends Annotation> boolean has(Class<T> annotation) {
 			return get(annotation) != null;
 		}
-
-		String getFieldName();
 	}
 
 	public static class NoAnnotations implements AnnotationHolder {
@@ -76,11 +74,6 @@ public class VirtualField {
 
 		@Override
 		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
-			return null;
-		}
-
-		@Override
-		public String getFieldName() {
 			return null;
 		}
 	}
@@ -101,11 +94,6 @@ public class VirtualField {
 		@Override
 		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
 			return field.getAnnotationsByType(annotation);
-		}
-
-		@Override
-		public String getFieldName() {
-			return field.getName();
 		}
 	}
 }

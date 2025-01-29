@@ -36,6 +36,7 @@ public class Bitser {
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
 			legacy = new LegacyClasses();
+			legacy.cache = cache;
 			// TODO Delete setRoot?
 			legacy.setRoot(wrapper.registerClasses(legacy));
 			serialize(legacy, output);

@@ -13,8 +13,7 @@ import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 
-import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
-import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
+import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static java.lang.Math.abs;
 
 @BitStruct(backwardCompatible = false)
@@ -22,6 +21,9 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 	@BitField
 	private final FloatField.Properties floatField;
+
+	@BitField
+	private final boolean isFloat;
 
 	FloatFieldWrapper(VirtualField field, FloatField floatField) {
 		super(field);
@@ -31,12 +33,14 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 		if (type != float.class && type != double.class && type != Float.class && type != Double.class) {
 			throw new InvalidBitFieldException("FloatField only supports floats and doubles, but got " + type);
 		}
+		this.isFloat = type == float.class || type == Float.class;
 	}
 
 	@SuppressWarnings("unused")
 	private FloatFieldWrapper() {
 		super();
 		this.floatField = new FloatField.Properties();
+		this.isFloat = false;
 	}
 
 	@Override
@@ -48,11 +52,11 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 			if (abs(recoveredValue - doubleValue) <= floatField.errorTolerance) {
 				BitCountStream counter = new BitCountStream();
-				IntegerBitser.encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
+				encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
 
 				if ((value instanceof Float && counter.getCounter() < 32) || (value instanceof Double && counter.getCounter() < 64)) {
 					write.output.write(true);
-					IntegerBitser.encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, write.output);
+					encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, write.output);
 					return;
 				}
 			}
@@ -72,12 +76,12 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 		if (floatField.expectMultipleOf != 0.0 && read.input.read()) {
 			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input);
 			double result = count * floatField.expectMultipleOf;
-			if (field.type == float.class || field.type == Float.class) setValue.consume((float) result);
+			if (isFloat) setValue.consume((float) result);
 			else setValue.consume(result);
 			return;
 		}
 
-		if (field.type == float.class || field.type == Float.class) {
+		if (isFloat) {
 			setValue.consume(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, read.input)));
 		} else {
 			setValue.consume(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input)));
@@ -87,9 +91,9 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	@Override
 	void setLegacyValue(Object target, Object value) {
 		// TODO Test and handle null
-		if (value instanceof Double) {
-			double d = (double) value;
-			if (field.type == float.class || field.type == Float.class) super.setLegacyValue(target, (float) d);
+		if (value instanceof Number) {
+			double d = ((Number) value).doubleValue();
+			if (isFloat) super.setLegacyValue(target, (float) d);
 			else super.setLegacyValue(target, d);
 		} else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);

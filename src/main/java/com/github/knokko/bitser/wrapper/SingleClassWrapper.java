@@ -129,8 +129,8 @@ class SingleClassWrapper {
 	}
 
 	LegacyClass register(LegacyClasses legacy) {
-		LegacyClass legacyClass = new LegacyClass();
-		legacy.add(myClass, legacyClass);
+		LegacyClass legacyClass = legacy.addClass(myClass);
+		if (!legacyClass.fields.isEmpty()) return legacyClass;
 
 		for (FieldWrapper field : fields) {
 			legacyClass.fields.add(new LegacyField(field.id, field.bitField));
@@ -160,6 +160,7 @@ class SingleClassWrapper {
 
 			int[] counter = new int[1];
 			for (LegacyField field : legacy.fields) {
+				System.out.println("Reading legacy field " + field.bitField);
 				field.bitField.readField(read, legacyValue -> {
 					if (field.id < newFields.length) {
 						FieldWrapper newField = newFields[field.id];
@@ -174,6 +175,7 @@ class SingleClassWrapper {
 				});
 			}
 		} else {
+			System.out.println("Reading non-legacy fields");
 			for (FieldWrapper field : fields) field.bitField.readField(target, read);
 		}
 	}

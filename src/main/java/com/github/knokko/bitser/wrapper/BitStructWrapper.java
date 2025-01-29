@@ -85,9 +85,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 	@Override
 	public LegacyStruct registerClasses(LegacyClasses legacy) {
-		LegacyStruct legacyStruct = new LegacyStruct();
+		LegacyStruct legacyStruct = legacy.addStruct(constructor.getDeclaringClass());
+		if (!legacyStruct.classHierarchy.isEmpty()) return legacyStruct;
 		for (SingleClassWrapper currentClass : classHierarchy) legacyStruct.classHierarchy.add(currentClass.register(legacy));
-		legacy.add(constructor.getDeclaringClass(), legacyStruct);
 		return legacyStruct;
 	}
 
