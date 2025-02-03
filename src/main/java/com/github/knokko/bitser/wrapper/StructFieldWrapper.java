@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
@@ -117,9 +118,9 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
 		// TODO Figure out the right index
 		int index = 0;
-		field.setValue.accept(target, read.cache.getWrapper(allowed[index]).setLegacyValues(read, value));
+		setValue.accept(read.cache.getWrapper(allowed[index]).setLegacyValues(read, value));
 	}
 }

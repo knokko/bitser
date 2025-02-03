@@ -9,6 +9,7 @@ import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static java.lang.Long.max;
@@ -72,11 +73,12 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 		if (type == byte.class || type == Byte.class) setValue.consume((byte) longValue);
 		else if (type == short.class || type == Short.class) setValue.consume((short) longValue);
 		else if (type == int.class || type == Integer.class) setValue.consume((int) longValue);
-		else setValue.consume(longValue);
+		else if (type == long.class || type == Long.class || type == null) setValue.consume(longValue);
+		else throw new Error("Unexpected integer type " + type);
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
 		// TODO Test and handle null
 		if (value instanceof Number) {
 			long l = ((Number) value).longValue();
@@ -86,10 +88,10 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 			}
 
 			Class<?> type = field.type;
-			if (type == byte.class || type == Byte.class) super.setLegacyValue(read, target, (byte) l);
-			else if (type == short.class || type == Short.class) super.setLegacyValue(read, target, (short) l);
-			else if (type == int.class || type == Integer.class) super.setLegacyValue(read, target, (int) l);
-			else super.setLegacyValue(read, target, l);
+			if (type == byte.class || type == Byte.class) super.setLegacyValue(read, (byte) l, setValue);
+			else if (type == short.class || type == Short.class) super.setLegacyValue(read, (short) l, setValue);
+			else if (type == int.class || type == Integer.class) super.setLegacyValue(read, (int) l, setValue);
+			else super.setLegacyValue(read, l, setValue);
 		} else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}

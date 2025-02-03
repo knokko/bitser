@@ -12,6 +12,7 @@ import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static java.lang.Math.abs;
@@ -89,13 +90,14 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object target, Object value) {
+	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
 		// TODO Test and handle null
 		if (value instanceof Number) {
 			double d = ((Number) value).doubleValue();
-			if (isFloat) super.setLegacyValue(read, target, (float) d);
-			else super.setLegacyValue(read, target, d);
-		} else {
+			if (isFloat) super.setLegacyValue(read, (float) d, setValue);
+			else super.setLegacyValue(read, d, setValue);
+		} else if (value == null && field.optional) super.setLegacyValue(read, null, setValue);
+		else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}

@@ -15,6 +15,7 @@ import com.github.knokko.bitser.util.VirtualField;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeVariableInteger;
@@ -90,7 +91,8 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (sizeField.expectUniform) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
-		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field, size);
+		// TODO Test backward-compatible TreeMap
+		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type != null ? field.type : HashMap.class, size);
 		for (int counter = 0; counter < size; counter++) {
 			DelayedEntry delayed = new DelayedEntry(map);
 			readElement(keysWrapper, read, delayed::setKey);
@@ -106,6 +108,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 			List<Object> rememberElement = new ArrayList<>(1);
 			wrapper.readValue(read, element -> {
 				rememberElement.add(element);
+				System.out.println("wrapper is " + wrapper + " so element is " + element);
 				setValue.consume(element);
 			});
 
@@ -121,6 +124,29 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 	private int getMaxSize() {
 		return (int) min(Integer.MAX_VALUE, sizeField.maxValue);
+	}
+
+	@Override
+	void setLegacyValue(ReadJob read, Object rawLegacyMap, Consumer<Object> setValue) {
+		Map<?, ?> legacyMap = (Map<?, ?>) rawLegacyMap;
+		@SuppressWarnings("unchecked")
+		Map<Object, Object> newMap = (Map<Object, Object>) constructCollectionWithSize(field.type, legacyMap.size());
+		legacyMap.forEach((key, value) -> {
+			int[] pCount = { 0 };
+			Object[] pKey = { null };
+			Object[] pValue = { null };
+			keysWrapper.setLegacyValue(read, key, newKey -> {
+				pKey[0] = newKey;
+				pCount[0] += 1;
+				if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
+			});
+			valuesWrapper.setLegacyValue(read, value, newValue -> {
+				pValue[0] = newValue;
+				pCount[0] += 1;
+				if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
+			});
+		});
+		super.setLegacyValue(read, newMap, setValue);
 	}
 
 	private static class DelayedEntry {

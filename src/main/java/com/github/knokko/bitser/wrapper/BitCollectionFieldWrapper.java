@@ -34,6 +34,11 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
+	ArrayType determineArrayType() {
+		return null;
+	}
+
+	@Override
 	public BitFieldWrapper getChildWrapper() {
 		return valuesWrapper;
 	}

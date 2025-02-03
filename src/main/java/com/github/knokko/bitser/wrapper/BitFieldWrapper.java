@@ -12,6 +12,7 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public abstract class BitFieldWrapper {
 
@@ -101,7 +102,7 @@ public abstract class BitFieldWrapper {
 
 	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
 
-	void setLegacyValue(ReadJob read, Object target, Object value) {
-		field.setValue.accept(target, value);
+	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
+		setValue.accept(value);
 	}
 }

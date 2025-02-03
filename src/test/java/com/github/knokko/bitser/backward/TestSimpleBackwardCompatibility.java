@@ -67,7 +67,6 @@ public class TestSimpleBackwardCompatibility {
 	}
 
 	// TODO Test saving some backward-compatible structs in a non-backward-compatible way
-	// TODO Handle struct fields
 
 	@BitStruct(backwardCompatible = true)
 	private static class NestedBefore {
@@ -79,7 +78,12 @@ public class TestSimpleBackwardCompatibility {
 		@IntegerField(expectUniform = true)
 		int test = 45;
 
-		// TODO Add field with id 3
+		@BitField(id = 3)
+		String hello = "hi";
+
+		@BitField(id = 4)
+		@IntegerField(expectUniform = false)
+		long ignored = 12345;
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -91,6 +95,9 @@ public class TestSimpleBackwardCompatibility {
 		@BitField(id = 1)
 		@IntegerField(expectUniform = true)
 		byte test = 22;
+
+		@BitField(id = 3)
+		String hello = "I";
 	}
 
 	@Test
@@ -102,17 +109,21 @@ public class TestSimpleBackwardCompatibility {
 		before.nested.dummyFraction = 0.025f;
 		before.nested.byeBye = "Hey";
 		before.test += 1;
+		before.hello = "world";
+		before.ignored = -123;
 
 		byte[] bytes1 = bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE);
 		NestedAfter after = bitser.deserializeFromBytes(NestedAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(99, after.nested.weirdChance);
 		assertEquals(0.025f, after.nested.dummyFraction);
 		assertEquals(46, after.test);
+		assertEquals("world", after.hello);
 
 		byte[] bytes2 = bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE);
 		NestedBefore back = bitser.deserializeFromBytes(NestedBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(99, back.nested.dummyChance);
 		assertEquals(0.025f, back.nested.dummyFraction);
 		assertEquals(46, back.test);
+		assertEquals(12345, back.ignored);
 	}
 }

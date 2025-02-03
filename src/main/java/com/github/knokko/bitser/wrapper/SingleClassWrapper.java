@@ -145,7 +145,9 @@ class SingleClassWrapper {
 
 	void setLegacyValues(ReadJob read, Object target, Object[] values) {
 		for (FieldWrapper field : fields) {
-			if (field.id < values.length) field.bitField.setLegacyValue(read, target, values[field.id]);
+			if (field.id < values.length) field.bitField.setLegacyValue(
+					read, values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
+			);
 		}
 	}
 
