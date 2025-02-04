@@ -9,9 +9,14 @@ import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.function.Consumer;
 
 import static java.lang.Byte.toUnsignedInt;
+import static java.lang.Double.doubleToRawLongBits;
+import static java.lang.Double.longBitsToDouble;
+import static java.lang.Float.floatToRawIntBits;
+import static java.lang.Float.intBitsToFloat;
 
 @BitStruct(backwardCompatible = false)
 class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
@@ -43,8 +48,11 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (value instanceof boolean[]) write.output.write(toByteArray((boolean[]) value));
 		else if (value instanceof byte[]) write.output.write((byte[]) value);
 		else if (value instanceof short[]) write.output.write(toByteArray((short[]) value));
+		else if (value instanceof char[]) write.output.write(toByteArray((char[]) value));
 		else if (value instanceof int[]) write.output.write(toByteArray((int[]) value));
+		else if (value instanceof float[]) write.output.write(toByteArray((float[]) value));
 		else if (value instanceof long[]) write.output.write(toByteArray((long[]) value));
+		else if (value instanceof double[]) write.output.write(toByteArray((double[]) value));
 		else throw new UnsupportedOperationException("Can't encode " + value.getClass() + " as bytes");
 	}
 
@@ -70,6 +78,17 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		return bytes;
 	}
 
+	private byte[] toByteArray(char[] chars) {
+		byte[] bytes = new byte[2 * chars.length];
+		for (int index = 0; index < chars.length; index++) {
+			char element = chars[index];
+			int byteIndex = 2 * index;
+			bytes[byteIndex] = (byte) (element >> 8);
+			bytes[byteIndex + 1] = (byte) element;
+		}
+		return bytes;
+	}
+
 	private byte[] toByteArray(int[] ints) {
 		byte[] bytes = new byte[4 * ints.length];
 		for (int index = 0; index < ints.length; index++) {
@@ -83,10 +102,40 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		return bytes;
 	}
 
-	private byte[] toByteArray(long[] longs) { // TODO Test longs
+	private byte[] toByteArray(float[] floats) {
+		byte[] bytes = new byte[4 * floats.length];
+		for (int index = 0; index < floats.length; index++) {
+			int element = floatToRawIntBits(floats[index]);
+			int byteIndex = 4 * index;
+			bytes[byteIndex] = (byte) (element >> 24);
+			bytes[byteIndex + 1] = (byte) (element >> 16);
+			bytes[byteIndex + 2] = (byte) (element >> 8);
+			bytes[byteIndex + 3] = (byte) element;
+		}
+		return bytes;
+	}
+
+	private byte[] toByteArray(long[] longs) {
 		byte[] bytes = new byte[8 * longs.length];
 		for (int index = 0; index < longs.length; index++) {
 			long element = longs[index];
+			int byteIndex = 8 * index;
+			bytes[byteIndex] = (byte) (element >> 56);
+			bytes[byteIndex + 1] = (byte) (element >> 48);
+			bytes[byteIndex + 2] = (byte) (element >> 40);
+			bytes[byteIndex + 3] = (byte) (element >> 32);
+			bytes[byteIndex + 4] = (byte) (element >> 24);
+			bytes[byteIndex + 5] = (byte) (element >> 16);
+			bytes[byteIndex + 6] = (byte) (element >> 8);
+			bytes[byteIndex + 7] = (byte) element;
+		}
+		return bytes;
+	}
+
+	private byte[] toByteArray(double[] doubles) {
+		byte[] bytes = new byte[8 * doubles.length];
+		for (int index = 0; index < doubles.length; index++) {
+			long element = doubleToRawLongBits(doubles[index]);
 			int byteIndex = 8 * index;
 			bytes[byteIndex] = (byte) (element >> 56);
 			bytes[byteIndex + 1] = (byte) (element >> 48);
@@ -105,8 +154,11 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, read.input);
 		else if (value instanceof byte[]) read.input.read((byte[]) value);
 		else if (value instanceof short[]) backToShortArray((short[]) value, read.input);
+		else if (value instanceof char[]) backToCharArray((char[]) value, read.input);
 		else if (value instanceof int[]) backToIntArray((int[]) value, read.input);
+		else if (value instanceof float[]) backToFloatArray((float[]) value, read.input);
 		else if (value instanceof long[]) backToLongArray((long[]) value, read.input);
+		else if (value instanceof double[]) backToDoubleArray((double[]) value, read.input);
 		else throw new UnsupportedOperationException("Can't decode " + value.getClass() + " from bytes");
 	}
 
@@ -133,6 +185,18 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		}
 	}
 
+	void backToCharArray(char[] chars, BitInputStream input) throws IOException {
+		byte[] bytes = new byte[2 * chars.length];
+		input.read(bytes);
+
+		for (int charIndex = 0; charIndex < chars.length; charIndex++) {
+			int byteIndex = 2 * charIndex;
+			int byte8 = toUnsignedInt(bytes[byteIndex]);
+			int byte0 = toUnsignedInt(bytes[byteIndex + 1]);
+			chars[charIndex] = (char) ((byte8 << 8) | byte0);
+		}
+	}
+
 	void backToIntArray(int[] ints, BitInputStream input) throws IOException {
 		byte[] bytes = new byte[4 * ints.length];
 		input.read(bytes);
@@ -144,6 +208,20 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			int byte8 = toUnsignedInt(bytes[byteIndex + 2]);
 			int byte0 = toUnsignedInt(bytes[byteIndex + 3]);
 			ints[intIndex] = (byte24 << 24) | (byte16 << 16) | (byte8 << 8) | byte0;
+		}
+	}
+
+	void backToFloatArray(float[] floats, BitInputStream input) throws IOException {
+		byte[] bytes = new byte[4 * floats.length];
+		input.read(bytes);
+
+		for (int floatIndex = 0; floatIndex < floats.length; floatIndex++) {
+			int byteIndex = 4 * floatIndex;
+			int byte24 = toUnsignedInt(bytes[byteIndex]);
+			int byte16 = toUnsignedInt(bytes[byteIndex + 1]);
+			int byte8 = toUnsignedInt(bytes[byteIndex + 2]);
+			int byte0 = toUnsignedInt(bytes[byteIndex + 3]);
+			floats[floatIndex] = intBitsToFloat((byte24 << 24) | (byte16 << 16) | (byte8 << 8) | byte0);
 		}
 	}
 
@@ -166,23 +244,70 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		}
 	}
 
+	void backToDoubleArray(double[] doubles, BitInputStream input) throws IOException {
+		byte[] bytes = new byte[8 * doubles.length];
+		input.read(bytes);
+
+		for (int doubleIndex = 0; doubleIndex < doubles.length; doubleIndex++) {
+			int byteIndex = 8 * doubleIndex;
+			long byte56 = toUnsignedInt(bytes[byteIndex]);
+			long byte48 = toUnsignedInt(bytes[byteIndex + 1]);
+			long byte40 = toUnsignedInt(bytes[byteIndex + 2]);
+			long byte32 = toUnsignedInt(bytes[byteIndex + 3]);
+			long byte24 = toUnsignedInt(bytes[byteIndex + 4]);
+			long byte16 = toUnsignedInt(bytes[byteIndex + 5]);
+			long byte8 = toUnsignedInt(bytes[byteIndex + 6]);
+			long byte0 = toUnsignedInt(bytes[byteIndex + 7]);
+			doubles[doubleIndex] = longBitsToDouble((byte56 << 56) | (byte48 << 48) | (byte40 << 40) | (byte32 << 32) |
+					(byte24 << 24) | (byte16 << 16) | (byte8 << 8) | byte0);
+		}
+	}
+
 	@Override
-	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
-		if (field.type == value.getClass()) super.setLegacyValue(read, value, setValue);
-		if (field.type == short[].class) super.setLegacyValue(read, legacyToShortArray(value), setValue);
-		if (field.type == int[].class) super.setLegacyValue(read, legacyToIntArray(value), setValue);
-		// TODO Other array types
+	void setLegacyValue(ReadJob read, Object legacyArray, Consumer<Object> setValue) {
+		if (legacyArray == null || field.type == legacyArray.getClass()) {
+			super.setLegacyValue(read, legacyArray, setValue);
+			return;
+		}
+
+		int size = legacyArray.getClass().isArray() ? Array.getLength(legacyArray) : ((Collection<?>) legacyArray).size();
+		Object newArray = Array.newInstance(field.type.getComponentType(), size);
+
+		if (legacyArray.getClass().isArray()) {
+			for (int index = 0; index < size; index++) {
+				Object legacyValue = Array.get(legacyArray, index);
+				setFromLegacyValue(newArray, index, legacyValue);
+			}
+		} else {
+			int index = 0;
+			for (Object legacyValue : (Collection<?>) legacyArray) {
+				setFromLegacyValue(newArray, index, legacyValue);
+				index += 1;
+			}
+		}
+
+		setValue.accept(newArray);
 	}
 
-	private short[] legacyToShortArray(Object legacy) {
-		short[] result = new short[Array.getLength(legacy)];
-		for (int index = 0; index < result.length; index++) result[index] = ((Number) Array.get(legacy, index)).shortValue();
-		return result;
+	private void setFromLegacyValue(Object newArray, int index, Object legacyValue) {
+		if (legacyValue == null) {
+			Array.set(newArray, index, null);
+			return;
+		}
+		Object newNumber = convertLegacyNumber(legacyValue);
+		Array.set(newArray, index, newNumber);
 	}
 
-	private int[] legacyToIntArray(Object legacy) {
-		int[] result = new int[Array.getLength(legacy)];
-		for (int index = 0; index < result.length; index++) result[index] = ((Number) Array.get(legacy, index)).intValue();
-		return result;
+	private Object convertLegacyNumber(Object legacyValue) {
+		if (legacyValue instanceof Boolean) return legacyValue;
+		Number legacyNumber = legacyValue instanceof Character ? ((int) ((char) legacyValue)) : (Number) legacyValue;
+		if (field.type == byte[].class) return legacyNumber.byteValue();
+		if (field.type == short[].class) return legacyNumber.shortValue();
+		if (field.type == char[].class) return (char) legacyNumber.intValue();
+		if (field.type == int[].class) return legacyNumber.intValue();
+		if (field.type == float[].class) return legacyNumber.floatValue();
+		if (field.type == long[].class) return legacyNumber.longValue();
+		if (field.type == double[].class) return legacyNumber.doubleValue();
+		throw new Error("Unexpected write-as-bytes type " + field.type);
 	}
 }

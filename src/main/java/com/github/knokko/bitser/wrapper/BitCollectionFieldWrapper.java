@@ -15,6 +15,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 
 @BitStruct(backwardCompatible = false)
 class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
@@ -104,5 +105,43 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				}
 			}
 		}
+	}
+
+	@Override
+	void setLegacyValue(ReadJob read, Object legacyCollection, Consumer<Object> setValue) {
+		if (legacyCollection == null || legacyCollection.getClass() == field.type) {
+			super.setLegacyValue(read, legacyCollection, setValue);
+			return;
+		}
+
+		int size = legacyCollection.getClass().isArray() ? Array.getLength(legacyCollection) : ((Collection<?>) legacyCollection).size();
+		Object[] oldArray = new Object[size];
+		if (legacyCollection.getClass().isArray()) {
+			for (int index = 0; index < size; index++) oldArray[index] = Array.get(legacyCollection, index);
+		} else {
+			int index = 0;
+			for (Object oldValue : ((Collection<?>) legacyCollection)) {
+				oldArray[index] = oldValue;
+				index += 1;
+			}
+		}
+
+		Object newCollection = field.type.isArray() ? Array.newInstance(field.type.getComponentType(), size) :
+				constructCollectionWithSize(field.type, size);
+		if (newCollection.getClass().isArray()) {
+			for (int index = 0; index < size; index++) {
+				final int rememberIndex = index;
+				valuesWrapper.setLegacyValue(
+						read, oldArray[index], newValue -> Array.set(newCollection, rememberIndex, newValue)
+				);
+			}
+		} else {
+			for (Object oldValue : oldArray) {
+				//noinspection unchecked
+				valuesWrapper.setLegacyValue(read, oldValue, newValue -> ((Collection<Object>) newCollection).add(newValue));
+			}
+		}
+
+		super.setLegacyValue(read, newCollection, setValue);
 	}
 }
