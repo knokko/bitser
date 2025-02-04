@@ -91,13 +91,13 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
-		// TODO Test and handle null
-		if (value instanceof Number) {
+		if (value == null) {
+			super.setLegacyValue(read, null, setValue);
+		} else if (value instanceof Number) {
 			double d = ((Number) value).doubleValue();
 			if (isFloat) super.setLegacyValue(read, (float) d, setValue);
 			else super.setLegacyValue(read, d, setValue);
-		} else if (value == null && field.optional) super.setLegacyValue(read, null, setValue);
-		else {
+		} else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}

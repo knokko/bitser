@@ -1,7 +1,6 @@
 package com.github.knokko.bitser.serialize;
 
 import com.github.knokko.bitser.backward.LegacyClasses;
-import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -38,7 +37,6 @@ public class Bitser {
 		if (backwardCompatible) {
 			legacy = new LegacyClasses();
 			legacy.cache = cache;
-			// TODO Delete setRoot?
 			legacy.setRoot(wrapper.registerClasses(legacy));
 			serialize(legacy, output);
 		}

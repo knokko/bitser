@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -38,6 +39,12 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	ArrayType determineArrayType() {
 		return null;
+	}
+
+	@Override
+	void registerLegacyClasses(LegacyClasses legacy) {
+		super.registerLegacyClasses(legacy);
+		valuesWrapper.registerLegacyClasses(legacy);
 	}
 
 	@Override

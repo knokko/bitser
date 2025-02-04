@@ -12,14 +12,13 @@ import java.util.function.Function;
 @BitStruct(backwardCompatible = false)
 public class VirtualField {
 
-	//@BitField
-	private final String source; // TODO Check whether this is really needed
+	private final String source;
 	public final Class<?> type;
 
 	@BitField
 	public final boolean optional;
 
-	@BitField(optional = true)
+	@BitField(optional = true) // TODO Figure out whether this is needed
 	public final String referenceTargetLabel;
 
 	public final AnnotationHolder annotations;

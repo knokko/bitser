@@ -104,7 +104,6 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	private Object constructCollectionWithSize(int size) {
 		if (field.type == null) {
-			// TODO This requires more testing, especially LinkedList
 			if (arrayType == null) return new ArrayList<>(size);
 			switch (arrayType) {
 				case BOOLEAN: return new boolean[size];

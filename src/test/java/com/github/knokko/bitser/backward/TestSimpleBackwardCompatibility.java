@@ -234,4 +234,42 @@ public class TestSimpleBackwardCompatibility {
 				OptionalLong.class, bitser.serializeToBytes(new OptionalInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		).x);
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalFloat {
+
+		@BitField(id = 2, optional = true)
+		@FloatField
+		Float x = 12f;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalDouble {
+
+		@BitField(id = 2, optional = true)
+		@FloatField
+		Double x = 100.0;
+	}
+
+	@Test
+	public void testOptionalFloats() {
+		Bitser bitser = new Bitser(true);
+		OptionalFloat none = new OptionalFloat();
+		none.x = null;
+
+		assertNull(bitser.deserializeFromBytes(
+				OptionalDouble.class, bitser.serializeToBytes(none, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		).x);
+	}
+
+	@Test
+	public void testDeserializeEmpty() {
+		// Since OptionalFloat.x has id 2 and FullInt.x has id 0, the value of FullInt.x should be its default value
+		Bitser bitser = new Bitser(true);
+		assertEquals(1_000_000, bitser.deserializeFromBytes(FullInt.class, bitser.serializeToBytes(
+				new OptionalFloat(), Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE).x);
+	}
+
+	// TODO Test inheritance
 }
