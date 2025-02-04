@@ -1,6 +1,8 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -10,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCollectionBackwardCompatibility {
@@ -305,5 +308,164 @@ public class TestCollectionBackwardCompatibility {
 		assertArrayEquals(new double[] { 0.0, Double.NEGATIVE_INFINITY }, back.doubles2);
 	}
 
-	// TODO Test invalid conversions
+	@BitStruct(backwardCompatible = true)
+	private static class BooleanArray {
+
+		@BitField(id = 0)
+		final boolean[] booleans = { true, false };
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class IntArray {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = false)
+		final int[] integers = { 1, 2, 3, 4 };
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class BooleanList {
+
+		@BitField(id = 0)
+		final LinkedList<Boolean> booleans = new LinkedList<>();
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class IntSet {
+
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		@BitField(id = 0)
+		@NestedFieldSetting(path = "c", optional = true)
+		@IntegerField(expectUniform = true)
+		final HashSet<Integer> integers = new HashSet<>();
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class IntList {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = true)
+		final ArrayList<Integer> integers = new ArrayList<>();
+	}
+
+	@Test
+	public void testForbidBooleanArrayToIntArray() {
+		Bitser bitser = new Bitser(true);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				IntArray.class, bitser.serializeToBytes(new BooleanArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "from legacy true to int");
+	}
+
+	@Test
+	public void testForbidBooleanArrayToIntSet() {
+		Bitser bitser = new Bitser(true);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				IntSet.class, bitser.serializeToBytes(new BooleanArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "from legacy true to ");
+		assertContains(errorMessage, "java.lang.Integer");
+	}
+
+	@Test
+	public void testForbidIntArrayToBooleanArray() {
+		Bitser bitser = new Bitser(true);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				BooleanArray.class, bitser.serializeToBytes(new IntArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "from legacy 1 to boolean");
+	}
+
+	@Test
+	public void testForbidIntArrayToBooleanList() {
+		Bitser bitser = new Bitser(true);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				BooleanList.class, bitser.serializeToBytes(new IntArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "from legacy 1 to");
+		assertContains(errorMessage, "java.lang.Boolean");
+	}
+
+	@Test
+	public void testForbidIntSetToBooleanList() {
+		Bitser bitser = new Bitser(true);
+		IntSet intSet = new IntSet();
+		intSet.integers.add(1234);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				BooleanList.class, bitser.serializeToBytes(intSet, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "from legacy 1234 to");
+		assertContains(errorMessage, "java.lang.Boolean");
+	}
+
+	@Test
+	public void forbidNullsIntoPrimitives() {
+		Bitser bitser = new Bitser(false);
+		IntSet intSet = new IntSet();
+		intSet.integers.add(null);
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				IntArray.class, bitser.serializeToBytes(intSet, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "IntArray.integers");
+		assertContains(errorMessage, "is null");
+		assertContains(errorMessage, "is no longer allowed");
+	}
+
+	@Test
+	public void forbidNullsIntoNonNulls() {
+		Bitser bitser = new Bitser(false);
+		IntSet intSet = new IntSet();
+		intSet.integers.add(null);
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				IntList.class, bitser.serializeToBytes(intSet, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "IntList.integers");
+		assertContains(errorMessage, "is null");
+		assertContains(errorMessage, "no longer allowed");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OldMap {
+
+		@SuppressWarnings("unused")
+		@IntegerField(expectUniform = true)
+		private static final boolean KEY_PROPERTIES = false;
+
+		@BitField(id = 0)
+		@FloatField
+		@NestedFieldSetting(path = "k", fieldName = "KEY_PROPERTIES")
+		final TreeMap<Character, Float> map = new TreeMap<>();
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class NewMap {
+
+		@SuppressWarnings("unused")
+		@IntegerField(expectUniform = false)
+		private static final boolean KEY_PROPERTIES = false;
+
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		@BitField(id = 0)
+		@FloatField
+		@NestedFieldSetting(path = "k", fieldName = "KEY_PROPERTIES")
+		final HashMap<Integer, Double> map = new HashMap<>();
+	}
+
+	@Test
+	public void convertBetweenMaps() {
+		Bitser bitser = new Bitser(false);
+		OldMap before = new OldMap();
+		before.map.put('I', 10f);
+		before.map.put(Character.MAX_VALUE, 100f);
+
+		NewMap after = bitser.deserializeFromBytes(NewMap.class, bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(2, after.map.size());
+		assertEquals(10.0, after.map.get((int) 'I'));
+		assertEquals(100.0, after.map.get((int) Character.MAX_VALUE));
+
+		OldMap back = bitser.deserializeFromBytes(OldMap.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(before.map, back.map);
+	}
+
+	// TODO Test something like List<Integer> to List<String> and something like UUID to int[]
 }

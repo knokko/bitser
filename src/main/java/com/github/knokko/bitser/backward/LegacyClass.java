@@ -4,7 +4,6 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.wrapper.ValueConsumer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,19 +25,20 @@ public class LegacyClass {
 		}
 	}
 
-	public Object[] read(ReadJob read) throws IOException {
+	public LegacyValues read(ReadJob read) throws IOException {
 		int maxId = -1;
 		for (LegacyField field : fields) {
 			if (field.id > maxId) maxId = field.id;
 		}
 		Object[] artificial = new Object[maxId + 1];
+		boolean[] hadValues = new boolean[maxId + 1];
 
-		System.out.println("maxId is " + maxId);
 		for (LegacyField field : fields) {
+			hadValues[field.id] = true;
 			field.bitField.read(read, child -> artificial[field.id] = child);
 			System.out.println("Legacy read " + artificial[field.id]);
 		}
 
-		return artificial;
+		return new LegacyValues(artificial, hadValues);
 	}
 }

@@ -91,7 +91,6 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (sizeField.expectUniform) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
-		// TODO Test backward-compatible TreeMap
 		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type != null ? field.type : HashMap.class, size);
 		for (int counter = 0; counter < size; counter++) {
 			DelayedEntry delayed = new DelayedEntry(map);

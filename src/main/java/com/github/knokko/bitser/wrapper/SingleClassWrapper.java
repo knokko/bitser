@@ -3,6 +3,7 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.backward.LegacyClass;
 import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.LegacyField;
+import com.github.knokko.bitser.backward.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -143,20 +144,20 @@ class SingleClassWrapper {
 		for (FieldWrapper field : fields) field.bitField.write(object, write);
 	}
 
-	void setLegacyValues(ReadJob read, Object target, Object[] values) {
+	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
 		for (FieldWrapper field : fields) {
-			if (field.id < values.length) field.bitField.setLegacyValue(
-					read, values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
+			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyValue(
+					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
 			);
 		}
 	}
 
 	void read(Object target, ReadJob read, LegacyClass legacy) throws IOException {
 		if (legacy != null) {
-			Object[] legacyProperties = legacy.read(read);
+			LegacyValues legacyProperties = legacy.read(read);
 
 			setLegacyValues(read, target, legacyProperties);
-			System.out.println("legacy properties are " + Arrays.toString(legacyProperties));
+			System.out.println("legacy properties are " + Arrays.toString(legacyProperties.values));
 //			int maxId = -1;
 //			for (FieldWrapper field : fields) {
 //				if (field.id > maxId) maxId = field.id;

@@ -112,7 +112,14 @@ public class StructFieldWrapper extends BitFieldWrapper {
 //			read.idLoader.getUnstable("structs", element -> {
 //				System.out.println("bla bla");
 //			}, read.input);
-			legacyStructs[index].read(read, setValue);
+			legacyStructs[index].read(read, legacyValues -> {
+				try {
+					setValue.consume(legacyValues);
+					// TODO hm... how does this work?
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 		}
 		else read.cache.getWrapper(allowed[index]).read(read, setValue, null);
 	}

@@ -103,6 +103,9 @@ public abstract class BitFieldWrapper {
 	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
 
 	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
+		if (!field.optional && value == null) {
+			throw new InvalidBitValueException("Legacy value for field " + field + " is null, which is no longer allowed");
+		}
 		setValue.accept(value);
 	}
 }

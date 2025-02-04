@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSimpleBackwardCompatibility {
@@ -125,5 +127,79 @@ public class TestSimpleBackwardCompatibility {
 		assertEquals(0.025f, back.nested.dummyFraction);
 		assertEquals(46, back.test);
 		assertEquals(12345, back.ignored);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class FullInt {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = true)
+		int x = 1_000_000;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class PartialInt {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = true, minValue = 0, maxValue = 200)
+		int x = 150;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class FullByte {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = false)
+		byte x;
+	}
+
+	@Test
+	public void testInvalidFullIntToPartialInt() {
+		Bitser bitser = new Bitser(false);
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				PartialInt.class, bitser.serializeToBytes(new FullInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "value 1000000 is out of range");
+		assertContains(errorMessage, "PartialInt.x");
+	}
+
+	@Test
+	public void testInvalidPartialIntToFullByte() {
+		Bitser bitser = new Bitser(false);
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				FullByte.class, bitser.serializeToBytes(new PartialInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "value 150 is out of range");
+		assertContains(errorMessage, "FullByte.x");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalInt {
+
+		@BitField(id = 0, optional = true)
+		@IntegerField(expectUniform = false)
+		Integer x = 10;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalLong {
+
+		@BitField(id = 0, optional = true)
+		@IntegerField(expectUniform = true)
+		Long x = 123456789L;
+	}
+
+	@Test
+	public void testOptionalIntegers() {
+		Bitser bitser = new Bitser(true);
+		OptionalInt none = new OptionalInt();
+		none.x = null;
+
+		assertNull(bitser.deserializeFromBytes(
+				OptionalLong.class, bitser.serializeToBytes(none, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		).x);
+		assertEquals(10L, bitser.deserializeFromBytes(
+				OptionalLong.class, bitser.serializeToBytes(new OptionalInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		).x);
 	}
 }

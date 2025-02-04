@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -79,21 +80,22 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
-		// TODO Test and handle null
-		if (value instanceof Number) {
-			long l = ((Number) value).longValue();
+		if (value == null) {
+			super.setLegacyValue(read, value, setValue);
+		} else if (value instanceof Number || value instanceof Character) {
+			long l = value instanceof Number ? ((Number) value).longValue() : (long) ((char) value);
 			if (l < intField.minValue || l > intField.maxValue) {
-				// TODO Test this
 				throw new InvalidBitValueException("Legacy value " + value + " is out of range for field " + field);
 			}
 
 			Class<?> type = field.type;
 			if (type == byte.class || type == Byte.class) super.setLegacyValue(read, (byte) l, setValue);
 			else if (type == short.class || type == Short.class) super.setLegacyValue(read, (short) l, setValue);
+			else if (type == char.class || type == Character.class) super.setLegacyValue(read, (char) l, setValue);
 			else if (type == int.class || type == Integer.class) super.setLegacyValue(read, (int) l, setValue);
 			else super.setLegacyValue(read, l, setValue);
 		} else {
-			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
+			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}
 }

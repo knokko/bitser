@@ -9,6 +9,8 @@ import com.github.knokko.bitser.wrapper.ValueConsumer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 @BitStruct(backwardCompatible = false)
 public class LegacyStruct {
@@ -22,11 +24,11 @@ public class LegacyStruct {
 		}
 	}
 
-	public void read(ReadJob read, ValueConsumer setValue) throws IOException {
-		List<Object[]> artificial = new ArrayList<>(classHierarchy.size());
+	public void read(ReadJob read, Consumer<List<LegacyValues>> setValue) throws IOException {
+		List<LegacyValues> artificial = new ArrayList<>(classHierarchy.size());
 		for (LegacyClass legacyClass : classHierarchy) {
 			artificial.add(legacyClass.read(read));
 		}
-		setValue.consume(artificial);
+		setValue.accept(artificial);
 	}
 }

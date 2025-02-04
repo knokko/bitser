@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -109,8 +110,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void setLegacyValue(ReadJob read, Object legacyCollection, Consumer<Object> setValue) {
-		if (legacyCollection == null || legacyCollection.getClass() == field.type) {
-			super.setLegacyValue(read, legacyCollection, setValue);
+		if (legacyCollection == null) {
+			super.setLegacyValue(read, null, setValue);
 			return;
 		}
 
@@ -131,14 +132,27 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (newCollection.getClass().isArray()) {
 			for (int index = 0; index < size; index++) {
 				final int rememberIndex = index;
-				valuesWrapper.setLegacyValue(
-						read, oldArray[index], newValue -> Array.set(newCollection, rememberIndex, newValue)
-				);
+				Object oldValue = oldArray[index];
+				valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
+					try {
+						Array.set(newCollection, rememberIndex, newValue);
+					} catch (IllegalArgumentException wrongType) {
+						throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
+					}
+				});
 			}
 		} else {
+			Object dummyArray = Array.newInstance(valuesWrapper.field.type, 1);
 			for (Object oldValue : oldArray) {
-				//noinspection unchecked
-				valuesWrapper.setLegacyValue(read, oldValue, newValue -> ((Collection<Object>) newCollection).add(newValue));
+				valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
+					try {
+						Array.set(dummyArray, 0, newValue);
+					} catch (IllegalArgumentException wrongType) {
+						throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
+					}
+					//noinspection unchecked
+					((Collection<Object>) newCollection).add(newValue);
+				});
 			}
 		}
 

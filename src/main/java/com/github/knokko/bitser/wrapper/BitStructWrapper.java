@@ -3,6 +3,7 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.LegacyStruct;
+import com.github.knokko.bitser.backward.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
@@ -131,7 +132,11 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		if (read.backwardCompatible) {
 			System.out.println("Found legacy struct " + legacyStruct);
 			legacyStruct.read(read, rawResult -> {
-				setValue.consume(setLegacyValues(read, rawResult));
+				try {
+					setValue.consume(setLegacyValues(read, rawResult));
+				} catch (IOException e) { // TODO why can this throw IOException?
+					throw new RuntimeException(e);
+				}
 			});
 		} else {
 			for (SingleClassWrapper currentClass : classHierarchy) currentClass.read(object, read, null);
@@ -142,7 +147,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	@Override
 	public T setLegacyValues(ReadJob read, Object rawLegacyValues) {
 		@SuppressWarnings("unchecked")
-		List<Object[]> legacyList = (List<Object[]>) rawLegacyValues;
+		List<LegacyValues> legacyList = (List<LegacyValues>) rawLegacyValues;
 		if (legacyList.size() != classHierarchy.size()) {
 			throw new InvalidBitFieldException("Inconsistent class hierarchy");
 		}
