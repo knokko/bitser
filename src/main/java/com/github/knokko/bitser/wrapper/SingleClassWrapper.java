@@ -43,6 +43,7 @@ class SingleClassWrapper {
 
 	private final Class<?> myClass;
 	final List<FieldWrapper> fields = new ArrayList<>();
+	final List<FieldWrapper> fieldsSortedById;
 
 	SingleClassWrapper(Class<?> myClass, boolean backwardCompatible) {
 		this.myClass = myClass;
@@ -108,8 +109,13 @@ class SingleClassWrapper {
 			}
 		}
 
-		if (backwardCompatible) fields.sort(Comparator.comparingInt(a -> a.id));
-		else fields.sort(Comparator.comparing(a -> a.classField.getName()));
+		fields.sort(Comparator.comparing(a -> a.classField.getName()));
+		this.fieldsSortedById = new ArrayList<>(fields);
+		fieldsSortedById.sort(Comparator.comparingInt(a -> a.id));
+	}
+
+	private List<FieldWrapper> getFields(boolean backwardCompatible) {
+		return backwardCompatible ? fieldsSortedById : fields;
 	}
 
 	@Override
@@ -118,7 +124,7 @@ class SingleClassWrapper {
 	}
 
 	public void collectReferenceTargetLabels(LabelCollection labels) {
-		for (FieldWrapper field : fields) {
+		for (FieldWrapper field : getFields(labels.backwardCompatible)) {
 			field.bitField.collectReferenceTargetLabels(labels);
 		}
 	}
@@ -133,7 +139,7 @@ class SingleClassWrapper {
 		LegacyClass legacyClass = legacy.addClass(myClass);
 		if (!legacyClass.fields.isEmpty()) return legacyClass;
 
-		for (FieldWrapper field : fields) {
+		for (FieldWrapper field : fieldsSortedById) {
 			legacyClass.fields.add(new LegacyField(field.id, field.bitField));
 			field.bitField.registerLegacyClasses(legacy);
 		}
@@ -141,11 +147,11 @@ class SingleClassWrapper {
 	}
 
 	void write(Object object, WriteJob write) throws IOException {
-		for (FieldWrapper field : fields) field.bitField.write(object, write);
+		for (FieldWrapper field : getFields(write.legacy != null)) field.bitField.write(object, write);
 	}
 
 	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
-		for (FieldWrapper field : fields) {
+		for (FieldWrapper field : fieldsSortedById) {
 			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyValue(
 					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
 			);
@@ -181,7 +187,7 @@ class SingleClassWrapper {
 //				});
 //			}
 		} else {
-			for (FieldWrapper field : fields) field.bitField.readField(target, read);
+			for (FieldWrapper field : getFields(read.backwardCompatible)) field.bitField.readField(target, read);
 		}
 	}
 
