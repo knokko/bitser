@@ -122,7 +122,15 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			return;
 		}
 
-		int size = legacyCollection.getClass().isArray() ? Array.getLength(legacyCollection) : ((Collection<?>) legacyCollection).size();
+		int size;
+		if (legacyCollection.getClass().isArray()) {
+			size = Array.getLength(legacyCollection);
+		} else if (legacyCollection instanceof Collection<?>) {
+			size = ((Collection<?>) legacyCollection).size();
+		} else {
+			throw new InvalidBitFieldException("Can't convert from legacy " + legacyCollection + " to " + field.type + " for field " + field);
+		}
+
 		Object[] oldArray = new Object[size];
 		if (legacyCollection.getClass().isArray()) {
 			for (int index = 0; index < size; index++) oldArray[index] = Array.get(legacyCollection, index);

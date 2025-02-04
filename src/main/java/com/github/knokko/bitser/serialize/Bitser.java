@@ -1,12 +1,16 @@
 package com.github.knokko.bitser.serialize;
 
 import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.connection.BitConnection;
+import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 import com.github.knokko.bitser.wrapper.BitserWrapper;
+import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -140,6 +144,32 @@ public class Bitser {
 	public <T> BitStructConnection<T> createStructConnection(
 			T initialState, Consumer<BitStructConnection.ChangeListener> reportChanges
 	) {
-		return cache.getWrapper(initialState.getClass()).createConnection(this, initialState, reportChanges);
+		return createRawStructConnection(initialState, initialState.getClass(), reportChanges);
+	}
+
+	private <T> BitStructConnection<T> createRawStructConnection(
+			T initialState, Class<?> theClass, Consumer<BitStructConnection.ChangeListener> reportChanges
+	) {
+		return cache.getWrapper(theClass).createConnection(this, initialState, reportChanges);
+	}
+
+	public boolean needsChildConnection(BitFieldWrapper childWrapper) {
+		if (childWrapper instanceof StructFieldWrapper) return true;
+		assert childWrapper.field.type != null;
+		return List.class.isAssignableFrom(childWrapper.field.type);
+	}
+
+	public <T> BitConnection createChildConnection(
+			T child, BitFieldWrapper childWrapper, Consumer<BitStructConnection.ChangeListener> reportChanges
+	) {
+		if (childWrapper instanceof StructFieldWrapper) {
+			return createRawStructConnection(child, childWrapper.field.type, reportChanges);
+		}
+		assert childWrapper.field.type != null;
+		if (List.class.isAssignableFrom(childWrapper.field.type)) {
+			//noinspection unchecked
+			return new BitListConnection<>(this, (List<T>) child, childWrapper.getChildWrapper(), reportChanges);
+		}
+		return null;
 	}
 }

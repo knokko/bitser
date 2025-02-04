@@ -26,7 +26,7 @@ public class BitListConnection<T> extends BitConnection {
 	private final BitFieldWrapper elementWrapper;
 	private final Consumer<BitStructConnection.ChangeListener> reportChanges;
 
-	BitListConnection(
+	public BitListConnection(
 			Bitser bitser, List<T> list, BitFieldWrapper elementWrapper,
 			Consumer<BitStructConnection.ChangeListener> reportChanges
 	) {
@@ -36,24 +36,16 @@ public class BitListConnection<T> extends BitConnection {
 		this.elementWrapper = elementWrapper;
 		this.reportChanges = reportChanges;
 
-		if (elementWrapper instanceof StructFieldWrapper || List.class.isAssignableFrom(elementWrapper.field.type)) {
+		if (bitser.needsChildConnection(elementWrapper)) {
 			connectionList = new ArrayList<>(myList.size());
 			for (T element : myList) connectionList.add(createChildConnection(element));
 		} else connectionList = null;
 	}
 
 	private BitConnection createChildConnection(T element) {
-		if (elementWrapper instanceof StructFieldWrapper) {
-			return bitser.createStructConnection(element, listener -> reportNestedChanges(listener, element));
-		}
-		if (List.class.isAssignableFrom(elementWrapper.field.type)) {
-			//noinspection unchecked
-			return new BitListConnection<>(
-					bitser, (List<T>) element, elementWrapper.getChildWrapper(),
-					listener -> reportNestedChanges(listener, element)
-			);
-		}
-		throw new Error("Unexpected wrapper " + elementWrapper);
+		return bitser.createChildConnection(
+				element, elementWrapper, listener -> reportNestedChanges(listener, element)
+		);
 	}
 
 	private void reportNestedChanges(BitStructConnection.ChangeListener listener, T element) {
@@ -111,10 +103,10 @@ public class BitListConnection<T> extends BitConnection {
 		if (modification.action == Action.EDIT) {
 			synchronized (list) {
 				if (modification.index < myList.size()) {
+					// TODO What if the element was replaced or shifted in the meantime?
 					connectionList.get(modification.index).handleChanges(input);
 				} else {
-					System.out.println("BitList edit failed");
-					// TODO Figure out a way to discard the changes
+					bitser.createChildConnection(null, elementWrapper, null).handleChanges(input);
 				}
 			}
 		} else if (modification.action == Action.REMOVE) {
@@ -123,7 +115,7 @@ public class BitListConnection<T> extends BitConnection {
 					myList.remove(modification.index);
 					list.remove(modification.index);
 					if (connectionList != null) connectionList.remove(modification.index);
-				} else System.out.println("BitList removal failed");
+				}
 			}
 		} else {
 			elementWrapper.read(new ReadJob(input, bitser.cache, null, false), rawElement -> {
@@ -150,7 +142,7 @@ public class BitListConnection<T> extends BitConnection {
 							if (connectionList != null) {
 								connectionList.set(modification.index, createChildConnection(element));
 							}
-						} else System.out.println("A replacement failed");
+						}
 					} else throw new Error("Unexpected action " + modification.action);
 				}
 			});

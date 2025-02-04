@@ -86,7 +86,6 @@ public class ReferenceIdLoader {
 	}
 
 	public void resolve() throws IOException {
-		System.out.println("Start resolving...");
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}

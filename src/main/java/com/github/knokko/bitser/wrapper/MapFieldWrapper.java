@@ -107,7 +107,6 @@ class MapFieldWrapper extends BitFieldWrapper {
 			List<Object> rememberElement = new ArrayList<>(1);
 			wrapper.readValue(read, element -> {
 				rememberElement.add(element);
-				System.out.println("wrapper is " + wrapper + " so element is " + element);
 				setValue.consume(element);
 			});
 

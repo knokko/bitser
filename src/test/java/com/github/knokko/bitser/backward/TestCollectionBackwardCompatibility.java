@@ -311,6 +311,7 @@ public class TestCollectionBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class BooleanArray {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		final boolean[] booleans = { true, false };
 	}
@@ -318,6 +319,7 @@ public class TestCollectionBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class IntArray {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		@IntegerField(expectUniform = false)
 		final int[] integers = { 1, 2, 3, 4 };
@@ -326,6 +328,7 @@ public class TestCollectionBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class BooleanList {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		final LinkedList<Boolean> booleans = new LinkedList<>();
 	}
@@ -343,6 +346,7 @@ public class TestCollectionBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class IntList {
 
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 		@BitField(id = 0)
 		@IntegerField(expectUniform = true)
 		final ArrayList<Integer> integers = new ArrayList<>();
@@ -467,5 +471,44 @@ public class TestCollectionBackwardCompatibility {
 		assertEquals(before.map, back.map);
 	}
 
-	// TODO Test something like List<Integer> to List<String> and something like UUID to int[]
+	@BitStruct(backwardCompatible = true)
+	private static class StringList {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		final ArrayList<String> strings = new ArrayList<>();
+	}
+
+	@Test
+	public void testForbidIntListToStringList() {
+		Bitser bitser = new Bitser(true);
+		IntList intList = new IntList();
+		intList.integers.add(1234);
+
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				StringList.class, bitser.serializeToBytes(intList, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "convert from legacy 1234");
+		assertContains(errorMessage, "java.lang.String");
+		assertContains(errorMessage, "StringList.strings");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class JustID {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		final UUID id = UUID.randomUUID();
+	}
+
+	@Test
+	public void testForbidUuidToIntArray() {
+		Bitser bitser = new Bitser(true);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				IntArray.class, bitser.serializeToBytes(new JustID(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "convert from legacy ");
+		assertContains(errorMessage, "int[]");
+		assertContains(errorMessage, "IntArray.integers");
+	}
 }
