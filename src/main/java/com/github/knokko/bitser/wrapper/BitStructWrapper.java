@@ -6,7 +6,6 @@ import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.backward.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.serialize.*;
 import com.github.knokko.bitser.util.VirtualField;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -131,13 +130,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		T object = createEmptyInstance();
 		if (read.backwardCompatible) {
 			System.out.println("Found legacy struct " + legacyStruct);
-			legacyStruct.read(read, rawResult -> {
-				try {
-					setValue.consume(setLegacyValues(read, rawResult));
-				} catch (IOException e) { // TODO why can this throw IOException?
-					throw new RuntimeException(e);
-				}
-			});
+			legacyStruct.read(read, rawResult -> setValue.consume(setLegacyValues(read, rawResult)));
 		} else {
 			for (SingleClassWrapper currentClass : classHierarchy) currentClass.read(object, read, null);
 			setValue.consume(object);

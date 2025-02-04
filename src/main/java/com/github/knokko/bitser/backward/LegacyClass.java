@@ -36,7 +36,6 @@ public class LegacyClass {
 		for (LegacyField field : fields) {
 			hadValues[field.id] = true;
 			field.bitField.read(read, child -> artificial[field.id] = child);
-			System.out.println("Legacy read " + artificial[field.id]);
 		}
 
 		return new LegacyValues(artificial, hadValues);

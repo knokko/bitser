@@ -4,13 +4,10 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.wrapper.ValueConsumer;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 @BitStruct(backwardCompatible = false)
 public class LegacyStruct {
@@ -24,11 +21,17 @@ public class LegacyStruct {
 		}
 	}
 
-	public void read(ReadJob read, Consumer<List<LegacyValues>> setValue) throws IOException {
+	public void read(ReadJob read, Consumer setValue) throws IOException {
 		List<LegacyValues> artificial = new ArrayList<>(classHierarchy.size());
 		for (LegacyClass legacyClass : classHierarchy) {
 			artificial.add(legacyClass.read(read));
 		}
-		setValue.accept(artificial);
+		setValue.consume(artificial);
+	}
+
+	@FunctionalInterface
+	public interface Consumer {
+
+		void consume(List<LegacyValues> values) throws IOException;
 	}
 }

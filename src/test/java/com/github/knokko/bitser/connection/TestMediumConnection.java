@@ -83,5 +83,6 @@ public class TestMediumConnection {
 
 		server.stop();
 		waitUntil(() -> Thread.activeCount() == oldThreadCount);
+		// TODO Test whether this is flaky
 	}
 }
