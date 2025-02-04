@@ -270,6 +270,4 @@ public class TestSimpleBackwardCompatibility {
 				new OptionalFloat(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE).x);
 	}
-
-	// TODO Test inheritance
 }

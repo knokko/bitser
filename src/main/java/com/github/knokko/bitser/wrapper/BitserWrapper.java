@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.backward.LegacyInstance;
 import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
@@ -37,7 +38,7 @@ public abstract class BitserWrapper<T> {
 
 	public abstract void read(ReadJob read, ValueConsumer setValue, LegacyStruct legacyStruct) throws IOException;
 
-	public abstract T setLegacyValues(ReadJob read, Object rawLegacyValues);
+	public abstract T setLegacyValues(ReadJob read, LegacyInstance legacy);
 
 	public abstract T shallowCopy(Object original);
 

@@ -21,17 +21,17 @@ public class LegacyStruct {
 		}
 	}
 
-	public void read(ReadJob read, Consumer setValue) throws IOException {
+	public void read(ReadJob read, int inheritanceIndex, Consumer setValue) throws IOException {
 		List<LegacyValues> artificial = new ArrayList<>(classHierarchy.size());
 		for (LegacyClass legacyClass : classHierarchy) {
 			artificial.add(legacyClass.read(read));
 		}
-		setValue.consume(artificial);
+		setValue.consume(new LegacyInstance(inheritanceIndex, artificial));
 	}
 
 	@FunctionalInterface
 	public interface Consumer {
 
-		void consume(List<LegacyValues> values) throws IOException;
+		void consume(LegacyInstance instance) throws IOException;
 	}
 }

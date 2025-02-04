@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.backward.LegacyInstance;
 import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
@@ -104,23 +105,23 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
-		int index = (int) decodeUniformInteger(0, length - 1, read.input);
-
+		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, read.input);
 
 		if (allowed.length == 0) {
-			System.out.println("StructFieldWrapper.readValue... index is " + index);
 //			read.idLoader.getUnstable("structs", element -> {
 //				System.out.println("bla bla");
 //			}, read.input);
-			legacyStructs[index].read(read, setValue::consume);
+			legacyStructs[inheritanceIndex].read(read, inheritanceIndex, setValue::consume);
 		}
-		else read.cache.getWrapper(allowed[index]).read(read, setValue, null);
+		else read.cache.getWrapper(allowed[inheritanceIndex]).read(read, setValue, null);
 	}
 
 	@Override
 	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
-		// TODO Figure out the right index
-		int index = 0;
-		setValue.accept(read.cache.getWrapper(allowed[index]).setLegacyValues(read, value));
+		LegacyInstance legacy = (LegacyInstance) value;
+		if (legacy.inheritanceIndex >= allowed.length) throw new InvalidBitValueException(
+				"Encountered unknown subclass while loading " + field
+		);
+		setValue.accept(read.cache.getWrapper(allowed[legacy.inheritanceIndex]).setLegacyValues(read, legacy));
 	}
 }

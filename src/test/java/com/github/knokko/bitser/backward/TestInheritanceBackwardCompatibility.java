@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.FloatField;
@@ -8,8 +9,8 @@ import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestInheritanceBackwardCompatibility {
 
@@ -136,8 +137,39 @@ public class TestInheritanceBackwardCompatibility {
 		assertEquals(0, newFish1.numLegs);
 
 		NewBird newBird = (NewBird) newZoo.animals[1];
-		// TODO
+		assertEquals(20, newBird.flySpeed);
+		assertEquals(2, newBird.numLegs);
+		assertFalse(newBird.isHungry);
 
 		NewFish newFish2 = (NewFish) newZoo.animals[2];
+		assertTrue(newFish2.canJump);
+		assertEquals(0.75f, newFish2.swimSpeed);
+
+		OldZoo back = bitser.deserializeFromBytes(OldZoo.class, bitser.serializeToBytes(
+				newZoo, Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(3, back.animals.length);
+
+		OldFish backFish1 = (OldFish) back.animals[0];
+		assertFalse(backFish1.canJump);
+		assertEquals(3.5, backFish1.swimSpeed);
+		assertEquals(0, backFish1.numLegs);
+
+		OldBird backBird = (OldBird) back.animals[1];
+		assertEquals(20, backBird.flySpeed);
+		assertEquals(2, backBird.numLegs);
+
+		OldFish backFish2 = (OldFish) back.animals[2];
+		assertTrue(backFish2.canJump);
+		assertEquals(0, backFish2.numLegs);
+		assertEquals(0.75, backFish2.swimSpeed);
+
+		newZoo.animals[0] = new NewReptile();
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				OldZoo.class, bitser.serializeToBytes(newZoo, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "unknown subclass");
+		assertContains(errorMessage, "OldAnimal[]");
+		assertContains(errorMessage, "OldZoo.animals");
 	}
 }
