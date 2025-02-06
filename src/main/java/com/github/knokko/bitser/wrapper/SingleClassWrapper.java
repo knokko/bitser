@@ -15,11 +15,11 @@ import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
 
 import static com.github.knokko.bitser.wrapper.WrapperFactory.createComplexWrapper;
+import static java.lang.Math.max;
 
 class SingleClassWrapper {
 
@@ -41,24 +41,26 @@ class SingleClassWrapper {
 		}
 	};
 
-	private final Class<?> myClass;
+	final Class<?> myClass;
 	final List<FieldWrapper> fields = new ArrayList<>();
 	final List<FieldWrapper> fieldsSortedById;
+	final List<FunctionWrapper> functions = new ArrayList<>();
 
 	SingleClassWrapper(Class<?> myClass, boolean backwardCompatible) {
 		this.myClass = myClass;
 
+		Class<?>[] otherFields = {
+				ClassField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
+				NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
+				StableReferenceFieldId.class, StringField.class, EnumField.class
+		};
+
 		Set<Integer> IDs = new HashSet<>();
-		Field[] classFields = myClass.getDeclaredFields();
-		for (Field classField : classFields) {
+		for (Field classField : myClass.getDeclaredFields()) {
 			if (Modifier.isStatic(classField.getModifiers())) continue;
 			BitField bitField = classField.getAnnotation(BitField.class);
 			if (bitField == null) {
-				Class<?>[] otherFields = {
-						ClassField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
-						NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
-						StableReferenceFieldId.class, StringField.class, EnumField.class
-				};
+
 
 				for (Class<?> otherField : otherFields) {
 					//noinspection unchecked
@@ -112,6 +114,44 @@ class SingleClassWrapper {
 		fields.sort(Comparator.comparing(a -> a.classField.getName()));
 		this.fieldsSortedById = new ArrayList<>(fields);
 		fieldsSortedById.sort(Comparator.comparingInt(a -> a.id));
+
+		IDs.clear();
+		for (Method classMethod : myClass.getDeclaredMethods()) {
+			BitField bitField = classMethod.getAnnotation(BitField.class);
+			if (bitField == null) continue;
+			if (Modifier.isStatic(classMethod.getModifiers())) {
+				throw new InvalidBitFieldException("BitField methods must not be static: " + classMethod);
+			}
+			Parameter[] parameters = classMethod.getParameters();
+			if (parameters.length > 1) {
+				throw new InvalidBitFieldException("BitField methods can have at most 1 parameter: " + classMethod);
+			}
+			if (parameters.length == 1 && parameters[0].getType() != FunctionContext.class) {
+				throw new InvalidBitFieldException("BitField method parameter type must be FunctionContext: " + classMethod);
+			}
+			if (bitField.id() < 0) {
+				throw new InvalidBitFieldException("BitField method IDs must be non-negative: " + classMethod);
+			}
+			if (IDs.contains(bitField.id())) {
+				throw new InvalidBitFieldException(myClass + " has multiple @BitField methods with id " + bitField.id());
+			}
+			IDs.add(bitField.id());
+			if (!Modifier.isPublic(classMethod.getModifiers())) classMethod.setAccessible(true);
+			VirtualField field = new VirtualField(
+					classMethod.toString(),
+					classMethod.getReturnType(),
+					bitField.optional(),
+					new VirtualField.MethodAnnotations(classMethod),
+					null, null
+			);
+
+			BitFieldWrapper bitFieldWrapper = createComplexWrapper(
+					myClass, field.annotations, field, classMethod.getGenericReturnType(), "", false
+			);
+			functions.add(new FunctionWrapper(bitField.id(), classMethod, bitFieldWrapper));
+		}
+
+		functions.sort(Comparator.comparingInt(a -> a.id));
 	}
 
 	private List<FieldWrapper> getFields(boolean backwardCompatible) {
@@ -126,6 +166,9 @@ class SingleClassWrapper {
 	public void collectReferenceTargetLabels(LabelCollection labels) {
 		for (FieldWrapper field : getFields(labels.backwardCompatible)) {
 			field.bitField.collectReferenceTargetLabels(labels);
+		}
+		for (FunctionWrapper function : functions) {
+			function.bitField.collectReferenceTargetLabels(labels);
 		}
 	}
 
@@ -143,11 +186,30 @@ class SingleClassWrapper {
 			legacyClass.fields.add(new LegacyField(field.id, field.bitField));
 			field.bitField.registerLegacyClasses(legacy);
 		}
+		for (FunctionWrapper function : functions) {
+			legacyClass.functions.add(new LegacyField(function.id, function.bitField));
+			function.bitField.registerLegacyClasses(legacy);
+		}
 		return legacyClass;
 	}
 
 	void write(Object object, WriteJob write) throws IOException {
 		for (FieldWrapper field : getFields(write.legacy != null)) field.bitField.write(object, write);
+		FunctionContext functionContext = new FunctionContext(write.withParameters);
+		for (FunctionWrapper function : functions) {
+			Object result;
+			try {
+				if (function.classMethod.getParameterCount() == 0) result = function.classMethod.invoke(object);
+				else result = function.classMethod.invoke(object, functionContext);
+			} catch (IllegalAccessException e) {
+				throw new Error(e);
+			} catch (InvocationTargetException e) {
+				if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
+				if (e.getCause() instanceof Error) throw (Error) e.getCause();
+				throw new RuntimeException(e.getCause());
+			}
+			function.bitField.writeValue(result, write);
+		}
 	}
 
 	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
@@ -156,39 +218,29 @@ class SingleClassWrapper {
 					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
 			);
 		}
+		int maxId = -1;
+		for (FunctionWrapper function : functions) maxId = max(maxId, function.id);
+		legacy.convertedFunctionValues = new Object[max(maxId + 1, legacy.storedFunctionValues.length)];
+		for (FunctionWrapper function : functions) {
+			if (function.id < legacy.hadFunctionValues.length && legacy.hadFunctionValues[function.id]) {
+				function.bitField.setLegacyValue(
+						read, legacy.storedFunctionValues[function.id],
+						newValue -> legacy.convertedFunctionValues[function.id] = newValue
+				);
+			}
+		}
 	}
 
-	void read(Object target, ReadJob read, LegacyClass legacy) throws IOException {
-		if (legacy != null) {
-			LegacyValues legacyProperties = legacy.read(read);
+	Object[] read(Object target, ReadJob read) throws IOException {
+		Object[] functionValues;
+		if (functions.isEmpty()) functionValues = new Object[0];
+		else functionValues = new Object[functions.get(functions.size() - 1).id + 1];
 
-			setLegacyValues(read, target, legacyProperties);
-			System.out.println("legacy properties are " + Arrays.toString(legacyProperties.values));
-//			int maxId = -1;
-//			for (FieldWrapper field : fields) {
-//				if (field.id > maxId) maxId = field.id;
-//			}
-//			FieldWrapper[] newFields = new FieldWrapper[maxId + 1];
-//			for (FieldWrapper field : fields) newFields[field.id] = field;
-//
-//			int[] counter = new int[1];
-//			for (LegacyField field : legacy.fields) {
-//				System.out.println("Reading legacy field " + field.bitField);
-//				field.bitField.readField(read, legacyValue -> {
-//					if (field.id < newFields.length) {
-//						FieldWrapper newField = newFields[field.id];
-//						if (newField != null) newField.bitField.setLegacyValue(target, legacyValue);
-//					}
-//					counter[0] += 1;
-//					if (counter[0] == legacy.fields.size()) {
-//						// TODO Call postInit method
-//						System.out.println("Legacy properties are " + Arrays.toString(legacyProperties));
-//					}
-//				});
-//			}
-		} else {
-			for (FieldWrapper field : getFields(read.backwardCompatible)) field.bitField.readField(target, read);
+		for (FieldWrapper field : getFields(read.backwardCompatible)) field.bitField.readField(target, read);
+		for (FunctionWrapper function : functions) {
+			function.bitField.readValue(read, result -> functionValues[function.id] = result);
 		}
+		return functionValues;
 	}
 
 	void shallowCopy(Object original, Object target) {
@@ -206,6 +258,19 @@ class SingleClassWrapper {
 		FieldWrapper(int id, Field classField, BitFieldWrapper bitField) {
 			this.id = id;
 			this.classField = classField;
+			this.bitField = bitField;
+		}
+	}
+
+	static class FunctionWrapper {
+
+		final int id;
+		final Method classMethod;
+		final BitFieldWrapper bitField;
+
+		FunctionWrapper(int id, Method classMethod, BitFieldWrapper bitField) {
+			this.id = id;
+			this.classMethod = classMethod;
 			this.bitField = bitField;
 		}
 	}

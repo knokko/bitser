@@ -4,6 +4,7 @@ import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.connection.BitConnection;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
+import com.github.knokko.bitser.init.WithParameter;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
@@ -42,14 +43,23 @@ public class Bitser {
 			legacy = new LegacyClasses();
 			legacy.cache = cache;
 			legacy.setRoot(wrapper.registerClasses(legacy));
-			serialize(legacy, output);
+			serialize(legacy, output, new WithParameter("legacy-classes", legacy));
 		}
 
 		LabelCollection labels = new LabelCollection(cache, new HashSet<>(), backwardCompatible);
 		wrapper.collectReferenceTargetLabels(labels);
 
+		Map<String, Object> withParameters = new HashMap<>();
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject instanceof WithParameter) {
+				WithParameter parameter = (WithParameter) withObject;
+				if (withParameters.containsKey(parameter.key)) {
+					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
+				}
+				withParameters.put(parameter.key, parameter.value);
+				continue;
+			}
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
 					new LabelCollection(cache, labels.declaredTargets, false)
 			);
@@ -59,12 +69,13 @@ public class Bitser {
 		wrapper.registerReferenceTargets(object, cache, idMapper);
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject instanceof WithParameter) continue;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
 		}
 
 		idMapper.save(output);
 
-		wrapper.write(object, new WriteJob(output, cache, idMapper, legacy));
+		wrapper.write(object, new WriteJob(output, cache, idMapper, withParameters, legacy));
 	}
 
 	public byte[] serializeToBytes(Object object, Object... withAndOptions) {
@@ -80,6 +91,7 @@ public class Bitser {
 	}
 
 	public <T> T deserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
+		Map<String, Object> withParameters = new HashMap<>();
 		boolean backwardCompatible = false;
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) {
@@ -97,6 +109,14 @@ public class Bitser {
 
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject instanceof WithParameter) {
+				WithParameter parameter = (WithParameter) withObject;
+				if (withParameters.containsKey(parameter.key)) {
+					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
+				}
+				withParameters.put(parameter.key, parameter.value);
+				continue;
+			}
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
 					new LabelCollection(cache, labels.declaredTargets, false)
 			);
@@ -105,6 +125,7 @@ public class Bitser {
 		ReferenceIdMapper withMapper = new ReferenceIdMapper(labels);
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject instanceof WithParameter) continue;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, withMapper);
 		}
 
@@ -113,7 +134,7 @@ public class Bitser {
 		List<T> result = new ArrayList<>(1);
 		//noinspection unchecked
 		wrapper.read(
-				new ReadJob(input, cache, idLoader, backwardCompatible),
+				new ReadJob(input, cache, idLoader, withParameters, backwardCompatible),
 				element -> result.add((T) element), legacy != null ? legacy.getRoot() : null
 		);
 

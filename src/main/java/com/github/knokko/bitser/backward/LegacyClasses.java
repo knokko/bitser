@@ -1,7 +1,6 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.serialize.BitserCache;

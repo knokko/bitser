@@ -14,6 +14,7 @@ import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -64,7 +65,7 @@ public class BitListConnection<T> extends BitConnection {
 			} else if (modification.action != Action.REMOVE) {
 				AbstractCollectionFieldWrapper.writeElement(
 						modification.element, elementWrapper,
-						new WriteJob(output, bitser.cache, null, null),
+						new WriteJob(output, bitser.cache, null, new HashMap<>(), null),
 						"This BitListConnection must not contain null values"
 				);
 			}
@@ -117,7 +118,7 @@ public class BitListConnection<T> extends BitConnection {
 				}
 			}
 		} else {
-			elementWrapper.read(new ReadJob(input, bitser.cache, null, false), rawElement -> {
+			elementWrapper.read(new ReadJob(input, bitser.cache, null, new HashMap<>(), false), rawElement -> {
 				@SuppressWarnings("unchecked") T element = (T) rawElement;
 				synchronized (list) {
 					if (modification.action == Action.ADD) {

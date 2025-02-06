@@ -81,6 +81,7 @@ public class TestInheritanceBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class NewSnake extends NewAnimal {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		boolean isVenomous;
 	}
@@ -88,6 +89,7 @@ public class TestInheritanceBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class NewReptile extends NewAnimal {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		boolean isMortal;
 	}

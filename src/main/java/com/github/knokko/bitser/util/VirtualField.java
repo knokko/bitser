@@ -6,6 +6,7 @@ import com.github.knokko.bitser.field.ReferenceFieldTarget;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -93,6 +94,25 @@ public class VirtualField {
 		@Override
 		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
 			return field.getAnnotationsByType(annotation);
+		}
+	}
+
+	public static class MethodAnnotations implements AnnotationHolder {
+
+		private final Method method;
+
+		public MethodAnnotations(Method method) {
+			this.method = method;
+		}
+
+		@Override
+		public <T extends Annotation> T get(Class<T> annotation) {
+			return method.getAnnotation(annotation);
+		}
+
+		@Override
+		public <T extends Annotation> T[] getMultiple(Class<T> annotation) {
+			return method.getAnnotationsByType(annotation);
 		}
 	}
 }

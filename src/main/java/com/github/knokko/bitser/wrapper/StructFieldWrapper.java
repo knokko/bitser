@@ -6,8 +6,8 @@ import com.github.knokko.bitser.backward.LegacyInstance;
 import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.field.ClassField;
-import com.github.knokko.bitser.field.ReferenceField;
+import com.github.knokko.bitser.field.*;
+import com.github.knokko.bitser.init.PostInit;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -25,12 +25,22 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInte
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
 
 @BitStruct(backwardCompatible = false)
-public class StructFieldWrapper extends BitFieldWrapper {
+public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 
 	private final Class<?>[] allowed;
 
-	@ReferenceField(stable = false, label = "structs")
 	private LegacyStruct[] legacyStructs;
+
+	@SuppressWarnings("unused")
+	@BitField(id = 0)
+	@NestedFieldSetting(path = "c", optional = true)
+	@ReferenceField(stable = false, label = "structs")
+	private LegacyStruct[] legacyStructs(FunctionContext context) {
+		LegacyClasses legacyClasses = (LegacyClasses) context.withParameters.get("legacy-classes");
+		LegacyStruct[] allowedStructs = new LegacyStruct[allowed.length];
+		for (int index = 0; index < allowed.length; index++) allowedStructs[index] = legacyClasses.getStruct(allowed[index]);
+		return allowedStructs;
+	}
 
 	StructFieldWrapper(VirtualField field, ClassField classField) {
 		super(field);
@@ -56,13 +66,19 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	public void postInit(PostInit.Context context) {
+		this.legacyStructs = (LegacyStruct[]) context.functionValues.get(StructFieldWrapper.class)[0];
+	}
+
+	@Override
 	public void collectReferenceTargetLabels(LabelCollection labels) {
 		super.collectReferenceTargetLabels(labels);
 
 		if (allowed.length == 0) {
-			for (LegacyStruct legacy : legacyStructs) {
-				legacy.collectReferenceTargetLabels(labels);
-			}
+			// TODO Maybe needed for references
+//			for (LegacyStruct legacy : legacyStructs) {
+//				legacy.collectReferenceTargetLabels(labels);
+//			}
 		} else {
 			for (Class<?> structClass : allowed) {
 				labels.cache.getWrapper(structClass).collectReferenceTargetLabels(labels);
@@ -73,18 +89,13 @@ public class StructFieldWrapper extends BitFieldWrapper {
 	@Override
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
 		super.registerReferenceTargets(value, cache, idMapper);
-		// TODO maybe override
 		if (value != null) cache.getWrapper(value.getClass()).registerReferenceTargets(value, cache, idMapper);
 	}
 
 	@Override
 	void registerLegacyClasses(LegacyClasses legacy) {
-		// TODO Find a nicer way to handle this...
-		if (legacyStructs == null) legacyStructs = new LegacyStruct[allowed.length];
-		for (int index = 0; index < allowed.length; index++) {
-			// TODO Maybe only register the classes that are actually used?
-			legacyStructs[index] = legacy.cache.getWrapper(allowed[index]).registerClasses(legacy);
-		}
+		// TODO Maybe only register the classes that are actually used?
+		for (Class<?> allowedClass : allowed) legacy.cache.getWrapper(allowedClass).registerClasses(legacy);
 	}
 
 	@Override
@@ -124,4 +135,6 @@ public class StructFieldWrapper extends BitFieldWrapper {
 		);
 		setValue.accept(read.cache.getWrapper(allowed[legacy.inheritanceIndex]).setLegacyValues(read, legacy));
 	}
+
+
 }

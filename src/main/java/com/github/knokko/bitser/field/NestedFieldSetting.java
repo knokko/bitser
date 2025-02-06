@@ -3,7 +3,7 @@ package com.github.knokko.bitser.field;
 import java.lang.annotation.*;
 
 @Repeatable(NestedFieldSettings.class)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NestedFieldSetting {
 

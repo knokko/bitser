@@ -14,13 +14,19 @@ public class LegacyClass {
 	@BitField
 	public final ArrayList<LegacyField> fields = new ArrayList<>();
 
+	@BitField
+	public final ArrayList<LegacyField> functions = new ArrayList<>();
+
 	@Override
 	public String toString() {
-		return "LegacyClass(#fields=" + fields.size() + ")";
+		return "LegacyClass(#fields=" + fields.size() + ",#functions=" + functions.size() + ")";
 	}
 
 	public void collectReferenceTargetLabels(LabelCollection labels) {
 		for (LegacyField field : fields) {
+			field.bitField.collectReferenceTargetLabels(labels);
+		}
+		for (LegacyField field : functions) {
 			field.bitField.collectReferenceTargetLabels(labels);
 		}
 	}
@@ -38,6 +44,18 @@ public class LegacyClass {
 			field.bitField.read(read, child -> artificial[field.id] = child);
 		}
 
-		return new LegacyValues(artificial, hadValues);
+		maxId = -1;
+		for (LegacyField function : functions) {
+			if (function.id > maxId) maxId = function.id;
+		}
+		Object[] functionValues = new Object[maxId + 1];
+		boolean[] hadFunctionValues = new boolean[maxId + 1];
+
+		for (LegacyField function : functions) {
+			hadFunctionValues[function.id] = true;
+			function.bitField.read(read, value -> functionValues[function.id] = value);
+		}
+
+		return new LegacyValues(artificial, hadValues, functionValues, hadFunctionValues);
 	}
 }

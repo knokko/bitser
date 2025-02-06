@@ -4,8 +4,10 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.LegacyInstance;
 import com.github.knokko.bitser.backward.LegacyStruct;
+import com.github.knokko.bitser.backward.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.init.PostInit;
 import com.github.knokko.bitser.serialize.*;
 import com.github.knokko.bitser.util.VirtualField;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -127,11 +129,21 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		if (read.backwardCompatible && !bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
-		T object = createEmptyInstance();
 		if (read.backwardCompatible) {
-			legacyStruct.read(read, -1, rawResult -> setValue.consume(setLegacyValues(read, rawResult)));
+			legacyStruct.read(read, -1, rawResult -> {
+				setValue.consume(setLegacyValues(read, rawResult));
+			});
 		} else {
-			for (SingleClassWrapper currentClass : classHierarchy) currentClass.read(object, read, null);
+			T object = createEmptyInstance();
+			Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();
+			for (SingleClassWrapper currentClass : classHierarchy) {
+				serializedFunctionValues.put(currentClass.myClass, currentClass.read(object, read));
+			}
+			if (object instanceof PostInit) {
+				((PostInit) object).postInit(
+						new PostInit.Context(serializedFunctionValues, null, null, read.withParameters)
+				);
+			}
 			setValue.consume(object);
 		}
 	}
@@ -144,6 +156,20 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		T instance = createEmptyInstance();
 		for (int index = 0; index < classHierarchy.size(); index++) {
 			classHierarchy.get(index).setLegacyValues(read, instance, legacy.valuesHierarchy.get(index));
+		}
+		if (instance instanceof PostInit) {
+			Map<Class<?>, Object[]> functionValues = new HashMap<>();
+			Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
+			Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
+			for (int index = 0; index < classHierarchy.size(); index++) {
+				LegacyValues classLegacy = legacy.valuesHierarchy.get(index);
+				functionValues.put(classHierarchy.get(index).myClass, classLegacy.convertedFunctionValues);
+				legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
+				legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
+			}
+			((PostInit) instance).postInit(
+					new PostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
+			);
 		}
 		return instance;
 	}

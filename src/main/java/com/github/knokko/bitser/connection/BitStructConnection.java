@@ -8,6 +8,7 @@ import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,7 +72,7 @@ public class BitStructConnection<T> extends BitConnection {
 			} else {
 				for (BitFieldWrapper fieldWrapper : fields) {
 					if (input.read()) {
-						fieldWrapper.read(new ReadJob(input, bitser.cache, null, false), value -> {
+						fieldWrapper.read(new ReadJob(input, bitser.cache, null, new HashMap<>(), false),value -> {
 							if (state != null) fieldWrapper.field.setValue.accept(state, value);
 						});
 					}
@@ -119,7 +120,7 @@ public class BitStructConnection<T> extends BitConnection {
 				numChanges += 1;
 
 				if (output != null) {
-					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, null));
+					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, new HashMap<>(), null));
 					updateChildConnection(fieldWrapper, index);
 				}
 			}
