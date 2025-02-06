@@ -169,7 +169,7 @@ public class BitListConnection<T> extends BitConnection {
 		return (BitListConnection<C>) connectionList.get(index);
 	}
 
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	private enum Action {
 		ADD,
 		REPLACE,

@@ -1,11 +1,10 @@
 package com.github.knokko.bitser.backward;
 
+import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.field.FloatField;
-import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.field.StableReferenceFieldId;
+import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +14,20 @@ import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSimpleBackwardCompatibility {
+
+	private enum OldPet {
+		DOG,
+		CAT
+	}
+
+	@SuppressWarnings("unused")
+	private enum NewPet {
+		OLD_DOG,
+		OLD_CAT,
+		CAT,
+		DOG,
+		PIG
+	}
 
 	@BitStruct(backwardCompatible = true)
 	private static class SimpleBefore {
@@ -29,6 +42,14 @@ public class TestSimpleBackwardCompatibility {
 
 		@BitField(id = 5)
 		String byeBye;
+
+		@BitField(id = 4, optional = true)
+		@EnumField(mode = BitEnum.Mode.Name)
+		OldPet namedPet;
+
+		@BitField(id = 6, optional = true)
+		@EnumField(mode = BitEnum.Mode.Ordinal)
+		OldPet ordinalPet;
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -45,6 +66,14 @@ public class TestSimpleBackwardCompatibility {
 		@BitField(id = 10)
 		@StableReferenceFieldId
 		final UUID newID = UUID.randomUUID();
+
+		@BitField(id = 4, optional = true)
+		@EnumField(mode = BitEnum.Mode.Name)
+		NewPet namedPet;
+
+		@BitField(id = 6, optional = true)
+		@EnumField(mode = BitEnum.Mode.Ordinal)
+		NewPet ordinalPet;
 	}
 
 	@Test
@@ -54,17 +83,23 @@ public class TestSimpleBackwardCompatibility {
 		before.dummyChance = 12;
 		before.dummyFraction = 2.5f;
 		before.byeBye = "Bye bye";
+		before.namedPet = OldPet.CAT;
+		before.ordinalPet = OldPet.DOG;
 
 		byte[] bytes1 = bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE);
 		SimpleAfter after = bitser.deserializeFromBytes(SimpleAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(12, after.weirdChance);
 		assertEquals(2.5f, after.dummyFraction);
+		assertEquals(NewPet.CAT, after.namedPet);
+		assertEquals(NewPet.OLD_DOG, after.ordinalPet);
 		assertNotNull(after.newID);
 
 		byte[] bytes2 = bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE);
 		SimpleBefore back = bitser.deserializeFromBytes(SimpleBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(12, back.dummyChance);
 		assertEquals(2.5f, back.dummyFraction);
+		assertEquals(OldPet.CAT, back.namedPet);
+		assertEquals(OldPet.DOG, back.ordinalPet);
 		assertNull(back.byeBye);
 	}
 
@@ -172,6 +207,7 @@ public class TestSimpleBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class PartialInt {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		@IntegerField(expectUniform = true, minValue = 0, maxValue = 200)
 		int x = 150;
@@ -180,6 +216,7 @@ public class TestSimpleBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class FullByte {
 
+		@SuppressWarnings("unused")
 		@BitField(id = 0)
 		@IntegerField(expectUniform = false)
 		byte x;
@@ -269,5 +306,57 @@ public class TestSimpleBackwardCompatibility {
 		assertEquals(1_000_000, bitser.deserializeFromBytes(FullInt.class, bitser.serializeToBytes(
 				new OptionalFloat(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE).x);
+	}
+
+	@Test
+	public void testInvalidNamedEnumConversion() {
+		Bitser bitser = new Bitser(true);
+		SimpleAfter after = new SimpleAfter();
+		after.namedPet = NewPet.PIG;
+
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				SimpleBefore.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "legacy enum constant PIG");
+		assertContains(errorMessage, "SimpleBefore.namedPet");
+	}
+
+	@Test
+	public void testInvalidOrdinalEnumConversion() {
+		Bitser bitser = new Bitser(true);
+		SimpleAfter after = new SimpleAfter();
+		after.ordinalPet = NewPet.PIG;
+
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				SimpleBefore.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "legacy ordinal 4");
+		assertContains(errorMessage, "SimpleBefore.ordinalPet");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class StringWrapper {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		final String hello = "world";
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class IdWrapper {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		final UUID id = UUID.randomUUID();
+	}
+
+	@Test
+	public void testInvalidConversionFromStringToUUID() {
+		Bitser bitser = new Bitser(false);
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				IdWrapper.class, bitser.serializeToBytes(new StringWrapper(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "from legacy world");
+		assertContains(errorMessage, "IdWrapper.id");
 	}
 }

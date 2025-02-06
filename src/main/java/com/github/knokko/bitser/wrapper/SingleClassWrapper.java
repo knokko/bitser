@@ -57,7 +57,7 @@ class SingleClassWrapper {
 				Class<?>[] otherFields = {
 						ClassField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
 						NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
-						StableReferenceFieldId.class, StringField.class
+						StableReferenceFieldId.class, StringField.class, EnumField.class
 				};
 
 				for (Class<?> otherField : otherFields) {

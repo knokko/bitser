@@ -131,7 +131,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		return (int) min(Integer.MAX_VALUE, sizeField.maxValue);
 	}
 
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	enum ArrayType {
 		BOOLEAN,
 		BYTE,

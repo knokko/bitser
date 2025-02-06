@@ -106,6 +106,10 @@ public abstract class BitFieldWrapper {
 		if (!field.optional && value == null) {
 			throw new InvalidBitValueException("Legacy value for field " + field + " is null, which is no longer allowed");
 		}
-		setValue.accept(value);
+		try {
+			setValue.accept(value);
+		} catch (IllegalArgumentException invalidType) {
+			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
+		}
 	}
 }

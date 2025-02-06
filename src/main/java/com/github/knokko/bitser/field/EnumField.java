@@ -1,19 +1,15 @@
-package com.github.knokko.bitser;
+package com.github.knokko.bitser.field;
+
+import com.github.knokko.bitser.BitEnum;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(ElementType.TYPE)
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface BitEnum {
+public @interface EnumField {
 
-	Mode mode();
-
-	@BitEnum(mode = Mode.Ordinal)
-	enum Mode {
-		Name,
-		Ordinal
-	}
+	BitEnum.Mode mode();
 }

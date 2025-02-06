@@ -188,7 +188,7 @@ public class TestBitStructConnection {
 		assertEquals(1234.5, connection2.state.d);
 	}
 
-	@BitEnum(mode = BitEnum.Mode.UniformOrdinal)
+	@BitEnum(mode = BitEnum.Mode.Ordinal)
 	private enum ExampleEnum {
 		A,
 		B,
