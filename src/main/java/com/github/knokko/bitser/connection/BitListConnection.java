@@ -103,7 +103,6 @@ public class BitListConnection<T> extends BitConnection {
 		if (modification.action == Action.EDIT) {
 			synchronized (list) {
 				if (modification.index < myList.size()) {
-					// TODO What if the element was replaced or shifted in the meantime?
 					connectionList.get(modification.index).handleChanges(input);
 				} else {
 					bitser.createChildConnection(null, elementWrapper, null).handleChanges(input);

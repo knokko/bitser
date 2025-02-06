@@ -34,7 +34,6 @@ public class BitStructConnection<T> extends BitConnection {
 		this.referenceState = state != null ? bitser.shallowCopy(state) : null;
 		this.state = state;
 		this.reportChanges = reportChanges;
-		// TODO Handle inheritance
 		this.childConnections = new BitConnection[fields.size()];
 		for (int index = 0; index < fields.size(); index++) updateChildConnection(fields.get(index), index);
 	}
@@ -42,7 +41,6 @@ public class BitStructConnection<T> extends BitConnection {
 	@Override
 	public void checkForChanges() {
 		synchronized (getLock()) {
-			// TODO What about the with?
 			try {
 				if (findAndWriteChanges(null) == 0) return;
 			} catch (IOException shouldNotHappen) {
@@ -64,7 +62,6 @@ public class BitStructConnection<T> extends BitConnection {
 	@Override
 	public void handleChanges(BitInputStream input) throws IOException {
 		synchronized (getLock()) {
-			// TODO What about the with?
 			if (input.read()) {
 				int index = (int) decodeUniformInteger(0, fields.size() - 1, input);
 				BitFieldWrapper field = fields.get(index);
@@ -122,7 +119,6 @@ public class BitStructConnection<T> extends BitConnection {
 				numChanges += 1;
 
 				if (output != null) {
-					// TODO Test (reference fields)
 					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, null));
 					updateChildConnection(fieldWrapper, index);
 				}
