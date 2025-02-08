@@ -112,4 +112,6 @@ public abstract class BitFieldWrapper {
 			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}
+
+	void setLegacyReference(ReadJob read, Object value, Consumer<Object> setValue) {}
 }

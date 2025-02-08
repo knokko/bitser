@@ -34,6 +34,7 @@ public class ReferenceIdLoader {
 	}
 
 	private final Map<String, Mappings> labelMappings;
+	private final List<Runnable> postResolveCallbacks = new ArrayList<>();
 
 	private ReferenceIdLoader(Map<String, Mappings> labelMappings) {
 		this.labelMappings = labelMappings;
@@ -85,10 +86,15 @@ public class ReferenceIdLoader {
 		mappings.getStable(label, id, setValue);
 	}
 
+	public void addPostResolveCallback(Runnable callback) {
+		postResolveCallbacks.add(callback);
+	}
+
 	public void resolve() throws IOException {
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}
+		for (Runnable callback : postResolveCallbacks) callback.run();
 	}
 
 	private static class Mappings {

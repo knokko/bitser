@@ -212,12 +212,21 @@ class SingleClassWrapper {
 		for (FunctionWrapper function : functions) maxId = max(maxId, function.id);
 		legacy.convertedFunctionValues = new Object[max(maxId + 1, legacy.storedFunctionValues.length)];
 		for (FunctionWrapper function : functions) {
+			// TODO Test with references
 			if (function.id < legacy.hadFunctionValues.length && legacy.hadFunctionValues[function.id]) {
 				function.bitField.setLegacyValue(
 						read, legacy.storedFunctionValues[function.id],
 						newValue -> legacy.convertedFunctionValues[function.id] = newValue
 				);
 			}
+		}
+	}
+
+	void performLegacyResolve(ReadJob read, Object target, LegacyValues legacy) {
+		for (FieldWrapper field : fieldsSortedById) {
+			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyReference(
+					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
+			);
 		}
 	}
 

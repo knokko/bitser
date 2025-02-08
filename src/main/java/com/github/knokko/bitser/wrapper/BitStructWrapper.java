@@ -160,6 +160,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		for (int index = 0; index < classHierarchy.size(); index++) {
 			classHierarchy.get(index).setLegacyValues(read, instance, legacy.valuesHierarchy.get(index));
 		}
+		read.idLoader.addPostResolveCallback(() -> performLegacyResolve(instance, read, legacy));
 		if (instance instanceof PostInit) {
 			Map<Class<?>, Object[]> functionValues = new HashMap<>();
 			Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
@@ -174,7 +175,15 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 					new PostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
 			);
 		}
+		legacy.recoveredInstance = instance;
 		return instance;
+	}
+
+	private void performLegacyResolve(T target, ReadJob read, LegacyInstance legacy) {
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			classHierarchy.get(index).performLegacyResolve(read, target, legacy.valuesHierarchy.get(index));
+		}
+		// TODO Maybe create PostResolve interface?
 	}
 
 	@Override
