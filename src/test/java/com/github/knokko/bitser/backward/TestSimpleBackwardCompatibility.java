@@ -359,4 +359,65 @@ public class TestSimpleBackwardCompatibility {
 		assertContains(errorMessage, "from legacy world");
 		assertContains(errorMessage, "IdWrapper.id");
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ParentWithIncompatibleChild {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		final NonBackwardNestedAfter child = new NonBackwardNestedAfter();
+	}
+
+	@Test
+	public void testBackwardCompatibleParentWithNonCompatibleChild() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(
+				new ParentWithIncompatibleChild(), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "is not backward compatible");
+		assertContains(errorMessage, "NonBackwardNestedAfter");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ParentWithIncompatibleFunction {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		NonBackwardNestedAfter createChild() {
+			return new NonBackwardNestedAfter();
+		}
+	}
+
+	@Test
+	public void testBackwardCompatibleParentWithNonCompatibleFunction() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(
+				new ParentWithIncompatibleFunction(), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "is not backward compatible");
+		assertContains(errorMessage, "NonBackwardNestedAfter");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class MissesID {
+
+		@SuppressWarnings("unused")
+		@BitField
+		final String hello = "world";
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ParentWithMissingIdChild {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		final MissesID child = new MissesID();
+	}
+
+	@Test
+	public void testBackwardCompatibleParentWithChildThatMissesID() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(
+				new ParentWithMissingIdChild(), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "is not backward compatible");
+		assertContains(errorMessage, "MissesID");
+	}
 }

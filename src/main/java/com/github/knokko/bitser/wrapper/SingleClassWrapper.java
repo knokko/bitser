@@ -178,17 +178,18 @@ class SingleClassWrapper {
 		}
 	}
 
-	LegacyClass register(LegacyClasses legacy) {
+	LegacyClass register(Object object, LegacyClasses legacy) {
 		LegacyClass legacyClass = legacy.addClass(myClass);
 		if (!legacyClass.fields.isEmpty()) return legacyClass;
 
 		for (FieldWrapper field : fieldsSortedById) {
 			legacyClass.fields.add(new LegacyField(field.id, field.bitField));
-			field.bitField.registerLegacyClasses(legacy);
+			field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), legacy);
 		}
+
 		for (FunctionWrapper function : functions) {
 			legacyClass.functions.add(new LegacyField(function.id, function.bitField));
-			function.bitField.registerLegacyClasses(legacy);
+			function.bitField.registerLegacyClasses(function.computeValue(object, legacy.functionContext), legacy);
 		}
 		return legacyClass;
 	}
@@ -197,18 +198,7 @@ class SingleClassWrapper {
 		for (FieldWrapper field : getFields(write.legacy != null)) field.bitField.write(object, write);
 		FunctionContext functionContext = new FunctionContext(write.withParameters);
 		for (FunctionWrapper function : functions) {
-			Object result;
-			try {
-				if (function.classMethod.getParameterCount() == 0) result = function.classMethod.invoke(object);
-				else result = function.classMethod.invoke(object, functionContext);
-			} catch (IllegalAccessException e) {
-				throw new Error(e);
-			} catch (InvocationTargetException e) {
-				if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
-				if (e.getCause() instanceof Error) throw (Error) e.getCause();
-				throw new RuntimeException(e.getCause());
-			}
-			function.bitField.writeValue(result, write);
+			function.bitField.writeValue(function.computeValue(object, functionContext), write);
 		}
 	}
 
@@ -272,6 +262,19 @@ class SingleClassWrapper {
 			this.id = id;
 			this.classMethod = classMethod;
 			this.bitField = bitField;
+		}
+
+		Object computeValue(Object object, FunctionContext context) {
+			try {
+				if (classMethod.getParameterCount() == 0) return classMethod.invoke(object);
+				else return classMethod.invoke(object, context);
+			} catch (IllegalAccessException e) {
+				throw new Error(e);
+			} catch (InvocationTargetException e) {
+				if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
+				if (e.getCause() instanceof Error) throw (Error) e.getCause();
+				throw new RuntimeException(e.getCause());
+			}
 		}
 	}
 }

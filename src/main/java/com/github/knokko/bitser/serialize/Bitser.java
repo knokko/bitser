@@ -4,6 +4,7 @@ import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.connection.BitConnection;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.init.WithParameter;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -31,35 +32,35 @@ public class Bitser {
 
 	public void serialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
 		BitserWrapper<?> wrapper = cache.getWrapper(object.getClass());
+
 		boolean backwardCompatible = false;
-		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) {
-				backwardCompatible = true;
-				break;
-			}
-		}
-		LegacyClasses legacy = null;
-		if (backwardCompatible) {
-			legacy = new LegacyClasses();
-			legacy.cache = cache;
-			legacy.setRoot(wrapper.registerClasses(legacy));
-			serialize(legacy, output, new WithParameter("legacy-classes", legacy));
-		}
-
-		LabelCollection labels = new LabelCollection(cache, new HashSet<>(), backwardCompatible);
-		wrapper.collectReferenceTargetLabels(labels);
-
 		Map<String, Object> withParameters = new HashMap<>();
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject == BACKWARD_COMPATIBLE) backwardCompatible = true;
 			if (withObject instanceof WithParameter) {
 				WithParameter parameter = (WithParameter) withObject;
 				if (withParameters.containsKey(parameter.key)) {
 					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
 				}
 				withParameters.put(parameter.key, parameter.value);
-				continue;
 			}
+		}
+
+		LegacyClasses legacy = null;
+		if (backwardCompatible) {
+			legacy = new LegacyClasses();
+			legacy.cache = cache;
+			legacy.functionContext = new FunctionContext(withParameters);
+			legacy.setRoot(wrapper.registerClasses(object, legacy));
+			serialize(legacy, output, new WithParameter("legacy-classes", legacy));
+		}
+
+		LabelCollection labels = new LabelCollection(cache, new HashSet<>(), backwardCompatible);
+		wrapper.collectReferenceTargetLabels(labels);
+
+		for (Object withObject : withAndOptions) {
+			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject instanceof WithParameter) continue;
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
 					new LabelCollection(cache, labels.declaredTargets, false)
 			);

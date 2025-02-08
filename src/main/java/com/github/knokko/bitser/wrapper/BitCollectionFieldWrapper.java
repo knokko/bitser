@@ -42,9 +42,15 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void registerLegacyClasses(LegacyClasses legacy) {
-		super.registerLegacyClasses(legacy);
-		valuesWrapper.registerLegacyClasses(legacy);
+	void registerLegacyClasses(Object value, LegacyClasses legacy) {
+		super.registerLegacyClasses(value, legacy);
+		if (value == null) return;
+		if (value.getClass().isArray()) {
+			int size = Array.getLength(value);
+			for (int index = 0; index < size; index++) valuesWrapper.registerLegacyClasses(Array.get(value, index), legacy);
+		} else {
+			for (Object element : (Collection<?>) value) valuesWrapper.registerLegacyClasses(element, legacy);
+		}
 	}
 
 	@Override

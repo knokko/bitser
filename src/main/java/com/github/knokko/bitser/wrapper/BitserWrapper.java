@@ -30,7 +30,7 @@ public abstract class BitserWrapper<T> {
 			Object object, BitserCache cache, ReferenceIdMapper idMapper
 	);
 
-	public abstract LegacyStruct registerClasses(LegacyClasses legacy);
+	public abstract LegacyStruct registerClasses(Object object, LegacyClasses legacy);
 
 	public abstract UUID getStableId(Object target);
 

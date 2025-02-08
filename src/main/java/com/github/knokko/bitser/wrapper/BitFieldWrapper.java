@@ -53,7 +53,7 @@ public abstract class BitFieldWrapper {
 		}
 	}
 
-	void registerLegacyClasses(LegacyClasses legacy) {}
+	void registerLegacyClasses(Object value, LegacyClasses legacy) {}
 
 	public final void write(Object object, WriteJob write) throws IOException {
 		try {

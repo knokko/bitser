@@ -86,10 +86,13 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public LegacyStruct registerClasses(LegacyClasses legacy) {
+	public LegacyStruct registerClasses(Object object, LegacyClasses legacy) {
+		if (!this.bitStruct.backwardCompatible()) {
+			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
+		}
 		LegacyStruct legacyStruct = legacy.addStruct(constructor.getDeclaringClass());
 		if (!legacyStruct.classHierarchy.isEmpty()) return legacyStruct;
-		for (SingleClassWrapper currentClass : classHierarchy) legacyStruct.classHierarchy.add(currentClass.register(legacy));
+		for (SingleClassWrapper currentClass : classHierarchy) legacyStruct.classHierarchy.add(currentClass.register(object, legacy));
 		return legacyStruct;
 	}
 

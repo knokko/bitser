@@ -93,9 +93,10 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 	}
 
 	@Override
-	void registerLegacyClasses(LegacyClasses legacy) {
-		// TODO Maybe only register the classes that are actually used?
-		for (Class<?> allowedClass : allowed) legacy.cache.getWrapper(allowedClass).registerClasses(legacy);
+	void registerLegacyClasses(Object value, LegacyClasses legacy) {
+		super.registerLegacyClasses(value, legacy);
+		if (value == null) return;
+		legacy.cache.getWrapper(value.getClass()).registerClasses(value, legacy);
 	}
 
 	@Override

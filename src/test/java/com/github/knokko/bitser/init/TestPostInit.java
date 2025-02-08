@@ -3,6 +3,7 @@ package com.github.knokko.bitser.init;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
@@ -20,12 +21,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestPostInit {
 
-	@BitStruct(backwardCompatible = false)
+	@BitStruct(backwardCompatible = true)
 	private static class DerivedSum implements PostInit {
 
+		@BitField(id = 1)
 		@IntegerField(expectUniform = false)
 		final int a;
 
+		@BitField(id = 0)
 		@IntegerField(expectUniform = false)
 		final int b;
 
@@ -131,10 +134,10 @@ public class TestPostInit {
 		assertEquals(0.75, parent.fraction);
 	}
 
-	@BitStruct(backwardCompatible = false)
+	@BitStruct(backwardCompatible = true)
 	private static class DefaultValue implements PostInit {
 
-		@BitField
+		@BitField(id = 0)
 		String value = "";
 
 		@Override
@@ -146,14 +149,20 @@ public class TestPostInit {
 	@Test
 	public void testWithParameters() {
 		Bitser bitser = new Bitser(true);
-		DefaultValue defaultValue = new DefaultValue();
 		DefaultValue customValue = new DefaultValue();
 		customValue.value = "hello";
 
-		defaultValue = bitser.deepCopy(defaultValue, new WithParameter("default-value", "it worked"), new WithParameter("unused", 1234));
+		DefaultValue defaultValue = bitser.deepCopy(
+				new DefaultValue(), new WithParameter("default-value", "it worked"), new WithParameter("unused", 1234)
+		);
 		customValue = bitser.deepCopy(customValue);
 		assertEquals("it worked", defaultValue.value);
 		assertEquals("hello", customValue.value);
+
+		defaultValue = bitser.deserializeFromBytes(DefaultValue.class, bitser.serializeToBytes(
+				new DefaultValue(), Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE, new WithParameter("default-value", "also backward-compatible"));
+		assertEquals("also backward-compatible", defaultValue.value);
 	}
 
 	@Test
@@ -351,5 +360,31 @@ public class TestPostInit {
 		assertEquals(2, loaded.classes.size());
 		assertTrue(loaded.classes.contains(File.class));
 		assertTrue(loaded.classes.contains(Path.class));
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class UsesFunctionContext implements PostInit {
+
+		int c;
+
+		@SuppressWarnings("unused")
+		@BitField(id = 2)
+		DerivedSum create(FunctionContext context) {
+			return new DerivedSum(5, (int) context.withParameters.get("b"));
+		}
+
+		@Override
+		public void postInit(Context context) {
+			this.c = ((DerivedSum) context.functionValues.get(UsesFunctionContext.class)[2]).c;
+		}
+	}
+
+	@Test
+	public void testBackwardCompatibleFunctionContext() {
+		Bitser bitser = new Bitser(false);
+		UsesFunctionContext loaded = bitser.deserializeFromBytes(UsesFunctionContext.class, bitser.serializeToBytes(
+				new UsesFunctionContext(), Bitser.BACKWARD_COMPATIBLE, new WithParameter("b", 7)
+		), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(12, loaded.c);
 	}
 }

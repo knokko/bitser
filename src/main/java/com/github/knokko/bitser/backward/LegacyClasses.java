@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -27,6 +28,7 @@ public class LegacyClasses {
 	@ReferenceField(stable = false, label = "structs")
 	private LegacyStruct root;
 	public BitserCache cache;
+	public FunctionContext functionContext;
 
 	public void setRoot(LegacyStruct root) {
 		if (this.root != null) throw new IllegalStateException();
