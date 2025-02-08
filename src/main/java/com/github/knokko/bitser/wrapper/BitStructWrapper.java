@@ -104,6 +104,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 	@Override
 	public void write(Object object, WriteJob write) throws IOException {
+		//System.out.println("Call BitStructWrapper.write for " + constructor.getDeclaringClass());
 		if (write.legacy != null && !bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
@@ -161,7 +162,15 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			classHierarchy.get(index).setLegacyValues(read, instance, legacy.valuesHierarchy.get(index));
 		}
 		read.idLoader.addPostResolveCallback(() -> performLegacyResolve(instance, read, legacy));
-		if (instance instanceof PostInit) {
+		legacy.recoveredInstance = instance;
+		return instance;
+	}
+
+	private void performLegacyResolve(T target, ReadJob read, LegacyInstance legacy) {
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			classHierarchy.get(index).performLegacyResolve(read, target, legacy.valuesHierarchy.get(index));
+		}
+		if (target instanceof PostInit) {
 			Map<Class<?>, Object[]> functionValues = new HashMap<>();
 			Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
 			Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
@@ -171,19 +180,10 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 				legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
 				legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
 			}
-			((PostInit) instance).postInit(
+			((PostInit) target).postInit(
 					new PostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
 			);
 		}
-		legacy.recoveredInstance = instance;
-		return instance;
-	}
-
-	private void performLegacyResolve(T target, ReadJob read, LegacyInstance legacy) {
-		for (int index = 0; index < classHierarchy.size(); index++) {
-			classHierarchy.get(index).performLegacyResolve(read, target, legacy.valuesHierarchy.get(index));
-		}
-		// TODO Maybe create PostResolve interface?
 	}
 
 	@Override

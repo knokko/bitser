@@ -30,7 +30,6 @@ abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 		if (value instanceof LegacyInstance) {
 			super.setLegacyValue(read, ((LegacyInstance) value).recoveredInstance, setValue);
 		} else {
-			// TODO Test this case
 			super.setLegacyValue(read, value, setValue);
 		}
 	}

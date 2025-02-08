@@ -1,9 +1,6 @@
 package com.github.knokko.bitser.wrapper;
 
-import com.github.knokko.bitser.backward.LegacyClass;
-import com.github.knokko.bitser.backward.LegacyClasses;
-import com.github.knokko.bitser.backward.LegacyField;
-import com.github.knokko.bitser.backward.LegacyValues;
+import com.github.knokko.bitser.backward.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -195,25 +192,40 @@ class SingleClassWrapper {
 	}
 
 	void write(Object object, WriteJob write) throws IOException {
-		for (FieldWrapper field : getFields(write.legacy != null)) field.bitField.write(object, write);
+		//System.out.println("SingleClassWrapper.write for " + myClass);
+		for (FieldWrapper field : getFields(write.legacy != null)) {
+			if (write.legacy != null) System.out.println("Writing field " + field.id + "...");
+			field.bitField.write(object, write);
+		}
 		FunctionContext functionContext = new FunctionContext(write.withParameters);
 		for (FunctionWrapper function : functions) {
+			if (write.legacy != null) System.out.println("Writing function " + function.id + "...");
 			function.bitField.writeValue(function.computeValue(object, functionContext), write);
 		}
+		//System.out.println("Finished SingleClassWrapper.write for " + myClass);
 	}
 
 	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
+		int maxFieldId = -1;
+		for (FieldWrapper field : fields) maxFieldId = max(maxFieldId, field.id);
+//		if (legacy.values.length <= maxFieldId) legacy.values = Arrays.copyOf(legacy.values, maxFieldId + 1);
+//		if (legacy.hadValues.length <= maxFieldId) legacy.hadValues = Arrays.copyOf(legacy.hadValues, maxFieldId + 1);
 		for (FieldWrapper field : fieldsSortedById) {
 			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyValue(
 					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
 			);
 		}
-		int maxId = -1;
-		for (FunctionWrapper function : functions) maxId = max(maxId, function.id);
-		legacy.convertedFunctionValues = new Object[max(maxId + 1, legacy.storedFunctionValues.length)];
+		int maxFunctionId = -1;
+		for (FunctionWrapper function : functions) maxFunctionId = max(maxFunctionId, function.id);
+		legacy.convertedFunctionValues = new Object[max(maxFunctionId + 1, legacy.storedFunctionValues.length)];
+//		if (legacy.storedFunctionValues.length <= maxFieldId) {
+//			legacy.storedFunctionValues = Arrays.copyOf(legacy.storedFunctionValues, maxFunctionId + 1);
+//		}
+//		if (legacy.hadFunctionValues.length <= maxFunctionId) {
+//			legacy.hadFunctionValues = Arrays.copyOf(legacy.hadFunctionValues, maxFunctionId + 1);
+//		}
 		for (FunctionWrapper function : functions) {
-			// TODO Test with references
-			if (function.id < legacy.hadFunctionValues.length && legacy.hadFunctionValues[function.id]) {
+			if (legacy.hadFunctionValues.length > function.id && legacy.hadFunctionValues[function.id]) {
 				function.bitField.setLegacyValue(
 						read, legacy.storedFunctionValues[function.id],
 						newValue -> legacy.convertedFunctionValues[function.id] = newValue
@@ -226,6 +238,16 @@ class SingleClassWrapper {
 		for (FieldWrapper field : fieldsSortedById) {
 			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyReference(
 					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
+			);
+		}
+		for (int index = 0; index < legacy.storedFunctionValues.length; index++) {
+			if (legacy.storedFunctionValues[index] instanceof LegacyInstance) {
+				legacy.storedFunctionValues[index] = ((LegacyInstance) legacy.storedFunctionValues[index]).recoveredInstance;
+			}
+		}
+		for (FunctionWrapper function : functions) {
+			if (function.id < legacy.hadFunctionValues.length && legacy.hadFunctionValues[function.id]) function.bitField.setLegacyReference(
+					read, legacy.storedFunctionValues[function.id], newValue -> legacy.convertedFunctionValues[function.id] = newValue
 			);
 		}
 	}

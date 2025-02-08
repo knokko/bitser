@@ -103,6 +103,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 	void writeValue(Object value, WriteJob write) throws IOException {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
+				//System.out.println("StructFieldWrapper.writeValue: class is " + value.getClass());
 				encodeUniformInteger(index, 0, allowed.length - 1, write.output);
 				write.cache.getWrapper(value.getClass()).write(value, write);
 				return;

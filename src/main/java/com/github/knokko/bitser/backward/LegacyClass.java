@@ -8,6 +8,8 @@ import com.github.knokko.bitser.serialize.ReadJob;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import static java.lang.Math.max;
+
 @BitStruct(backwardCompatible = false)
 public class LegacyClass {
 
@@ -33,26 +35,24 @@ public class LegacyClass {
 
 	public LegacyValues read(ReadJob read) throws IOException {
 		int maxId = -1;
-		for (LegacyField field : fields) {
-			if (field.id > maxId) maxId = field.id;
-		}
+		for (LegacyField field : fields) maxId = max(maxId, field.id);
 		Object[] artificial = new Object[maxId + 1];
 		boolean[] hadValues = new boolean[maxId + 1];
 
 		for (LegacyField field : fields) {
 			hadValues[field.id] = true;
+			System.out.println("Reading field " + field.id + "...");
 			field.bitField.read(read, child -> artificial[field.id] = child);
 		}
 
 		maxId = -1;
-		for (LegacyField function : functions) {
-			if (function.id > maxId) maxId = function.id;
-		}
+		for (LegacyField function : functions) maxId = max(maxId, function.id);
 		Object[] functionValues = new Object[maxId + 1];
 		boolean[] hadFunctionValues = new boolean[maxId + 1];
 
 		for (LegacyField function : functions) {
 			hadFunctionValues[function.id] = true;
+			System.out.println("Reading function " + function.id + "...");
 			function.bitField.read(read, value -> functionValues[function.id] = value);
 		}
 
