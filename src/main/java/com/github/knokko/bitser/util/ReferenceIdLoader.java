@@ -26,7 +26,10 @@ public class ReferenceIdLoader {
 		Map<String, Mappings> labelMappings = new HashMap<>(labels.declaredTargets.size());
 		for (String label : sortedLabels) {
 			int unstableSize = 0;
-			if (labels.unstable.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+			if (labels.unstable.contains(label)) {
+				System.out.println("Add unstable label " + label);
+				unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+			}
 			labelMappings.put(label, new Mappings(unstableSize, labels.stable.contains(label)));
 		}
 
@@ -73,11 +76,12 @@ public class ReferenceIdLoader {
 		Mappings mappings = labelMappings.get(label);
 		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
 
-		System.out.println("getUnstable...");
+		System.out.println("getUnstable " + label + "...");
 		mappings.getUnstable(label, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input), setValue);
 	}
 
 	public void getStable(String label, ValueConsumer setValue, BitInputStream input) throws IOException {
+		System.out.println("Call getStable " + label);
 		Mappings mappings = labelMappings.get(label);
 		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
 

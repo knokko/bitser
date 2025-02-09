@@ -72,6 +72,7 @@ public class Bitser {
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
 		}
 
+		System.out.println("Start id saving-----------------------------");
 		idMapper.save(output);
 
 		wrapper.write(object, new WriteJob(output, cache, idMapper, withParameters, legacy));

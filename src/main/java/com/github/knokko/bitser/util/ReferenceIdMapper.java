@@ -55,6 +55,7 @@ public class ReferenceIdMapper {
 	}
 
 	public void maybeEncodeUnstableId(String label, Object value, BitOutputStream output) throws IOException {
+		System.out.println("maybe encode unstable " + label);
 		if (!readOnly) throw new IllegalStateException("You can't call encodeUnstableId until the mapper is read-only");
 
 		Mappings mappings = this.labelMappings.get(label);
@@ -118,7 +119,7 @@ public class ReferenceIdMapper {
 		for (String label : sortedLabels) {
 			Mappings mappings = labelMappings.get(label);
 			if (mappings.unstable != null) {
-				System.out.println("Encode unstable...");
+				System.out.println("Encode unstable " + label + "...");
 				encodeVariableInteger(mappings.unstable.size(), 0, Integer.MAX_VALUE, output);
 			}
 		}

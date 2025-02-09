@@ -108,7 +108,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				valuesWrapper.readValue(read, element -> {
 					rememberElement.add(element);
 					if (value instanceof Collection<?>) {
-						System.out.println("Add " + element + " to " + value.getClass());
 						((Collection<Object>) value).add(element);
 					} else {
 						Array.set(value, rememberIndex, element);
