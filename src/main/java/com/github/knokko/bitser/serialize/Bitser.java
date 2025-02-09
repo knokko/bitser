@@ -59,8 +59,7 @@ public class Bitser {
 		wrapper.collectReferenceTargetLabels(labels);
 
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
-			if (withObject instanceof WithParameter) continue;
+			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
 			cache.getWrapper(withObject.getClass()).collectReferenceTargetLabels(
 					new LabelCollection(cache, labels.declaredTargets, false)
 			);
@@ -69,8 +68,7 @@ public class Bitser {
 		ReferenceIdMapper idMapper = new ReferenceIdMapper(labels);
 		wrapper.registerReferenceTargets(object, cache, idMapper);
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
-			if (withObject instanceof WithParameter) continue;
+			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
 		}
 
@@ -106,7 +104,8 @@ public class Bitser {
 		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
 
 		LabelCollection labels = new LabelCollection(cache, new HashSet<>(), backwardCompatible);
-		wrapper.collectReferenceTargetLabels(labels);
+		if (legacy == null) wrapper.collectReferenceTargetLabels(labels);
+		else legacy.collectReferenceTargetLabels(labels);
 
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
@@ -125,8 +124,7 @@ public class Bitser {
 
 		ReferenceIdMapper withMapper = new ReferenceIdMapper(labels);
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
-			if (withObject instanceof WithParameter) continue;
+			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, withMapper);
 		}
 

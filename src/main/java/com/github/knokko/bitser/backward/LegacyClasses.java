@@ -5,6 +5,7 @@ import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.LabelCollection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +34,10 @@ public class LegacyClasses {
 	public void setRoot(LegacyStruct root) {
 		if (this.root != null) throw new IllegalStateException();
 		this.root = root;
+	}
+
+	public void collectReferenceTargetLabels(LabelCollection labels) {
+		for (LegacyClass legacyClass : classes) legacyClass.collectReferenceTargetLabels(labels);
 	}
 
 	public LegacyStruct getRoot() {

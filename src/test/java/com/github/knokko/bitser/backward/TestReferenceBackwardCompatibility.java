@@ -21,7 +21,7 @@ public class TestReferenceBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class Dummy {
 
-		@BitField(id = 0)
+		@BitField(id = 2)
 		@IntegerField(expectUniform = false)
 		final int x;
 
@@ -38,7 +38,7 @@ public class TestReferenceBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class NewDummy implements PostInit { // TODO Move PostInit class
 
-		@BitField(id = 0)
+		@BitField(id = 2)
 		@IntegerField(expectUniform = false)
 		final int x;
 
@@ -495,17 +495,17 @@ public class TestReferenceBackwardCompatibility {
 	}
 
 	@Test
-	public void testForbiddenUnstableToStableReference() {
+	public void testUnstableToStableReference() {
 		Bitser bitser = new Bitser(true);
 		SimpleUnstable unstable = new SimpleUnstable();
 		unstable.target = new Dummy(75);
 		unstable.reference = unstable.target;
 
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		SimpleStable stable = bitser.deserializeFromBytes(
 				SimpleStable.class, bitser.serializeToBytes(unstable, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
-		assertContains(errorMessage, "stable ID");
-		assertContains(errorMessage, "the one");
+		);
+		assertEquals(-1.0, stable.target.rating);
+		assertSame(stable.target, stable.reference);
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -527,10 +527,10 @@ public class TestReferenceBackwardCompatibility {
 		stable.target = new StableDummy(75.75);
 		stable.reference = stable.target;
 
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		SimpleUnstable2 loaded = bitser.deserializeFromBytes(
 				SimpleUnstable2.class, bitser.serializeToBytes(stable, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
-		assertContains(errorMessage, "stable ID");
-		assertContains(errorMessage, "the one");
+		);
+		assertEquals(75.75, loaded.target.rating);
+		assertSame(loaded.target, loaded.reference);
 	}
 }
