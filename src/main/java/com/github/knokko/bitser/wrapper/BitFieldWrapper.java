@@ -114,4 +114,8 @@ public abstract class BitFieldWrapper {
 	}
 
 	void setLegacyReference(ReadJob read, Object value, Consumer<Object> setValue) {}
+
+	boolean delayLegacyUntilResolve() {
+		return false;
+	}
 }

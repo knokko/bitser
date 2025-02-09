@@ -33,4 +33,9 @@ abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 			super.setLegacyValue(read, value, setValue);
 		}
 	}
+
+	@Override
+	boolean delayLegacyUntilResolve() {
+		return true;
+	}
 }

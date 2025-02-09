@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.util;
 
+import com.github.knokko.bitser.backward.LegacyInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -15,6 +16,11 @@ public class ReferenceIdMapper {
 
 	static UUID extractStableId(Object target, BitserCache cache) {
 		try {
+			if (target instanceof LegacyInstance) {
+				UUID id = ((LegacyInstance) target).stableID;
+				if (id == null) throw new InvalidBitValueException("Legacy object didn't have stable ID"); // TODO test this
+				return id;
+			}
 			UUID id = cache.getWrapper(target.getClass()).getStableId(target);
 			if (id == null) throw new InvalidBitValueException("Stable UUID of " + target + " is null, which is forbidden");
 			return id;

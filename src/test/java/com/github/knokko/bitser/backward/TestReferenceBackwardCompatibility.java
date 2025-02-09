@@ -8,6 +8,8 @@ import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -225,6 +227,98 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(456, again.dummies.get(1).y);
 	}
 
+	@BitStruct(backwardCompatible = true)
+	private static class StableDummy {
+
+		@SuppressWarnings("unused")
+		@BitField(id = 0)
+		@StableReferenceFieldId
+		final UUID id = UUID.randomUUID();
+
+		@BitField(id = 1)
+		@FloatField(expectMultipleOf = 0.1)
+		final double rating;
+
+		StableDummy(double rating) {
+			this.rating = rating;
+		}
+
+		@SuppressWarnings("unused")
+		StableDummy() {
+			this(-1.0);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OldMixedReferenceList {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "dummies")
+		final ArrayList<StableDummy> targets = new ArrayList<>();
+
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		@BitField(id = 1)
+		@ReferenceField(stable = true, label = "dummies")
+		final ArrayList<StableDummy> stableReferences = new ArrayList<>();
+
+		@BitField(id = 2)
+		@ReferenceField(stable = false, label = "dummies")
+		final ArrayList<ArrayList<StableDummy>> unstableReferences = new ArrayList<>();
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class NewMixedReferenceList {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "dummies")
+		final StableDummy[] targets;
+
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		@BitField(id = 1)
+		@ReferenceField(stable = true, label = "dummies")
+		final LinkedList<StableDummy> stableReferences = new LinkedList<>();
+
+		@BitField(id = 2)
+		@ReferenceField(stable = false, label = "dummies")
+		StableDummy[][] unstableReferences;
+
+		@SuppressWarnings("unused")
+		NewMixedReferenceList(StableDummy[] targets) {
+			this.targets = targets;
+		}
+
+		@SuppressWarnings("unused")
+		NewMixedReferenceList() {
+			this.targets = null;
+		}
+	}
+
+	@Test
+	public void testStableReferences() {
+		Bitser bitser = new Bitser(true);
+		OldMixedReferenceList before = new OldMixedReferenceList();
+		before.targets.add(new StableDummy(0.5));
+		before.targets.add(new StableDummy(-2.5));
+		before.stableReferences.add(before.targets.get(1));
+		before.stableReferences.add(before.targets.get(0));
+		before.stableReferences.add(before.targets.get(1));
+		before.unstableReferences.add(new ArrayList<>(1));
+		before.unstableReferences.get(0).add(before.targets.get(1));
+
+		NewMixedReferenceList after = bitser.deserializeFromBytes(NewMixedReferenceList.class, bitser.serializeToBytes(
+				before, Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE);
+		assert after.targets != null;
+		assertEquals(2, after.targets.length);
+		assertEquals(0.5, after.targets[0].rating);
+		assertEquals(-2.5, after.targets[1].rating);
+		assertEquals(3, after.stableReferences.size());
+		assertSame(after.targets[1], after.stableReferences.get(0));
+		assertSame(after.targets[0], after.stableReferences.get(1));
+		assertSame(after.targets[1], after.stableReferences.get(0));
+		assertEquals(1, after.unstableReferences.length);
+		assertEquals(1, after.unstableReferences[0].length);
+		assertSame(after.targets[1], after.unstableReferences[0][0]);
+	}
 	// TODO Test nested
-	// TODO Test stable
 }

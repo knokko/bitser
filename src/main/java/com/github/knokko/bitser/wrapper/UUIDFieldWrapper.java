@@ -14,10 +14,10 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInte
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
 
 @BitStruct(backwardCompatible = false)
-class UUIDFieldWrapper extends BitFieldWrapper {
+public class UUIDFieldWrapper extends BitFieldWrapper {
 
 	@BitField
-	final boolean isStableReferenceId;
+	public final boolean isStableReferenceId;
 
 	UUIDFieldWrapper(VirtualField field) {
 		super(field);

@@ -4,9 +4,11 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.wrapper.UUIDFieldWrapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static java.lang.Math.max;
 
@@ -38,11 +40,15 @@ public class LegacyClass {
 		for (LegacyField field : fields) maxId = max(maxId, field.id);
 		Object[] artificial = new Object[maxId + 1];
 		boolean[] hadValues = new boolean[maxId + 1];
+		UUID stableID = null;
 
 		for (LegacyField field : fields) {
 			hadValues[field.id] = true;
 			System.out.println("Reading field " + field.id + "...");
 			field.bitField.read(read, child -> artificial[field.id] = child);
+			if (field.bitField instanceof UUIDFieldWrapper && ((UUIDFieldWrapper) field.bitField).isStableReferenceId) {
+				stableID = (UUID) artificial[field.id];
+			}
 		}
 
 		maxId = -1;
@@ -56,6 +62,6 @@ public class LegacyClass {
 			function.bitField.read(read, value -> functionValues[function.id] = value);
 		}
 
-		return new LegacyValues(artificial, hadValues, functionValues, hadFunctionValues);
+		return new LegacyValues(artificial, hadValues, functionValues, hadFunctionValues, stableID);
 	}
 }

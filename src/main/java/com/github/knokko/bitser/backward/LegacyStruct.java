@@ -8,6 +8,7 @@ import com.github.knokko.bitser.serialize.ReadJob;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @BitStruct(backwardCompatible = false)
 public class LegacyStruct {
@@ -23,10 +24,13 @@ public class LegacyStruct {
 
 	public void read(ReadJob read, int inheritanceIndex, Consumer setValue) throws IOException {
 		List<LegacyValues> artificial = new ArrayList<>(classHierarchy.size());
+		UUID stableID = null;
 		for (LegacyClass legacyClass : classHierarchy) {
-			artificial.add(legacyClass.read(read));
+			LegacyValues classValues = legacyClass.read(read);
+			artificial.add(classValues);
+			if (classValues.stableID != null) stableID = classValues.stableID;
 		}
-		setValue.consume(new LegacyInstance(inheritanceIndex, artificial));
+		setValue.consume(new LegacyInstance(inheritanceIndex, artificial, stableID));
 	}
 
 	@FunctionalInterface

@@ -108,6 +108,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				valuesWrapper.readValue(read, element -> {
 					rememberElement.add(element);
 					if (value instanceof Collection<?>) {
+						System.out.println("Add " + element + " to " + value.getClass());
 						((Collection<Object>) value).add(element);
 					} else {
 						Array.set(value, rememberIndex, element);
@@ -123,6 +124,15 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void setLegacyValue(ReadJob read, Object legacyCollection, Consumer<Object> setValue) {
+		if (!valuesWrapper.delayLegacyUntilResolve()) actuallySetLegacyValues(read, legacyCollection, setValue);
+	}
+
+	@Override
+	void setLegacyReference(ReadJob read, Object legacyCollection, Consumer<Object> setValue) {
+		if (valuesWrapper.delayLegacyUntilResolve()) actuallySetLegacyValues(read, legacyCollection, setValue);
+	}
+
+	private void actuallySetLegacyValues(ReadJob read, Object legacyCollection, Consumer<Object> setValue) {
 		if (legacyCollection == null) {
 			super.setLegacyValue(read, null, setValue);
 			return;
@@ -147,6 +157,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				index += 1;
 			}
 		}
+		System.out.println("setLegacyValue for " + field.type);
 
 		Object newCollection = field.type.isArray() ? Array.newInstance(field.type.getComponentType(), size) :
 				constructCollectionWithSize(field.type, size);
@@ -154,29 +165,55 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			for (int index = 0; index < size; index++) {
 				final int rememberIndex = index;
 				Object oldValue = oldArray[index];
-				valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
-					try {
-						Array.set(newCollection, rememberIndex, newValue);
-					} catch (IllegalArgumentException wrongType) {
-						throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
-					}
-				});
+				if (valuesWrapper.delayLegacyUntilResolve()) {
+					valuesWrapper.setLegacyReference(
+							read, oldValue, newValue -> setLegacyArrayValue(newCollection, rememberIndex, oldValue, newValue)
+					);
+				} else {
+					valuesWrapper.setLegacyValue(
+							read, oldValue, newValue -> setLegacyArrayValue(newCollection, rememberIndex, oldValue, newValue)
+					);
+				}
+				// TODO Test all cases
 			}
 		} else {
-			Object dummyArray = Array.newInstance(valuesWrapper.field.type, 1);
 			for (Object oldValue : oldArray) {
-				valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
-					try {
-						Array.set(dummyArray, 0, newValue);
-					} catch (IllegalArgumentException wrongType) {
-						throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
-					}
-					//noinspection unchecked
-					((Collection<Object>) newCollection).add(newValue);
-				});
+				if (valuesWrapper.delayLegacyUntilResolve()) {
+					valuesWrapper.setLegacyReference(
+							read, oldValue, newValue -> addToLegacyCollection(newCollection, oldValue, newValue)
+					);
+				} else {
+					valuesWrapper.setLegacyValue(
+							read, oldValue, newValue -> addToLegacyCollection(newCollection, oldValue, newValue)
+					);
+				}
 			}
 		}
 
 		super.setLegacyValue(read, newCollection, setValue);
+	}
+
+	private void setLegacyArrayValue(Object newCollection, int index, Object oldValue, Object newValue) {
+		try {
+			Array.set(newCollection, index, newValue);
+		} catch (IllegalArgumentException wrongType) {
+			throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
+		}
+	}
+
+	private void addToLegacyCollection(Object newCollection, Object oldValue, Object newValue) {
+		Object dummyArray = Array.newInstance(valuesWrapper.field.type, 1);
+		try {
+			Array.set(dummyArray, 0, newValue);
+		} catch (IllegalArgumentException wrongType) {
+			throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
+		}
+		//noinspection unchecked
+		((Collection<Object>) newCollection).add(newValue);
+	}
+
+	@Override
+	boolean delayLegacyUntilResolve() {
+		return valuesWrapper.delayLegacyUntilResolve();
 	}
 }
