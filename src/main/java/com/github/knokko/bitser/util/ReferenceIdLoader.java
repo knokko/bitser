@@ -46,6 +46,7 @@ public class ReferenceIdLoader {
 
 		if (mappings.stable != null) mappings.registerStable(value, extractStableId(value, cache));
 		if (mappings.unstable != null) {
+			System.out.println("Prepare to decode unstable ID...");
 			mappings.registerUnstable(value, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input));
 		}
 	}
@@ -72,6 +73,7 @@ public class ReferenceIdLoader {
 		Mappings mappings = labelMappings.get(label);
 		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
 
+		System.out.println("getUnstable...");
 		mappings.getUnstable(label, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input), setValue);
 	}
 

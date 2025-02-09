@@ -140,6 +140,7 @@ public class Bitser {
 		);
 
 		withMapper.shareWith(idLoader);
+		System.out.println("Start resolve-----------------------------");
 		idLoader.resolve();
 
 		return result.get(0);
