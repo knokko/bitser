@@ -1,8 +1,8 @@
-package com.github.knokko.bitser.init;
+package com.github.knokko.bitser.serialize;
 
 import java.util.Map;
 
-public interface PostInit {
+public interface BitPostInit {
 
 	void postInit(Context context);
 

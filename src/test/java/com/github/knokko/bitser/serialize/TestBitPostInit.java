@@ -1,11 +1,10 @@
-package com.github.knokko.bitser.init;
+package com.github.knokko.bitser.serialize;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -19,10 +18,10 @@ import java.util.Set;
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestPostInit {
+public class TestBitPostInit {
 
 	@BitStruct(backwardCompatible = true)
-	private static class DerivedSum implements PostInit {
+	private static class DerivedSum implements BitPostInit {
 
 		@BitField(id = 1)
 		@IntegerField(expectUniform = false)
@@ -86,7 +85,7 @@ public class TestPostInit {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class LegacyConversionAfter implements PostInit {
+	private static class LegacyConversionAfter implements BitPostInit {
 
 		@BitField(id = 0)
 		String hello;
@@ -135,7 +134,7 @@ public class TestPostInit {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class DefaultValue implements PostInit {
+	private static class DefaultValue implements BitPostInit {
 
 		@BitField(id = 0)
 		String value = "";
@@ -184,7 +183,7 @@ public class TestPostInit {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class SaveClassName implements PostInit {
+	private static class SaveClassName implements BitPostInit {
 
 		private Class<?> wrapped;
 
@@ -221,7 +220,7 @@ public class TestPostInit {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class MultipleClassNames implements PostInit {
+	private static class MultipleClassNames implements BitPostInit {
 
 		private final List<Class<?>> classes = new ArrayList<>();
 
@@ -314,7 +313,7 @@ public class TestPostInit {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class ClassSet implements PostInit {
+	private static class ClassSet implements BitPostInit {
 
 		private final Set<Class<?>> classes = new HashSet<>();
 
@@ -328,7 +327,7 @@ public class TestPostInit {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public void postInit(PostInit.Context context) {
+		public void postInit(BitPostInit.Context context) {
 			Object[] legacyValues = context.legacyFunctionValues.get(ClassSet.class);
 			Object[] currentValues = context.functionValues.get(ClassSet.class);
 
@@ -363,7 +362,7 @@ public class TestPostInit {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class UsesFunctionContext implements PostInit {
+	private static class UsesFunctionContext implements BitPostInit {
 
 		int c;
 

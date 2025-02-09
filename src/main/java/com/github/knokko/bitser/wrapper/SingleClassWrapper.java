@@ -208,8 +208,6 @@ class SingleClassWrapper {
 	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
 		int maxFieldId = -1;
 		for (FieldWrapper field : fields) maxFieldId = max(maxFieldId, field.id);
-//		if (legacy.values.length <= maxFieldId) legacy.values = Arrays.copyOf(legacy.values, maxFieldId + 1);
-//		if (legacy.hadValues.length <= maxFieldId) legacy.hadValues = Arrays.copyOf(legacy.hadValues, maxFieldId + 1);
 		for (FieldWrapper field : fieldsSortedById) {
 			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyValue(
 					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
@@ -218,12 +216,6 @@ class SingleClassWrapper {
 		int maxFunctionId = -1;
 		for (FunctionWrapper function : functions) maxFunctionId = max(maxFunctionId, function.id);
 		legacy.convertedFunctionValues = new Object[max(maxFunctionId + 1, legacy.storedFunctionValues.length)];
-//		if (legacy.storedFunctionValues.length <= maxFieldId) {
-//			legacy.storedFunctionValues = Arrays.copyOf(legacy.storedFunctionValues, maxFunctionId + 1);
-//		}
-//		if (legacy.hadFunctionValues.length <= maxFunctionId) {
-//			legacy.hadFunctionValues = Arrays.copyOf(legacy.hadFunctionValues, maxFunctionId + 1);
-//		}
 		for (FunctionWrapper function : functions) {
 			if (legacy.hadFunctionValues.length > function.id && legacy.hadFunctionValues[function.id]) {
 				function.bitField.setLegacyValue(

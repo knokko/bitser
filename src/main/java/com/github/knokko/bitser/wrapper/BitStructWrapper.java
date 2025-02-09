@@ -7,7 +7,7 @@ import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.backward.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.init.PostInit;
+import com.github.knokko.bitser.serialize.BitPostInit;
 import com.github.knokko.bitser.serialize.*;
 import com.github.knokko.bitser.util.VirtualField;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
@@ -143,9 +143,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			for (SingleClassWrapper currentClass : classHierarchy) {
 				serializedFunctionValues.put(currentClass.myClass, currentClass.read(object, read));
 			}
-			if (object instanceof PostInit) {
-				((PostInit) object).postInit(
-						new PostInit.Context(serializedFunctionValues, null, null, read.withParameters)
+			if (object instanceof BitPostInit) {
+				((BitPostInit) object).postInit(
+						new BitPostInit.Context(serializedFunctionValues, null, null, read.withParameters)
 				);
 			}
 			setValue.consume(object);
@@ -170,7 +170,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		for (int index = 0; index < classHierarchy.size(); index++) {
 			classHierarchy.get(index).performLegacyResolve(read, target, legacy.valuesHierarchy.get(index));
 		}
-		if (target instanceof PostInit) {
+		if (target instanceof BitPostInit) {
 			Map<Class<?>, Object[]> functionValues = new HashMap<>();
 			Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
 			Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
@@ -180,8 +180,8 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 				legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
 				legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
 			}
-			((PostInit) target).postInit(
-					new PostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
+			((BitPostInit) target).postInit(
+					new BitPostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
 			);
 		}
 	}

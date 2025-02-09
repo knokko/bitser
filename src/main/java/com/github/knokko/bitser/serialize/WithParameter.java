@@ -1,4 +1,4 @@
-package com.github.knokko.bitser.init;
+package com.github.knokko.bitser.serialize;
 
 public class WithParameter {
 

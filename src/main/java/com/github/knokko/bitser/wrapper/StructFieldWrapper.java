@@ -7,7 +7,7 @@ import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.init.PostInit;
+import com.github.knokko.bitser.serialize.BitPostInit;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -25,7 +25,7 @@ import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInte
 import static com.github.knokko.bitser.serialize.IntegerBitser.encodeUniformInteger;
 
 @BitStruct(backwardCompatible = false)
-public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
+public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 
 	private final Class<?>[] allowed;
 
@@ -66,7 +66,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 	}
 
 	@Override
-	public void postInit(PostInit.Context context) {
+	public void postInit(BitPostInit.Context context) {
 		this.legacyStructs = (LegacyStruct[]) context.functionValues.get(StructFieldWrapper.class)[0];
 	}
 

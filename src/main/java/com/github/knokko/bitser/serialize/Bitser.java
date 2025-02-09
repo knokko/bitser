@@ -5,7 +5,6 @@ import com.github.knokko.bitser.connection.BitConnection;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.field.FunctionContext;
-import com.github.knokko.bitser.init.WithParameter;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.util.ReferenceIdLoader;

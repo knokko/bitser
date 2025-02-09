@@ -3,8 +3,8 @@ package com.github.knokko.bitser.backward;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.init.PostInit;
-import com.github.knokko.bitser.init.WithParameter;
+import com.github.knokko.bitser.serialize.BitPostInit;
+import com.github.knokko.bitser.serialize.WithParameter;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,7 @@ public class TestReferenceBackwardCompatibility {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class NewDummy implements PostInit { // TODO Move PostInit class
+	private static class NewDummy implements BitPostInit {
 
 		@BitField(id = 2)
 		@IntegerField(expectUniform = false)
@@ -189,7 +189,7 @@ public class TestReferenceBackwardCompatibility {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class ReferenceMethodNew implements PostInit {
+	private static class ReferenceMethodNew implements BitPostInit {
 
 		@BitField(id = 0)
 		@ReferenceFieldTarget(label = "dummy")
@@ -207,7 +207,7 @@ public class TestReferenceBackwardCompatibility {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class ReferenceMethodNewCorrupted implements PostInit {
+	private static class ReferenceMethodNewCorrupted implements BitPostInit {
 
 		@BitField(id = 0)
 		@ReferenceFieldTarget(label = "dummy")
@@ -465,7 +465,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 	@BitStruct(backwardCompatible = true)
-	private static class NewNestedRoot implements PostInit {
+	private static class NewNestedRoot implements BitPostInit {
 
 		@BitField(id = 4)
 		@ReferenceFieldTarget(label = "dummies")
