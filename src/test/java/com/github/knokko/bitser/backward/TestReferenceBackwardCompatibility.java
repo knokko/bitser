@@ -8,6 +8,7 @@ import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.UUID;
 
@@ -320,5 +321,150 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(1, after.unstableReferences[0].length);
 		assertSame(after.targets[1], after.unstableReferences[0][0]);
 	}
-	// TODO Test nested
+
+	@BitStruct(backwardCompatible = true)
+	private static class OldTargetWrapper {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "dummies")
+		final StableDummy dummy;
+
+		@BitField(id = 2)
+		@ReferenceField(stable = false, label = "friends")
+		final Dummy friend;
+
+		OldTargetWrapper(StableDummy dummy, Dummy friend) {
+			this.dummy = dummy;
+			this.friend = friend;
+		}
+
+		@SuppressWarnings("unused")
+		OldTargetWrapper() {
+			this(null, null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class NewTargetWrapper {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "dummies")
+		final StableDummy dummy;
+
+		@BitField(id = 1)
+		@IntegerField(expectUniform = false)
+		final int x;
+
+		@BitField(id = 2)
+		@ReferenceField(stable = false, label = "friends")
+		final Dummy friend;
+
+		NewTargetWrapper(StableDummy dummy, int x, Dummy friend) {
+			this.dummy = dummy;
+			this.x = x;
+			this.friend = friend;
+		}
+
+		@SuppressWarnings("unused")
+		NewTargetWrapper() {
+			this(null, 123, null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class FriendWrapper {
+
+		@BitField(id = 5)
+		@ReferenceFieldTarget(label = "friends")
+		final Dummy friend;
+
+		@BitField(id = 2)
+		@ReferenceField(stable = true, label = "dummies")
+		final StableDummy cross;
+
+		FriendWrapper(Dummy friend, StableDummy cross) {
+			this.friend = friend;
+			this.cross = cross;
+		}
+
+		@SuppressWarnings("unused")
+		FriendWrapper() {
+			this(null, null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OldNestedRoot {
+
+		@BitField(id = 4)
+		@ReferenceFieldTarget(label = "dummies")
+		StableDummy stableRoot;
+
+		@BitField(id = 3)
+		@ReferenceFieldTarget(label = "friends")
+		Dummy friendRoot;
+
+		@BitField(id = 2)
+		OldTargetWrapper[] targets;
+
+		@BitField(id = 1)
+		final ArrayList<FriendWrapper> friends = new ArrayList<>();
+	}
+
+	@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+	@BitStruct(backwardCompatible = true)
+	private static class NewNestedRoot implements PostInit {
+
+		@BitField(id = 4)
+		@ReferenceFieldTarget(label = "dummies")
+		StableDummy stableRoot;
+
+		@BitField(id = 3)
+		@ReferenceFieldTarget(label = "friends")
+		Dummy friendRoot;
+
+		@BitField(id = 2)
+		final LinkedList<NewTargetWrapper> targets = new LinkedList<>();
+
+		@BitField(id = 1)
+		final HashSet<FriendWrapper> friends = new HashSet<>();
+
+		int x;
+
+		@Override
+		public void postInit(Context context) {
+			this.x = targets.size() + friends.size();
+		}
+	}
+
+	@Test
+	public void testNested() {
+		Bitser bitser = new Bitser(true);
+		OldNestedRoot oldRoot = new OldNestedRoot();
+		oldRoot.stableRoot = new StableDummy(4.5);
+		oldRoot.friendRoot = new Dummy(12);
+		oldRoot.targets = new OldTargetWrapper[] {
+				new OldTargetWrapper(new StableDummy(17), oldRoot.friendRoot),
+				null
+		};
+		oldRoot.friends.add(new FriendWrapper(new Dummy(31), oldRoot.targets[0].dummy));
+		oldRoot.targets[1] = new OldTargetWrapper(new StableDummy(99), oldRoot.friends.get(0).friend);
+
+		NewNestedRoot newRoot = bitser.deserializeFromBytes(NewNestedRoot.class, bitser.serializeToBytes(
+				oldRoot, Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(4.5, newRoot.stableRoot.rating);
+		assertEquals(12, newRoot.friendRoot.x);
+		assertEquals(2, newRoot.targets.size());
+		assertEquals(17, newRoot.targets.get(0).dummy.rating);
+		assertEquals(123, newRoot.targets.get(0).x);
+		assertSame(newRoot.friendRoot, newRoot.targets.get(0).friend);
+		assertEquals(99, newRoot.targets.get(1).dummy.rating);
+		assertEquals(123, newRoot.targets.get(1).x);
+		assertSame(newRoot.friends.iterator().next().friend, newRoot.targets.get(1).friend);
+		assertEquals(1, newRoot.friends.size());
+		assertEquals(31, newRoot.friends.iterator().next().friend.x);
+		assertSame(newRoot.targets.get(0).dummy, newRoot.friends.iterator().next().cross);
+		assertEquals(3, newRoot.x);
+	}
 }

@@ -174,7 +174,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 							read, oldValue, newValue -> setLegacyArrayValue(newCollection, rememberIndex, oldValue, newValue)
 					);
 				}
-				// TODO Test all cases
 			}
 		} else {
 			for (Object oldValue : oldArray) {
