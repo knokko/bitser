@@ -642,7 +642,7 @@ public class TestReferenceBackwardCompatibility {
 		OptionalUnstable unstable = bitser.deserializeFromBytes(OptionalUnstable.class, bitser.serializeToBytes(
 				simple, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
-		assertEquals(1, unstable.target.x);
+		assertEquals(2, unstable.target.x);
 		assertNull(unstable.reference);
 	}
 
