@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.init.PostInit;
 import com.github.knokko.bitser.init.WithParameter;
@@ -12,6 +13,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.UUID;
 
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestReferenceBackwardCompatibility {
@@ -466,5 +468,69 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(31, newRoot.friends.iterator().next().friend.x);
 		assertSame(newRoot.targets.get(0).dummy, newRoot.friends.iterator().next().cross);
 		assertEquals(3, newRoot.x);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class SimpleUnstable {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "the one")
+		Dummy target;
+
+		@BitField(id = 1)
+		@ReferenceField(stable = false, label = "the one")
+		Dummy reference;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class SimpleStable {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "the one")
+		StableDummy target;
+
+		@BitField(id = 1)
+		@ReferenceField(stable = true, label = "the one")
+		StableDummy reference;
+	}
+
+	@Test
+	public void testForbiddenUnstableToStableReference() {
+		Bitser bitser = new Bitser(true);
+		SimpleUnstable unstable = new SimpleUnstable();
+		unstable.target = new Dummy(75);
+		unstable.reference = unstable.target;
+
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				SimpleStable.class, bitser.serializeToBytes(unstable, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "stable ID");
+		assertContains(errorMessage, "the one");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class SimpleUnstable2 {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "the one")
+		StableDummy target;
+
+		@BitField(id = 1)
+		@ReferenceField(stable = false, label = "the one")
+		StableDummy reference;
+	}
+
+	@Test
+	public void testStableToUnstableReference() {
+		Bitser bitser = new Bitser(true);
+		SimpleStable stable = new SimpleStable();
+		stable.target = new StableDummy(75.75);
+		stable.reference = stable.target;
+
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+				SimpleUnstable2.class, bitser.serializeToBytes(stable, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "stable ID");
+		assertContains(errorMessage, "the one");
 	}
 }

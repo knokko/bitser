@@ -73,16 +73,8 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 	@Override
 	public void collectReferenceTargetLabels(LabelCollection labels) {
 		super.collectReferenceTargetLabels(labels);
-
-		if (allowed.length == 0) {
-			// TODO Maybe needed for references
-//			for (LegacyStruct legacy : legacyStructs) {
-//				legacy.collectReferenceTargetLabels(labels);
-//			}
-		} else {
-			for (Class<?> structClass : allowed) {
-				labels.cache.getWrapper(structClass).collectReferenceTargetLabels(labels);
-			}
+		for (Class<?> structClass : allowed) {
+			labels.cache.getWrapper(structClass).collectReferenceTargetLabels(labels);
 		}
 	}
 
@@ -121,12 +113,8 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, read.input);
 
 		if (allowed.length == 0) {
-//			read.idLoader.getUnstable("structs", element -> {
-//				System.out.println("bla bla");
-//			}, read.input);
 			legacyStructs[inheritanceIndex].read(read, inheritanceIndex, setValue::consume);
-		}
-		else read.cache.getWrapper(allowed[inheritanceIndex]).read(read, setValue, null);
+		} else read.cache.getWrapper(allowed[inheritanceIndex]).read(read, setValue, null);
 	}
 
 	@Override
@@ -137,6 +125,4 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 		);
 		setValue.accept(read.cache.getWrapper(allowed[legacy.inheritanceIndex]).setLegacyValues(read, legacy));
 	}
-
-
 }

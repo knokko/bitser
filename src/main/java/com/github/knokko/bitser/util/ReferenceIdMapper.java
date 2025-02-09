@@ -18,7 +18,7 @@ public class ReferenceIdMapper {
 		try {
 			if (target instanceof LegacyInstance) {
 				UUID id = ((LegacyInstance) target).stableID;
-				if (id == null) throw new InvalidBitValueException("Legacy object didn't have stable ID"); // TODO test this
+				if (id == null) throw new InvalidBitValueException("Will get better error message when more context is available");
 				return id;
 			}
 			UUID id = cache.getWrapper(target.getClass()).getStableId(target);

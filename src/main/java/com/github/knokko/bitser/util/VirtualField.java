@@ -19,7 +19,7 @@ public class VirtualField {
 	@BitField
 	public final boolean optional;
 
-	@BitField(optional = true) // TODO Figure out whether this is needed
+	@BitField(optional = true)
 	public final String referenceTargetLabel;
 
 	public final AnnotationHolder annotations;

@@ -90,7 +90,11 @@ public abstract class BitFieldWrapper {
 			readValue(read, value -> {
 				setValue.consume(value);
 				if (field.referenceTargetLabel != null) {
-					read.idLoader.register(field.referenceTargetLabel, value, read.input, read.cache);
+					try {
+						read.idLoader.register(field.referenceTargetLabel, value, read.input, read.cache);
+					} catch (InvalidBitValueException missingID) {
+						throw new InvalidBitFieldException("Missing stable ID for legacy field with label " + field.referenceTargetLabel);
+					}
 				}
 			});
 		}
