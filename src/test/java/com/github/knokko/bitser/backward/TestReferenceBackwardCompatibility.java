@@ -1,7 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.init.PostInit;
 import com.github.knokko.bitser.init.WithParameter;
@@ -582,5 +582,132 @@ public class TestReferenceBackwardCompatibility {
 		);
 		assertEquals(75.75, loaded.target.rating);
 		assertSame(loaded.target, loaded.reference);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class SimpleNonReference {
+
+		@BitField(id = 0)
+		Dummy target;
+
+		@BitField(id = 1)
+		Dummy reference;
+	}
+
+	@Test
+	public void testReferenceToNonReference() {
+		Bitser bitser = new Bitser(false);
+		SimpleUnstable unstable = new SimpleUnstable();
+		unstable.target = new Dummy(45);
+		unstable.reference = unstable.target;
+
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				SimpleNonReference.class, bitser.serializeToBytes(unstable, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "SimpleNonReference.reference");
+	}
+
+	@Test
+	public void testNonReferenceToReference() {
+		Bitser bitser = new Bitser(true);
+		SimpleNonReference simple = new SimpleNonReference();
+		simple.reference = new Dummy(1);
+		simple.target = new Dummy(2);
+
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				SimpleUnstable.class, bitser.serializeToBytes(simple, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "SimpleUnstable.reference");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalUnstable {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "the one")
+		Dummy target;
+
+		@BitField(id = 1, optional = true)
+		@ReferenceField(stable = false, label = "the one")
+		Dummy reference;
+	}
+
+	@Test
+	public void testNonReferenceToOptionalReference() {
+		Bitser bitser = new Bitser(true);
+		SimpleNonReference simple = new SimpleNonReference();
+		simple.reference = new Dummy(1);
+		simple.target = new Dummy(2);
+
+		OptionalUnstable unstable = bitser.deserializeFromBytes(OptionalUnstable.class, bitser.serializeToBytes(
+				simple, Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(1, unstable.target.x);
+		assertNull(unstable.reference);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalNonReference {
+
+		@BitField(id = 0)
+		Dummy target;
+
+		@BitField(id = 1, optional = true)
+		Dummy reference;
+	}
+
+	@Test
+	public void testReferenceToOptionalNonReference() {
+		Bitser bitser = new Bitser(true);
+		SimpleUnstable unstable = new SimpleUnstable();
+		unstable.target = new Dummy(50);
+		unstable.reference = unstable.target;
+
+		OptionalNonReference simple = bitser.deserializeFromBytes(OptionalNonReference.class, bitser.serializeToBytes(
+				unstable, Bitser.BACKWARD_COMPATIBLE
+		), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(50, simple.target.x);
+		assertNull(simple.reference);
+	}
+
+	@Test
+	public void testBackwardCompatibleWith() {
+		Bitser bitser = new Bitser(false);
+		OldNestedRoot oldWith = new OldNestedRoot();
+		oldWith.stableRoot = new StableDummy(1.0);
+		oldWith.friendRoot = new Dummy(2);
+		oldWith.targets = new OldTargetWrapper[] { new OldTargetWrapper(new StableDummy(3), oldWith.friendRoot) };
+		oldWith.friends.add(new FriendWrapper(new Dummy(4), oldWith.stableRoot));
+
+		OldNestedRoot oldSubject = new OldNestedRoot();
+		oldSubject.stableRoot = new StableDummy(5.0);
+		oldSubject.friendRoot = new Dummy(6);
+		oldSubject.friends.add(new FriendWrapper(new Dummy(7), oldWith.targets[0].dummy));
+		oldSubject.targets = new OldTargetWrapper[] { new OldTargetWrapper(new StableDummy(8), oldWith.friendRoot) };
+
+		byte[] oldSubjectBytes = bitser.serializeToBytes(oldSubject, oldWith, Bitser.BACKWARD_COMPATIBLE);
+		byte[] oldWithBytes = bitser.serializeToBytes(oldWith, Bitser.BACKWARD_COMPATIBLE);
+
+		NewNestedRoot newWith = bitser.deserializeFromBytes(NewNestedRoot.class, oldWithBytes, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(1.0, newWith.stableRoot.rating);
+		assertEquals(2, newWith.friendRoot.x);
+		assertEquals(3.0, newWith.targets.get(0).dummy.rating);
+		assertSame(newWith.friendRoot, newWith.targets.get(0).friend);
+		assertEquals(4, newWith.friends.iterator().next().friend.x);
+		assertSame(newWith.stableRoot, newWith.friends.iterator().next().cross);
+
+		NewNestedRoot newSubject = bitser.deserializeFromBytes(NewNestedRoot.class, oldSubjectBytes, Bitser.BACKWARD_COMPATIBLE, newWith);
+		assertEquals(5.0, newSubject.stableRoot.rating);
+		assertEquals(6, newSubject.friendRoot.x);
+		assertEquals(7, newSubject.friends.iterator().next().friend.x);
+		assertEquals(8.0, newSubject.targets.get(0).dummy.rating);
+		assertSame(newWith.targets.get(0).dummy, newSubject.friends.iterator().next().cross);
+		assertSame(newWith.friendRoot, newSubject.targets.get(0).friend);
+
+		NewNestedRoot back = bitser.deserializeFromBytes(NewNestedRoot.class, bitser.serializeToBytes(
+				newSubject, Bitser.BACKWARD_COMPATIBLE, newWith
+		), newWith, Bitser.BACKWARD_COMPATIBLE);
+		assertSame(newWith.targets.get(0).dummy, back.friends.iterator().next().cross);
+		assertSame(newWith.friendRoot, back.targets.get(0).friend);
 	}
 }

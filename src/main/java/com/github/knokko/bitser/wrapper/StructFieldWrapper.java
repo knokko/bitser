@@ -119,6 +119,10 @@ public class StructFieldWrapper extends BitFieldWrapper implements PostInit {
 
 	@Override
 	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
+		if (value == null) {
+			super.setLegacyValue(read, null, setValue);
+			return;
+		}
 		LegacyInstance legacy = (LegacyInstance) value;
 		if (legacy.inheritanceIndex >= allowed.length) throw new InvalidBitValueException(
 				"Encountered unknown subclass while loading " + field
