@@ -206,6 +206,28 @@ public class TestReferenceBackwardCompatibility {
 		}
 	}
 
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceMethodNewCorrupted implements PostInit {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "dummy")
+		final ArrayList<NewDummy> dummies = new ArrayList<>();
+
+		@BitField(id = 1)
+		NewDummy best;
+
+		@Override
+		public void postInit(Context context) {
+			if (best != null) return;
+			LegacyInstance legacyDummy = (LegacyInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
+			LegacyValues legacyValues = legacyDummy.valuesHierarchy.get(0);
+			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hadValues);
+			int x = (int) (long) legacyValues.values[2];
+			//noinspection SuspiciousNameCombination
+			best = new NewDummy(x, x);
+		}
+	}
+
 	@Test
 	public void testReferenceMethod() {
 		Bitser bitser = new Bitser(true);
@@ -226,6 +248,34 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(5, again.best.x);
 		assertEquals(5, again.best.y);
 		assertSame(again.best, again.dummies.get(0));
+		assertEquals(123, again.dummies.get(1).x);
+		assertEquals(456, again.dummies.get(1).y);
+	}
+
+	@Test
+	public void testReferenceMethodCorrupted() {
+		Bitser bitser = new Bitser(true);
+		ReferenceMethodOldCorrupted before = new ReferenceMethodOldCorrupted();
+		before.dummies.add(new Dummy(5));
+
+		ReferenceMethodNewCorrupted after = bitser.deserializeFromBytes(ReferenceMethodNewCorrupted.class, bitser.serializeToBytes(
+				before, Bitser.BACKWARD_COMPATIBLE, new WithParameter("best", 0)
+		), Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(1, after.dummies.size());
+		assertEquals(5, after.best.x);
+		assertEquals(5, after.best.y);
+		assertNotSame(after.best, after.dummies.get(0));
+		assertEquals(5, after.dummies.get(0).x);
+		assertEquals(5, after.dummies.get(0).y);
+
+		after.dummies.add(new NewDummy(123, 456));
+		ReferenceMethodNewCorrupted again = bitser.deepCopy(after, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(2, again.dummies.size());
+		assertEquals(5, again.best.x);
+		assertEquals(5, again.best.y);
+		assertNotSame(after.best, again.dummies.get(0));
+		assertEquals(5, again.dummies.get(0).x);
+		assertEquals(5, again.dummies.get(0).y);
 		assertEquals(123, again.dummies.get(1).x);
 		assertEquals(456, again.dummies.get(1).y);
 	}

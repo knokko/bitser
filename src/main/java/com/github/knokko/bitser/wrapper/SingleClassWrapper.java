@@ -242,7 +242,8 @@ class SingleClassWrapper {
 		}
 		for (int index = 0; index < legacy.storedFunctionValues.length; index++) {
 			if (legacy.storedFunctionValues[index] instanceof LegacyInstance) {
-				legacy.storedFunctionValues[index] = ((LegacyInstance) legacy.storedFunctionValues[index]).recoveredInstance;
+				Object recoveredInstance = ((LegacyInstance) legacy.storedFunctionValues[index]).recoveredInstance;
+				if (recoveredInstance != null) legacy.storedFunctionValues[index] = recoveredInstance;
 			}
 		}
 		for (FunctionWrapper function : functions) {
