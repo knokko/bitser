@@ -73,6 +73,11 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	public void collectReferenceTargetLabels(LabelCollection labels) {
 		super.collectReferenceTargetLabels(labels);
+		if (allowed.length == 0) {
+			for (LegacyStruct legacy : legacyStructs) {
+				if (legacy != null) legacy.collectReferenceTargetLabels(labels);
+			}
+		}
 		for (Class<?> structClass : allowed) {
 			labels.cache.getWrapper(structClass).collectReferenceTargetLabels(labels);
 		}
