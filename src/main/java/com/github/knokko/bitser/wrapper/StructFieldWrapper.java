@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
@@ -38,7 +39,9 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	private LegacyStruct[] legacyStructs(FunctionContext context) {
 		LegacyClasses legacyClasses = (LegacyClasses) context.withParameters.get("legacy-classes");
 		LegacyStruct[] allowedStructs = new LegacyStruct[allowed.length];
-		for (int index = 0; index < allowed.length; index++) allowedStructs[index] = legacyClasses.getStruct(allowed[index]);
+		for (int index = 0; index < allowed.length; index++) {
+			allowedStructs[index] = Objects.requireNonNull(legacyClasses.getStruct(allowed[index]));
+		}
 		return allowedStructs;
 	}
 
@@ -68,6 +71,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	public void postInit(BitPostInit.Context context) {
 		this.legacyStructs = (LegacyStruct[]) context.functionValues.get(StructFieldWrapper.class)[0];
+		for (LegacyStruct legacy : legacyStructs) Objects.requireNonNull(legacy);
 	}
 
 	@Override
@@ -75,7 +79,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		super.collectReferenceTargetLabels(labels);
 		if (allowed.length == 0) {
 			for (LegacyStruct legacy : legacyStructs) {
-				if (legacy != null) legacy.collectReferenceTargetLabels(labels);
+				legacy.collectReferenceTargetLabels(labels);
 			}
 		}
 		for (Class<?> structClass : allowed) {
