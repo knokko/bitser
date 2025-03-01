@@ -140,9 +140,11 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 				serializedFunctionValues.put(currentClass.myClass, currentClass.read(object, read));
 			}
 			if (object instanceof BitPostInit) {
-				((BitPostInit) object).postInit(
-						new BitPostInit.Context(serializedFunctionValues, null, null, read.withParameters)
-				);
+				read.idLoader.addPostResolveCallback(() -> {
+					((BitPostInit) object).postInit(
+							new BitPostInit.Context(serializedFunctionValues, null, null, read.withParameters)
+					);
+				});
 			}
 			setValue.consume(object);
 		}
