@@ -177,17 +177,23 @@ class SingleClassWrapper {
 
 	LegacyClass register(Object object, LegacyClasses legacy) {
 		LegacyClass legacyClass = legacy.addClass(myClass);
-		if (!legacyClass.fields.isEmpty()) return legacyClass;
 
-		for (FieldWrapper field : fieldsSortedById) {
-			legacyClass.fields.add(new LegacyField(field.id, field.bitField));
+		for (int index = 0; index < fieldsSortedById.size(); index++) {
+			FieldWrapper field = fieldsSortedById.get(index);
+			if (legacyClass.fields.size() == index) {
+				legacyClass.fields.add(new LegacyField(field.id, field.bitField));
+			}
 			field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), legacy);
 		}
 
-		for (FunctionWrapper function : functions) {
-			legacyClass.functions.add(new LegacyField(function.id, function.bitField));
+		for (int index = 0; index < functions.size(); index++) {
+			FunctionWrapper function = functions.get(index);
+			if (legacyClass.functions.size() == index) {
+				legacyClass.functions.add(new LegacyField(function.id, function.bitField));
+			}
 			function.bitField.registerLegacyClasses(function.computeValue(object, legacy.functionContext), legacy);
 		}
+
 		return legacyClass;
 	}
 

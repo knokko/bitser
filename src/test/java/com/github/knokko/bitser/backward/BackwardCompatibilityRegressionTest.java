@@ -144,15 +144,16 @@ public class BackwardCompatibilityRegressionTest {
 		monster.plotLoot.add(new PotentialPlotItem(itemStuff.plotItems.get(71), 71));
 		monster.dreamLoot.add(itemStuff.dreamStones.get(5));
 
+		battleStuff.monsters.add(new Monster());
 		battleStuff.monsters.add(monster);
 		ContentRoot root = new ContentRoot(itemStuff, battleStuff);
 
 		ContentRoot copied = new Bitser(false).deepCopy(root, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(300, copied.itemStuff.plotItems.size());
 		assertEquals(25, copied.itemStuff.dreamStones.size());
-		assertEquals(1, copied.battleStuff.monsters.size());
+		assertEquals(2, copied.battleStuff.monsters.size());
 
-		monster = copied.battleStuff.monsters.get(0);
+		monster = copied.battleStuff.monsters.get(1);
 		assertEquals(1, monster.plotLoot.size());
 		assertEquals(1, monster.dreamLoot.size());
 		assertSame(copied.itemStuff.plotItems.get(71), monster.plotLoot.get(0).item);

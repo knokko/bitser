@@ -1,10 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.backward.LegacyClasses;
-import com.github.knokko.bitser.backward.LegacyInstance;
-import com.github.knokko.bitser.backward.LegacyStruct;
-import com.github.knokko.bitser.backward.LegacyValues;
+import com.github.knokko.bitser.backward.*;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.serialize.BitPostInit;
@@ -91,8 +88,13 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
 		LegacyStruct legacyStruct = legacy.addStruct(constructor.getDeclaringClass());
-		if (!legacyStruct.classHierarchy.isEmpty()) return legacyStruct;
-		for (SingleClassWrapper currentClass : classHierarchy) legacyStruct.classHierarchy.add(currentClass.register(object, legacy));
+		for (int index = 0; index < classHierarchy.size(); index++) {
+			SingleClassWrapper currentClass = classHierarchy.get(index);
+			LegacyClass registered = currentClass.register(object, legacy);
+			if (legacyStruct.classHierarchy.size() == index) {
+				legacyStruct.classHierarchy.add(registered);
+			}
+		}
 		return legacyStruct;
 	}
 
