@@ -710,4 +710,52 @@ public class TestReferenceBackwardCompatibility {
 		assertSame(newWith.targets.get(0).dummy, back.friends.iterator().next().cross);
 		assertSame(newWith.friendRoot, back.targets.get(0).friend);
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class LotsOfReferences {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "attacks")
+		final ArrayList<String> attacks = new ArrayList<>();
+
+		@BitField(id = 1)
+		@ReferenceFieldTarget(label = "structs")
+		final ArrayList<String> structs = new ArrayList<>();
+
+		@BitField(id = 2)
+		@ReferenceFieldTarget(label = "zones")
+		final ArrayList<String> zones = new ArrayList<>();
+
+		@BitField(id = 3)
+		@ReferenceField(stable = false, label = "attacks")
+		String bestAttack;
+
+		@BitField(id = 4)
+		@ReferenceField(stable = false, label = "structs")
+		String bestStruct;
+
+		@BitField(id = 5)
+		@ReferenceField(stable = false, label = "zones")
+		String bestZone;
+	}
+
+	@Test
+	public void testNoBuiltinLabelConflicts() {
+		LotsOfReferences lots = new LotsOfReferences();
+		for (int counter = 0; counter < 10; counter++) lots.attacks.add("Attack " + counter);
+		for (int counter = 0; counter < 100; counter++) lots.structs.add("Struct " + counter);
+		for (int counter = 0; counter < 1000; counter++) lots.zones.add("Zone " + counter);
+		lots.bestAttack = lots.attacks.get(3);
+		lots.bestStruct = lots.structs.get(72);
+		lots.bestZone = lots.zones.get(385);
+
+		LotsOfReferences copy = new Bitser(false).deepCopy(lots, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(lots.attacks, copy.attacks);
+		assertNotSame(lots.attacks, copy.attacks);
+		assertEquals(lots.structs, copy.structs);
+		assertEquals(lots.zones, copy.zones);
+		assertSame(copy.attacks.get(3), copy.bestAttack);
+		assertSame(copy.structs.get(72), copy.bestStruct);
+		assertSame(copy.zones.get(385), copy.bestZone);
+	}
 }

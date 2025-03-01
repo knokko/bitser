@@ -107,7 +107,7 @@ public class Bitser {
 		else legacy.collectReferenceTargetLabels(labels);
 
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) withObject = legacy;
+			if (withObject == BACKWARD_COMPATIBLE) continue;
 			if (withObject instanceof WithParameter) {
 				WithParameter parameter = (WithParameter) withObject;
 				if (withParameters.containsKey(parameter.key)) {
