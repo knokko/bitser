@@ -97,8 +97,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	public void fixLegacyTypes(ReadJob read, Object value) {
-		if (value == null && field.optional) return;
-		assert value != null;
+		if (value == null) return;
 		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
 		legacyInstance.newCollection = constructCollectionWithSize(Array.getLength(legacyInstance.legacyArray));
 		if (field.referenceTargetLabel != null) {
