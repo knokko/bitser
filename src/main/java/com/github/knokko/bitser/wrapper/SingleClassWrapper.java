@@ -263,7 +263,12 @@ class SingleClassWrapper {
 				}
 			}
 			field.bitField.fixLegacyTypes(read, legacyValues.values[field.id]);
-		} // TODO Same for functions
+		}
+		for (FunctionWrapper function : functions) {
+			if (function.id >= legacyValues.storedFunctionValues.length) continue;
+			// TODO Maybe also do reference checks here
+			function.bitField.fixLegacyTypes(read, legacyValues.storedFunctionValues[function.id]);
+		}
 	}
 
 	void shallowCopy(Object original, Object target) {

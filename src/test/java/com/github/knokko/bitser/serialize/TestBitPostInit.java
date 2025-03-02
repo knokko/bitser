@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.serialize;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.instance.LegacyCollectionInstance;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.FunctionContext;
@@ -252,9 +253,11 @@ public class TestBitPostInit {
 					names.add((String) values[1]);
 					assertArrayEquals(new Object[3], currentValues);
 				} else {
-					names = (List<String>) values[2];
-					assertArrayEquals(new Object[] { null, null, names }, currentValues);
-					assertArrayEquals(values, currentValues);
+					LegacyCollectionInstance legacyNames = (LegacyCollectionInstance) values[2];
+					Object[] rawNames = (Object[]) legacyNames.legacyArray;
+					names = new ArrayList<>(rawNames.length);
+					for (Object rawName : rawNames) names.add((String) rawName);
+					assertArrayEquals(new Object[] { null, null, legacyNames.newCollection}, currentValues);
 				}
 			}
 
@@ -334,8 +337,8 @@ public class TestBitPostInit {
 			Set<String> names = (Set<String>) currentValues[2];
 			assertArrayEquals(new Object[] { null, null, names }, currentValues);
 
-			List<String> legacyNames = (List<String>) legacyValues[2];
-			assertArrayEquals(new Object[] { null, null, legacyNames }, legacyValues);
+			LegacyCollectionInstance legacyNamesInstance = (LegacyCollectionInstance) legacyValues[2];
+			assertArrayEquals(new Object[] { null, null, legacyNamesInstance }, legacyValues);
 			for (String name : names) {
 				try {
 					classes.add(Class.forName(name));
