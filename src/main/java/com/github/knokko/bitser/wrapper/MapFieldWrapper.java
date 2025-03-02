@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
@@ -53,6 +54,16 @@ class MapFieldWrapper extends BitFieldWrapper {
 		this.sizeField = new IntegerField.Properties();
 		this.keysWrapper = null;
 		this.valuesWrapper = null;
+	}
+
+	@Override
+	void registerLegacyClasses(Object map, LegacyClasses legacy) {
+		super.registerLegacyClasses(map, legacy);
+		if (map == null) return;
+		((Map<?, ?>) map).forEach((key, value) -> {
+			keysWrapper.registerLegacyClasses(key, legacy);
+			valuesWrapper.registerLegacyClasses(value, legacy);
+		});
 	}
 
 	@Override
@@ -125,26 +136,69 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object rawLegacyMap, Consumer<Object> setValue) {
+	void setLegacyValue(ReadJob read, Object legacyMap, Consumer<Object> setValue) {
+		if (!keysWrapper.delayLegacyUntilResolve() && !valuesWrapper.delayLegacyUntilResolve()) {
+			actuallySetLegacyValues(read, legacyMap, setValue);
+		}
+	}
+
+	@Override
+	void setLegacyReference(ReadJob read, Object legacyMap, Consumer<Object> setValue) {
+		if (keysWrapper.delayLegacyUntilResolve() || valuesWrapper.delayLegacyUntilResolve()) {
+			actuallySetLegacyValues(read, legacyMap, setValue);
+		}
+	}
+
+	private void actuallySetLegacyValues(ReadJob read, Object rawLegacyMap, Consumer<Object> setValue) {
+		if (rawLegacyMap == null) {
+			super.setLegacyValue(read, null, setValue);
+			return;
+		}
+
 		Map<?, ?> legacyMap = (Map<?, ?>) rawLegacyMap;
+
 		@SuppressWarnings("unchecked")
 		Map<Object, Object> newMap = (Map<Object, Object>) constructCollectionWithSize(field.type, legacyMap.size());
-		legacyMap.forEach((key, value) -> {
+		legacyMap.forEach((oldKey, oldValue) -> {
 			int[] pCount = { 0 };
 			Object[] pKey = { null };
 			Object[] pValue = { null };
-			keysWrapper.setLegacyValue(read, key, newKey -> {
-				pKey[0] = newKey;
-				pCount[0] += 1;
-				if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
-			});
-			valuesWrapper.setLegacyValue(read, value, newValue -> {
-				pValue[0] = newValue;
-				pCount[0] += 1;
-				if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
-			});
+
+			if (keysWrapper.delayLegacyUntilResolve()) {
+				keysWrapper.setLegacyReference(read, oldKey, newKey-> {
+					pKey[0] = newKey;
+					pCount[0] += 1;
+					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
+				});
+			} else {
+				keysWrapper.setLegacyValue(read, oldKey, newKey -> {
+					pKey[0] = newKey;
+					pCount[0] += 1;
+					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
+				});
+			}
+
+			if (valuesWrapper.delayLegacyUntilResolve()) {
+				valuesWrapper.setLegacyReference(read, oldValue, newValue -> {
+					pValue[0] = newValue;
+					pCount[0] += 1;
+					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
+				});
+			} else {
+				valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
+					pValue[0] = newValue;
+					pCount[0] += 1;
+					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
+				});
+			}
 		});
+
 		super.setLegacyValue(read, newMap, setValue);
+	}
+
+	@Override
+	boolean delayLegacyUntilResolve() {
+		return keysWrapper.delayLegacyUntilResolve() || valuesWrapper.delayLegacyUntilResolve();
 	}
 
 	private static class DelayedEntry {

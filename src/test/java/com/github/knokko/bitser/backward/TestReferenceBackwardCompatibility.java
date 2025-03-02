@@ -8,10 +8,7 @@ import com.github.knokko.bitser.serialize.WithParameter;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.UUID;
+import java.util.*;
 
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -714,6 +711,14 @@ public class TestReferenceBackwardCompatibility {
 	@BitStruct(backwardCompatible = true)
 	private static class LotsOfReferences {
 
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "zones")
+		private static final boolean ZONE_KEY_PROPERTIES = false;
+
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "attacks")
+		private static final boolean ATTACK_VALUE_PROPERTIES = false;
+
 		@BitField(id = 0)
 		@ReferenceFieldTarget(label = "attacks")
 		final ArrayList<String> attacks = new ArrayList<>();
@@ -727,16 +732,13 @@ public class TestReferenceBackwardCompatibility {
 		final ArrayList<String> zones = new ArrayList<>();
 
 		@BitField(id = 3)
-		@ReferenceField(stable = false, label = "attacks")
-		String bestAttack;
+		@NestedFieldSetting(path = "k", fieldName = "ZONE_KEY_PROPERTIES")
+		@NestedFieldSetting(path = "v", fieldName = "ATTACK_VALUE_PROPERTIES")
+		final HashMap<String, String> bestAttacksPerZone = new HashMap<>();
 
 		@BitField(id = 4)
 		@ReferenceField(stable = false, label = "structs")
 		String bestStruct;
-
-		@BitField(id = 5)
-		@ReferenceField(stable = false, label = "zones")
-		String bestZone;
 	}
 
 	@Test
@@ -745,17 +747,117 @@ public class TestReferenceBackwardCompatibility {
 		for (int counter = 0; counter < 10; counter++) lots.attacks.add("Attack " + counter);
 		for (int counter = 0; counter < 100; counter++) lots.structs.add("Struct " + counter);
 		for (int counter = 0; counter < 1000; counter++) lots.zones.add("Zone " + counter);
-		lots.bestAttack = lots.attacks.get(3);
+		lots.bestAttacksPerZone.put(lots.zones.get(385), lots.attacks.get(3));
 		lots.bestStruct = lots.structs.get(72);
-		lots.bestZone = lots.zones.get(385);
 
 		LotsOfReferences copy = new Bitser(false).deepCopy(lots, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(lots.attacks, copy.attacks);
 		assertNotSame(lots.attacks, copy.attacks);
 		assertEquals(lots.structs, copy.structs);
 		assertEquals(lots.zones, copy.zones);
-		assertSame(copy.attacks.get(3), copy.bestAttack);
 		assertSame(copy.structs.get(72), copy.bestStruct);
-		assertSame(copy.zones.get(385), copy.bestZone);
+		assertEquals(1, copy.bestAttacksPerZone.size());
+		assertSame(copy.attacks.get(3), copy.bestAttacksPerZone.get(copy.zones.get(385)));
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceWrapper1 {
+
+		@BitField(id = 0)
+		@ReferenceField(stable = false, label = "a")
+		final String string;
+
+		ReferenceWrapper1(String string) {
+			this.string = string;
+		}
+
+		@SuppressWarnings("unused")
+		ReferenceWrapper1() {
+			this(null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceWrapper2 {
+
+		@BitField(id = 0)
+		@ReferenceField(stable = false, label = "b")
+		final String string;
+
+		ReferenceWrapper2(String string) {
+			this.string = string;
+		}
+
+		@SuppressWarnings("unused")
+		ReferenceWrapper2() {
+			this(null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceTarget1 {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "a")
+		final String string;
+
+		ReferenceTarget1(String string) {
+			this.string = string;
+		}
+
+		@SuppressWarnings("unused")
+		ReferenceTarget1() {
+			this(null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceTarget2 {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "b")
+		final String string;
+
+		ReferenceTarget2(String string) {
+			this.string = string;
+		}
+
+		@SuppressWarnings("unused")
+		ReferenceTarget2() {
+			this(null);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class MapOfStructs {
+
+		@BitField(id = 0)
+		final HashMap<String, ReferenceTarget1> target1 = new HashMap<>();
+
+		@BitField(id = 1)
+		final HashMap<ReferenceTarget2, String> target2 = new HashMap<>();
+
+		@BitField(id = 2)
+		final HashMap<String, ReferenceWrapper1> reference1 = new HashMap<>();
+
+		@BitField(id = 3)
+		final HashMap<ReferenceWrapper2, String> reference2 = new HashMap<>();
+	}
+
+	@Test
+	public void testMapOfStructs() {
+		MapOfStructs root = new MapOfStructs();
+		String target1 = "ok";
+		String target2 = "welcome";
+		root.target1.put("hello", new ReferenceTarget1(target1));
+		root.target2.put(new ReferenceTarget2(target2), "nice");
+		root.reference1.put("pretty", new ReferenceWrapper1(target1));
+		root.reference2.put(new ReferenceWrapper2(target2), "taste");
+
+		MapOfStructs copy = new Bitser(true).deepCopy(root, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(1, copy.target1.size());
+		assertEquals(1, copy.target2.size());
+		assertEquals(1, copy.reference1.size());
+		assertEquals(1, copy.reference2.size());
 	}
 }
