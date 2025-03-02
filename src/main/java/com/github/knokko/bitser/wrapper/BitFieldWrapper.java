@@ -128,4 +128,8 @@ public abstract class BitFieldWrapper {
 	}
 
 	public void fixLegacyTypes(ReadJob read, Object value) {}
+
+	public boolean isReference() {
+		return false;
+	}
 }

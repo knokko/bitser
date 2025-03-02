@@ -17,4 +17,9 @@ abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 		super();
 		this.label = "";
 	}
+
+	@Override
+	public boolean isReference() {
+		return true;
+	}
 }

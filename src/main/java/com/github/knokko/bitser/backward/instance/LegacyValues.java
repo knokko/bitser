@@ -6,16 +6,19 @@ public class LegacyValues {
 
 	public final Object[] values;
 	public final boolean[] hadValues;
+	public final boolean[] hadReferenceValues;
 	public final Object[] storedFunctionValues;
 	public Object[] convertedFunctionValues;
 	public final boolean[] hadFunctionValues;
 	public final UUID stableID;
 
 	public LegacyValues(
-			Object[] values, boolean[] hadValues, Object[] storedFunctionValues, boolean[] hadFunctionValues, UUID stableID
+			Object[] values, boolean[] hadValues, boolean[] hadReferenceValues,
+			Object[] storedFunctionValues, boolean[] hadFunctionValues, UUID stableID
 	) {
 		this.values = values;
 		this.hadValues = hadValues;
+		this.hadReferenceValues = hadReferenceValues;
 		this.storedFunctionValues = storedFunctionValues;
 		this.hadFunctionValues = hadFunctionValues;
 		this.stableID = stableID;

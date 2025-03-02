@@ -138,14 +138,17 @@ public class Bitser {
 			wrapper.fixLegacyTypes(readJob, pLegacy[0]);
 			//noinspection unchecked
 			result.add((T) pLegacy[0].newInstance);
+			withMapper.shareWith(idLoader);
+			idLoader.resolve();
 			wrapper.setLegacyValues(readJob, pLegacy[0]);
+			idLoader.postResolve();
 		} else {
 			//noinspection unchecked
 			wrapper.read(readJob, element -> result.add((T) element), null); // TODO eliminate last null
+			withMapper.shareWith(idLoader);
+			idLoader.resolve();
+			idLoader.postResolve();
 		}
-
-		withMapper.shareWith(idLoader);
-		idLoader.resolve();
 
 		return result.get(0);
 	}

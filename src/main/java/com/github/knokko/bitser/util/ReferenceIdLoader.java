@@ -52,8 +52,7 @@ public class ReferenceIdLoader {
 
 	public void replace(String label, Object oldTarget, Object newTarget) {
 		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
-		mappings.replace(oldTarget, newTarget);
+		if (mappings != null) mappings.replace(oldTarget, newTarget);
 	}
 
 	void prepareWith() {
@@ -108,10 +107,10 @@ public class ReferenceIdLoader {
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}
-		//noinspection ForLoopReplaceableByForEach avoid ConcurrentModificationException
-		for (int index = 0; index < postResolveCallbacks.size(); index++) {
-			postResolveCallbacks.get(index).run();
-		}
+	}
+
+	public void postResolve() {
+		for (Runnable callback : postResolveCallbacks) callback.run();
 	}
 
 	private static class Mappings {
@@ -131,11 +130,15 @@ public class ReferenceIdLoader {
 
 		void replace(Object oldTarget, Object newTarget) {
 			// TODO Optimize this
-			for (Integer key : unstable.keySet()) {
-				if (unstable.get(key) == oldTarget) unstable.put(key, newTarget);
+			if (unstable != null) {
+				for (Integer key : unstable.keySet()) {
+					if (unstable.get(key) == oldTarget) unstable.put(key, newTarget);
+				}
 			}
-			for (UUID id : stable.keySet()) {
-				if (stable.get(id) == oldTarget) stable.put(id, newTarget);
+			if (stable != null) {
+				for (UUID id : stable.keySet()) {
+					if (stable.get(id) == oldTarget) stable.put(id, newTarget);
+				}
 			}
 		}
 

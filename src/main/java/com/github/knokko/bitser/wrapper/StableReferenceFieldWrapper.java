@@ -39,22 +39,4 @@ class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
 		read.idLoader.getStable(label, setValue, read.input);
 	}
-
-	@Override
-	Object readLegacyValue(ReadJob read) throws IOException {
-		return new UUID(
-				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input),
-				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input)
-		);
-	}
-
-	@Override
-	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
-		if (value == null) {
-			super.setLegacyValue(read, null, setValue);
-			return;
-		}
-
-		setValue.accept(read.idLoader.getStableNow(label, (UUID) value));
-	}
 }

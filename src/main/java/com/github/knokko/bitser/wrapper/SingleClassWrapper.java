@@ -3,6 +3,7 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.backward.*;
 import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
@@ -212,9 +213,13 @@ class SingleClassWrapper {
 		int maxFieldId = -1;
 		for (FieldWrapper field : fields) maxFieldId = max(maxFieldId, field.id);
 		for (FieldWrapper field : fieldsSortedById) {
-			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyValue(
-					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
-			);
+			if (field.id < legacy.values.length && legacy.hadValues[field.id] &&
+					legacy.hadReferenceValues[field.id] == field.bitField.isReference()
+			) {
+				field.bitField.setLegacyValue(read, legacy.values[field.id], newValue ->
+						field.bitField.field.setValue.accept(target, newValue)
+				);
+			}
 		}
 		int maxFunctionId = -1;
 		for (FunctionWrapper function : functions) maxFunctionId = max(maxFunctionId, function.id);
@@ -244,6 +249,19 @@ class SingleClassWrapper {
 	public void fixLegacyTypes(ReadJob read, LegacyValues legacyValues) {
 		for (FieldWrapper field : fields) {
 			if (field.id >= legacyValues.values.length) continue;
+			if (!field.bitField.field.optional) {
+				if (legacyValues.hadReferenceValues[field.id] && !field.bitField.isReference()) {
+					throw new InvalidBitValueException(
+							"Can't store legacy reference in non-reference field " + field.classField
+					);
+				}
+				if (!legacyValues.hadReferenceValues[field.id] && field.bitField.isReference()) {
+					throw new InvalidBitValueException(
+							"Can't store legacy non-reference " + legacyValues.values[field.id] +
+									" in " + field.classField
+					);
+				}
+			}
 			field.bitField.fixLegacyTypes(read, legacyValues.values[field.id]);
 		} // TODO Same for functions
 	}
