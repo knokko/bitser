@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
+import com.github.knokko.bitser.backward.instance.LegacyCollectionInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
@@ -12,7 +13,6 @@ import com.github.knokko.bitser.util.VirtualField;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
@@ -79,7 +79,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (sizeField.expectUniform) encodeUniformInteger(size, getMinSize(), getMaxSize(), write.output);
 		else encodeVariableInteger(size, getMinSize(), getMaxSize(), write.output);
 
-		writeValue(value, size, write);
+		writeElements(value, size, write);
 	}
 
 	@Override
@@ -89,13 +89,26 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
 		Object value = constructCollectionWithSize(size);
-		readValue(value, size, read);
-		setValue.consume(value);
+		readElements(value, size, read);
+
+		if (read.backwardCompatible) setValue.consume(new LegacyCollectionInstance(value));
+		else setValue.consume(value);
 	}
 
-	abstract void writeValue(Object value, int size, WriteJob write) throws IOException;
+	@Override
+	public void fixLegacyTypes(ReadJob read, Object value) {
+		if (value == null && field.optional) return;
+		assert value != null;
+		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
+		legacyInstance.newCollection = constructCollectionWithSize(Array.getLength(legacyInstance.legacyArray));
+		if (field.referenceTargetLabel != null) {
+			read.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newCollection);
+		}
+	}
 
-	abstract void readValue(Object value, int size, ReadJob read) throws IOException;
+	abstract void writeElements(Object value, int size, WriteJob write) throws IOException;
+
+	abstract void readElements(Object value, int size, ReadJob read) throws IOException;
 
 	private int getCollectionSize(Object object) {
 		if (object instanceof Collection<?>) return ((Collection<?>) object).size();
@@ -104,7 +117,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	private Object constructCollectionWithSize(int size) {
 		if (field.type == null) {
-			if (arrayType == null) return new ArrayList<>(size);
+			if (arrayType == null) return new Object[size];
 			switch (arrayType) {
 				case BOOLEAN: return new boolean[size];
 				case BYTE: return new byte[size];

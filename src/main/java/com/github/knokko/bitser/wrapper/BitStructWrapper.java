@@ -2,6 +2,8 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.*;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.serialize.BitPostInit;
@@ -153,36 +155,40 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 	}
 
 	@Override
-	public T setLegacyValues(ReadJob read, LegacyInstance legacy) {
+	public T setLegacyValues(ReadJob read, LegacyStructInstance legacy) {
 		if (legacy.valuesHierarchy.size() != classHierarchy.size()) {
 			throw new InvalidBitFieldException("Inconsistent class hierarchy");
 		}
-		T instance = createEmptyInstance();
 		for (int index = 0; index < classHierarchy.size(); index++) {
-			classHierarchy.get(index).setLegacyValues(read, instance, legacy.valuesHierarchy.get(index));
+			classHierarchy.get(index).setLegacyValues(read, legacy.newInstance, legacy.valuesHierarchy.get(index));
 		}
-		read.idLoader.addPostResolveCallback(() -> performLegacyResolve(instance, read, legacy));
-		legacy.recoveredInstance = instance;
-		return instance;
+
+		if (legacy.newInstance instanceof BitPostInit) {
+			read.idLoader.addPostResolveCallback(() -> {
+				Map<Class<?>, Object[]> functionValues = new HashMap<>();
+				Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
+				Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
+				for (int index = 0; index < classHierarchy.size(); index++) {
+					LegacyValues classLegacy = legacy.valuesHierarchy.get(index);
+					functionValues.put(classHierarchy.get(index).myClass, classLegacy.convertedFunctionValues);
+					legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
+					legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
+				}
+				((BitPostInit) legacy.newInstance).postInit(
+						new BitPostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
+				);
+			});
+		}
+
+		//noinspection unchecked
+		return (T) legacy.newInstance;
 	}
 
-	private void performLegacyResolve(T target, ReadJob read, LegacyInstance legacy) {
+	@Override
+	public void fixLegacyTypes(ReadJob read, LegacyStructInstance legacyInstance) {
+		legacyInstance.newInstance = createEmptyInstance();
 		for (int index = 0; index < classHierarchy.size(); index++) {
-			classHierarchy.get(index).performLegacyResolve(read, target, legacy.valuesHierarchy.get(index));
-		}
-		if (target instanceof BitPostInit) {
-			Map<Class<?>, Object[]> functionValues = new HashMap<>();
-			Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
-			Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
-			for (int index = 0; index < classHierarchy.size(); index++) {
-				LegacyValues classLegacy = legacy.valuesHierarchy.get(index);
-				functionValues.put(classHierarchy.get(index).myClass, classLegacy.convertedFunctionValues);
-				legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
-				legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
-			}
-			((BitPostInit) target).postInit(
-					new BitPostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
-			);
+			classHierarchy.get(index).fixLegacyTypes(read, legacyInstance.valuesHierarchy.get(index));
 		}
 	}
 

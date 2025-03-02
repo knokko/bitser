@@ -2,6 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.backward.instance.LegacyMapInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
@@ -14,8 +15,10 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
@@ -104,7 +107,10 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type != null ? field.type : HashMap.class, size);
 		for (int counter = 0; counter < size; counter++) {
-			DelayedEntry delayed = new DelayedEntry(map);
+			DelayedEntry delayed = new DelayedEntry((key, value) -> {
+				//noinspection unchecked
+				((Map<Object, Object>) map).put(key, value);
+			});
 			readElement(keysWrapper, read, delayed::setKey);
 			readElement(valuesWrapper, read, delayed::setValue);
 		}
@@ -136,69 +142,55 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object legacyMap, Consumer<Object> setValue) {
-		if (!keysWrapper.delayLegacyUntilResolve() && !valuesWrapper.delayLegacyUntilResolve()) {
-			actuallySetLegacyValues(read, legacyMap, setValue);
-		}
-	}
-
-	@Override
-	void setLegacyReference(ReadJob read, Object legacyMap, Consumer<Object> setValue) {
-		if (keysWrapper.delayLegacyUntilResolve() || valuesWrapper.delayLegacyUntilResolve()) {
-			actuallySetLegacyValues(read, legacyMap, setValue);
-		}
-	}
-
-	private void actuallySetLegacyValues(ReadJob read, Object rawLegacyMap, Consumer<Object> setValue) {
+	void setLegacyValue(ReadJob read, Object rawLegacyMap, Consumer<Object> setValue) {
 		if (rawLegacyMap == null) {
 			super.setLegacyValue(read, null, setValue);
 			return;
 		}
 
-		Map<?, ?> legacyMap = (Map<?, ?>) rawLegacyMap;
+		LegacyMapInstance legacyInstance = (LegacyMapInstance) rawLegacyMap;
 
-		@SuppressWarnings("unchecked")
-		Map<Object, Object> newMap = (Map<Object, Object>) constructCollectionWithSize(field.type, legacyMap.size());
-		legacyMap.forEach((oldKey, oldValue) -> {
-			int[] pCount = { 0 };
-			Object[] pKey = { null };
-			Object[] pValue = { null };
+		Object dummyKeyArray = Array.newInstance(keysWrapper.field.type, 1);
+		Object dummyValueArray = Array.newInstance(valuesWrapper.field.type, 1);
 
-			if (keysWrapper.delayLegacyUntilResolve()) {
-				keysWrapper.setLegacyReference(read, oldKey, newKey-> {
-					pKey[0] = newKey;
-					pCount[0] += 1;
-					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
-				});
-			} else {
-				keysWrapper.setLegacyValue(read, oldKey, newKey -> {
-					pKey[0] = newKey;
-					pCount[0] += 1;
-					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
-				});
-			}
+		legacyInstance.legacyMap.forEach((legacyKey, legacyValue) -> {
+			DelayedEntry delayed = new DelayedEntry((newKey, newValue) -> {
+				try {
+					Array.set(dummyKeyArray, 0, newKey);
+				} catch (IllegalArgumentException wrongType) {
+					throw new InvalidBitFieldException("Can't convert from legacy " + legacyKey + " to " + keysWrapper.field.type + " for field " + field);
+				}
+				try {
+					Array.set(dummyValueArray, 0, newValue);
+				} catch (IllegalArgumentException wrongType) {
+					throw new InvalidBitFieldException("Can't convert from legacy " + legacyValue + " to " + valuesWrapper.field.type + " for field " + field);
+				}
 
-			if (valuesWrapper.delayLegacyUntilResolve()) {
-				valuesWrapper.setLegacyReference(read, oldValue, newValue -> {
-					pValue[0] = newValue;
-					pCount[0] += 1;
-					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
-				});
-			} else {
-				valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
-					pValue[0] = newValue;
-					pCount[0] += 1;
-					if (pCount[0] == 2) newMap.put(pKey[0], pValue[0]);
-				});
-			}
+				//noinspection unchecked
+				((Map<Object, Object>)legacyInstance.newMap).put(newKey, newValue);
+			});
+			keysWrapper.setLegacyValue(read, legacyKey, delayed::setKey);
+			valuesWrapper.setLegacyValue(read, legacyValue, delayed::setValue);
 		});
 
-		super.setLegacyValue(read, newMap, setValue);
+		super.setLegacyValue(read, legacyInstance.newMap, setValue);
 	}
 
 	@Override
-	boolean delayLegacyUntilResolve() {
-		return keysWrapper.delayLegacyUntilResolve() || valuesWrapper.delayLegacyUntilResolve();
+	public void fixLegacyTypes(ReadJob read, Object rawLegacyInstance) {
+		if (rawLegacyInstance == null && field.optional) return;
+		assert rawLegacyInstance != null;
+		LegacyMapInstance legacyInstance = (LegacyMapInstance) rawLegacyInstance;
+		legacyInstance.newMap = (Map<?, ?>) constructCollectionWithSize(
+				field.type, legacyInstance.legacyMap.size()
+		);
+		if (field.referenceTargetLabel != null) {
+			read.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newMap);
+		}
+		legacyInstance.legacyMap.forEach((key, value) -> {
+			keysWrapper.fixLegacyTypes(read, key);
+			valuesWrapper.fixLegacyTypes(read, value);
+		});
 	}
 
 	private static class DelayedEntry {
@@ -208,16 +200,15 @@ class MapFieldWrapper extends BitFieldWrapper {
 		Object key = null;
 		Object value = null;
 
-		final Map<?, ?> destination;
+		final BiConsumer<Object, Object> insert;
 
-		DelayedEntry(Map<?, ?> destination) {
-			this.destination = destination;
+		DelayedEntry(BiConsumer<Object, Object> insert) {
+			this.insert = insert;
 		}
 
 		private void maybeInsert() {
 			if (hasKey && hasValue) {
-				//noinspection unchecked
-				((Map<Object, Object>) destination).put(key, value);
+				insert.accept(key, value);
 			}
 		}
 

@@ -1,4 +1,4 @@
-package com.github.knokko.bitser.backward;
+package com.github.knokko.bitser.backward.instance;
 
 import java.util.UUID;
 
@@ -9,7 +9,7 @@ public class LegacyValues {
 	public final Object[] storedFunctionValues;
 	public Object[] convertedFunctionValues;
 	public final boolean[] hadFunctionValues;
-	final UUID stableID;
+	public final UUID stableID;
 
 	public LegacyValues(
 			Object[] values, boolean[] hadValues, Object[] storedFunctionValues, boolean[] hadFunctionValues, UUID stableID

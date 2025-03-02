@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.serialize;
 
 import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.connection.BitConnection;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
@@ -130,11 +131,18 @@ public class Bitser {
 		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels);
 
 		List<T> result = new ArrayList<>(1);
-		//noinspection unchecked
-		wrapper.read(
-				new ReadJob(input, cache, idLoader, withParameters, backwardCompatible),
-				element -> result.add((T) element), legacy != null ? legacy.getRoot() : null
-		);
+		ReadJob readJob = new ReadJob(input, cache, idLoader, withParameters, backwardCompatible);
+		if (legacy != null) {
+			LegacyStructInstance[] pLegacy = { null };
+			legacy.getRoot().read(readJob, -1, element -> pLegacy[0] = element);
+			wrapper.fixLegacyTypes(readJob, pLegacy[0]);
+			//noinspection unchecked
+			result.add((T) pLegacy[0].newInstance);
+			wrapper.setLegacyValues(readJob, pLegacy[0]);
+		} else {
+			//noinspection unchecked
+			wrapper.read(readJob, element -> result.add((T) element), null); // TODO eliminate last null
+		}
 
 		withMapper.shareWith(idLoader);
 		idLoader.resolve();

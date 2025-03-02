@@ -2,7 +2,7 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
-import com.github.knokko.bitser.backward.LegacyInstance;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.decodeUniformInteger;
@@ -132,10 +131,22 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			super.setLegacyValue(read, null, setValue);
 			return;
 		}
-		LegacyInstance legacy = (LegacyInstance) value;
+		LegacyStructInstance legacy = (LegacyStructInstance) value;
 		if (legacy.inheritanceIndex >= allowed.length) throw new InvalidBitValueException(
 				"Encountered unknown subclass while loading " + field
 		);
-		setValue.accept(read.cache.getWrapper(allowed[legacy.inheritanceIndex]).setLegacyValues(read, legacy));
+		BitserWrapper<?> valueWrapper = read.cache.getWrapper(allowed[legacy.inheritanceIndex]);
+		setValue.accept(valueWrapper.setLegacyValues(read, legacy));
+	}
+
+	@Override
+	public void fixLegacyTypes(ReadJob read, Object value) {
+		if (value == null && field.optional) return;
+		LegacyStructInstance instance = (LegacyStructInstance) value;
+		assert instance != null; // TODO Throw right exception?
+		read.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(read, instance);
+		if (field.referenceTargetLabel != null) {
+			read.idLoader.replace(field.referenceTargetLabel, instance, instance.newInstance);
+		}
 	}
 }

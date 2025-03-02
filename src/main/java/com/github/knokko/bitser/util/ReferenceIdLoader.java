@@ -50,6 +50,12 @@ public class ReferenceIdLoader {
 		}
 	}
 
+	public void replace(String label, Object oldTarget, Object newTarget) {
+		Mappings mappings = labelMappings.get(label);
+		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
+		mappings.replace(oldTarget, newTarget);
+	}
+
 	void prepareWith() {
 		labelMappings.values().forEach(Mappings::prepareWith);
 	}
@@ -86,6 +92,14 @@ public class ReferenceIdLoader {
 		mappings.getStable(label, id, setValue);
 	}
 
+	public Object getStableNow(String label, UUID id) {
+		Mappings mappings = labelMappings.get(label);
+		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
+		Object result = mappings.stable.get(id);
+		if (result == null) throw new Error("Missing stable " + label + " with ID " + id);
+		return result;
+	}
+
 	public void addPostResolveCallback(Runnable callback) {
 		postResolveCallbacks.add(callback);
 	}
@@ -113,6 +127,16 @@ public class ReferenceIdLoader {
 			this.unstableSize = unstableSize;
 			this.unstable = unstableSize > 0 ? new HashMap<>(unstableSize) : null;
 			this.stable = hasStable ? new HashMap<>() : null;
+		}
+
+		void replace(Object oldTarget, Object newTarget) {
+			// TODO Optimize this
+			for (Integer key : unstable.keySet()) {
+				if (unstable.get(key) == oldTarget) unstable.put(key, newTarget);
+			}
+			for (UUID id : stable.keySet()) {
+				if (stable.get(id) == oldTarget) stable.put(id, newTarget);
+			}
 		}
 
 		void registerUnstable(Object target, int id) {

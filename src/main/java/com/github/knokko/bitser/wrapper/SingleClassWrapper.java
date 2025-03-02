@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.backward.*;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -228,25 +229,6 @@ class SingleClassWrapper {
 		}
 	}
 
-	void performLegacyResolve(ReadJob read, Object target, LegacyValues legacy) {
-		for (FieldWrapper field : fieldsSortedById) {
-			if (field.id < legacy.values.length && legacy.hadValues[field.id]) field.bitField.setLegacyReference(
-					read, legacy.values[field.id], newValue -> field.bitField.field.setValue.accept(target, newValue)
-			);
-		}
-		for (int index = 0; index < legacy.storedFunctionValues.length; index++) {
-			if (legacy.storedFunctionValues[index] instanceof LegacyInstance) {
-				Object recoveredInstance = ((LegacyInstance) legacy.storedFunctionValues[index]).recoveredInstance;
-				if (recoveredInstance != null) legacy.storedFunctionValues[index] = recoveredInstance;
-			}
-		}
-		for (FunctionWrapper function : functions) {
-			if (function.id < legacy.hadFunctionValues.length && legacy.hadFunctionValues[function.id]) function.bitField.setLegacyReference(
-					read, legacy.storedFunctionValues[function.id], newValue -> legacy.convertedFunctionValues[function.id] = newValue
-			);
-		}
-	}
-
 	Object[] read(Object target, ReadJob read) throws IOException {
 		Object[] functionValues;
 		if (functions.isEmpty()) functionValues = new Object[0];
@@ -257,6 +239,13 @@ class SingleClassWrapper {
 			function.bitField.readValue(read, result -> functionValues[function.id] = result);
 		}
 		return functionValues;
+	}
+
+	public void fixLegacyTypes(ReadJob read, LegacyValues legacyValues) {
+		for (FieldWrapper field : fields) {
+			if (field.id >= legacyValues.values.length) continue;
+			field.bitField.fixLegacyTypes(read, legacyValues.values[field.id]);
+		} // TODO Same for functions
 	}
 
 	void shallowCopy(Object original, Object target) {

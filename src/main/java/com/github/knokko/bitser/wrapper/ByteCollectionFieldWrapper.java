@@ -44,7 +44,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, int size, WriteJob write) throws IOException {
+	void writeElements(Object value, int size, WriteJob write) throws IOException {
 		if (value instanceof boolean[]) write.output.write(toByteArray((boolean[]) value));
 		else if (value instanceof byte[]) write.output.write((byte[]) value);
 		else if (value instanceof short[]) write.output.write(toByteArray((short[]) value));
@@ -150,7 +150,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void readValue(Object value, int size, ReadJob read) throws IOException {
+	void readElements(Object value, int size, ReadJob read) throws IOException {
 		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, read.input);
 		else if (value instanceof byte[]) read.input.read((byte[]) value);
 		else if (value instanceof short[]) backToShortArray((short[]) value, read.input);

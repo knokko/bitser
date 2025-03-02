@@ -1,6 +1,8 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitPostInit;
@@ -216,7 +218,7 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			LegacyInstance legacyDummy = (LegacyInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
+			LegacyStructInstance legacyDummy = (LegacyStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
 			LegacyValues legacyValues = legacyDummy.valuesHierarchy.get(0);
 			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hadValues);
 			int x = (int) (long) legacyValues.values[2];

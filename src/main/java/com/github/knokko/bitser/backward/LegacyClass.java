@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;

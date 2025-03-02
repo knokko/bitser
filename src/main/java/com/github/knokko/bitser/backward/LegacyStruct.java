@@ -1,6 +1,8 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
+import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -30,12 +32,12 @@ public class LegacyStruct {
 			artificial.add(classValues);
 			if (classValues.stableID != null) stableID = classValues.stableID;
 		}
-		setValue.consume(new LegacyInstance(inheritanceIndex, artificial, stableID));
+		setValue.consume(new LegacyStructInstance(inheritanceIndex, artificial, stableID));
 	}
 
 	@FunctionalInterface
 	public interface Consumer {
 
-		void consume(LegacyInstance instance) throws IOException;
+		void consume(LegacyStructInstance instance) throws IOException;
 	}
 }

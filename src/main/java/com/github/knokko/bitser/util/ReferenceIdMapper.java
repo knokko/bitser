@@ -1,6 +1,6 @@
 package com.github.knokko.bitser.util;
 
-import com.github.knokko.bitser.backward.LegacyInstance;
+import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -16,8 +16,8 @@ public class ReferenceIdMapper {
 
 	static UUID extractStableId(Object target, BitserCache cache) {
 		try {
-			if (target instanceof LegacyInstance) {
-				UUID id = ((LegacyInstance) target).stableID;
+			if (target instanceof LegacyStructInstance) {
+				UUID id = ((LegacyStructInstance) target).stableID;
 				if (id == null) throw new InvalidBitValueException("Will get better error message when more context is available");
 				return id;
 			}
