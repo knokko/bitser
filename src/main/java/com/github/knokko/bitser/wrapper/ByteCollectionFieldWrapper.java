@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.backward.instance.LegacyCollectionInstance;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.ReadJob;
@@ -9,7 +10,6 @@ import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Collection;
 import java.util.function.Consumer;
 
 import static java.lang.Byte.toUnsignedInt;
@@ -264,29 +264,25 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object legacyArray, Consumer<Object> setValue) {
-		if (legacyArray == null || field.type == legacyArray.getClass()) {
-			super.setLegacyValue(read, legacyArray, setValue);
+	void setLegacyValue(ReadJob read, Object rawLegacyInstance, Consumer<Object> setValue) {
+		if (rawLegacyInstance == null) {
+			super.setLegacyValue(read, null, setValue);
 			return;
 		}
 
-		int size = legacyArray.getClass().isArray() ? Array.getLength(legacyArray) : ((Collection<?>) legacyArray).size();
-		Object newArray = Array.newInstance(field.type.getComponentType(), size);
-
-		if (legacyArray.getClass().isArray()) {
-			for (int index = 0; index < size; index++) {
-				Object legacyValue = Array.get(legacyArray, index);
-				setFromLegacyValue(newArray, index, legacyValue);
-			}
-		} else {
-			int index = 0;
-			for (Object legacyValue : (Collection<?>) legacyArray) {
-				setFromLegacyValue(newArray, index, legacyValue);
-				index += 1;
-			}
+		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) rawLegacyInstance;
+		if (field.type == legacyInstance.legacyArray.getClass()) {
+			super.setLegacyValue(read, legacyInstance.legacyArray, setValue);
+			return;
 		}
 
-		setValue.accept(newArray);
+		int size = Array.getLength(legacyInstance.legacyArray);
+		for (int index = 0; index < size; index++) {
+			Object legacyValue = Array.get(legacyInstance.legacyArray, index);
+			setFromLegacyValue(legacyInstance.newCollection, index, legacyValue);
+		}
+
+		setValue.accept(legacyInstance.newCollection);
 	}
 
 	private void setFromLegacyValue(Object newArray, int index, Object legacyValue) {

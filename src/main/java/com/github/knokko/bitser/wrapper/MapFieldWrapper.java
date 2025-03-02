@@ -114,7 +114,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 			readElement(keysWrapper, read, delayed::setKey);
 			readElement(valuesWrapper, read, delayed::setValue);
 		}
-		setValue.consume(map);
+
+		if (read.backwardCompatible) setValue.consume(new LegacyMapInstance((HashMap<?, ?>) map));
+		else setValue.consume(map);
 	}
 
 	private void readElement(BitFieldWrapper wrapper, ReadJob read, ValueConsumer setValue) throws IOException {

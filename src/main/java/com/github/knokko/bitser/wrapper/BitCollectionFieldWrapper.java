@@ -123,38 +123,29 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object legacyCollection, Consumer<Object> setValue) {
-		if (legacyCollection == null) {
+	void setLegacyValue(ReadJob read, Object rawLegacyInstance, Consumer<Object> setValue) {
+		if (rawLegacyInstance == null) {
 			super.setLegacyValue(read, null, setValue);
 			return;
 		}
 
-		Object legacyArray;
-		if (legacyCollection.getClass().isArray()) {
-			legacyArray = legacyCollection;
-		} else {
-			legacyArray = ((Collection<?>) legacyCollection).toArray();
-		}
-		int size = Array.getLength(legacyArray);
-
-		Object newCollection = field.type.isArray() ? Array.newInstance(field.type.getComponentType(), size) :
-				constructCollectionWithSize(field.type, size);
-
-		Object dummyArray = newCollection.getClass().isArray() ? null : Array.newInstance(valuesWrapper.field.type, 1);
+		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) rawLegacyInstance;
+		Object dummyArray = legacyInstance.newCollection.getClass().isArray() ? null : Array.newInstance(valuesWrapper.field.type, 1);
+		int size = Array.getLength(legacyInstance.legacyArray);
 		for (int index = 0; index < size; index++) {
 			final int rememberIndex = index;
-			final Object oldValue = Array.get(legacyArray, index);
+			final Object oldValue = Array.get(legacyInstance.legacyArray, index);
 
 			try {
-				if (newCollection.getClass().isArray()) {
+				if (legacyInstance.newCollection.getClass().isArray()) {
 					valuesWrapper.setLegacyValue(read, oldValue, newValue ->
-							Array.set(newCollection, rememberIndex, newValue)
+							Array.set(legacyInstance.newCollection, rememberIndex, newValue)
 					);
 				} else {
 					valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
 						Array.set(dummyArray, 0, newValue);
 						//noinspection unchecked
-						((Collection<Object>) newCollection).add(newValue);
+						((Collection<Object>) legacyInstance.newCollection).add(newValue);
 					});
 				}
 			} catch (IllegalArgumentException wrongType) {
@@ -162,11 +153,14 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			}
 		}
 
-		super.setLegacyValue(read, newCollection, setValue);
+		super.setLegacyValue(read, legacyInstance.newCollection, setValue);
 	}
 
 	@Override
 	public void fixLegacyTypes(ReadJob read, Object value) {
+		if (value != null && !(value instanceof LegacyCollectionInstance)) {
+			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + valuesWrapper.field.type + " for field " + field);
+		}
 		super.fixLegacyTypes(read, value);
 		if (value == null) return;
 		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
