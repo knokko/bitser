@@ -106,16 +106,23 @@ class MapFieldWrapper extends BitFieldWrapper {
 		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
 
 		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type != null ? field.type : HashMap.class, size);
+		LegacyMapInstance legacyInstance = read.backwardCompatible ? new LegacyMapInstance((HashMap<?, ?>) map) : null;
 		for (int counter = 0; counter < size; counter++) {
 			DelayedEntry delayed = new DelayedEntry((key, value) -> {
 				//noinspection unchecked
 				((Map<Object, Object>) map).put(key, value);
 			});
-			readElement(keysWrapper, read, delayed::setKey);
-			readElement(valuesWrapper, read, delayed::setValue);
+			readElement(keysWrapper, read, key -> {
+				if (legacyInstance != null) legacyInstance.legacyKeys.add(key);
+				delayed.setKey(key);
+			});
+			readElement(valuesWrapper, read, value -> {
+				if (legacyInstance != null) legacyInstance.legacyValues.add(value);
+				delayed.setValue(value);
+			});
 		}
 
-		if (read.backwardCompatible) setValue.consume(new LegacyMapInstance((HashMap<?, ?>) map));
+		if (read.backwardCompatible) setValue.consume(legacyInstance);
 		else setValue.consume(map);
 	}
 
@@ -189,10 +196,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (field.referenceTargetLabel != null) {
 			read.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newMap);
 		}
-		legacyInstance.legacyMap.forEach((key, value) -> {
-			keysWrapper.fixLegacyTypes(read, key);
-			valuesWrapper.fixLegacyTypes(read, value);
-		});
+
+		for (Object key : legacyInstance.legacyKeys) keysWrapper.fixLegacyTypes(read, key);
+		for (Object value : legacyInstance.legacyValues) valuesWrapper.fixLegacyTypes(read, value);
 	}
 
 	private static class DelayedEntry {

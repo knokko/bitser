@@ -104,8 +104,8 @@ public class Bitser {
 		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
 
 		LabelCollection labels = new LabelCollection(cache, new HashSet<>(), backwardCompatible);
-		if (legacy == null) wrapper.collectReferenceTargetLabels(labels);
-		else legacy.collectReferenceTargetLabels(labels);
+		wrapper.collectReferenceTargetLabels(labels);
+		//if (legacy != null) legacy.collectReferenceTargetLabels(labels);
 
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) continue;
