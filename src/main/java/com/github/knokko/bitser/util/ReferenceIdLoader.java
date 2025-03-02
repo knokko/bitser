@@ -94,7 +94,10 @@ public class ReferenceIdLoader {
 		for (Mappings mappings : labelMappings.values()) {
 			for (ResolveTask task : mappings.resolveTasks) task.resolve();
 		}
-		for (Runnable callback : postResolveCallbacks) callback.run();
+		//noinspection ForLoopReplaceableByForEach avoid ConcurrentModificationException
+		for (int index = 0; index < postResolveCallbacks.size(); index++) {
+			postResolveCallbacks.get(index).run();
+		}
 	}
 
 	private static class Mappings {
