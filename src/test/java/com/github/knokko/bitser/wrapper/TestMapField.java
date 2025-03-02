@@ -277,4 +277,42 @@ public class TestMapField {
 		assertContains(errorMessage, "optional BitField is not allowed");
 		assertContains(errorMessage, "use @NestedFieldSetting instead");
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class MiniStruct {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = false)
+		int size;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceToStructMap {
+
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "names")
+		private static final boolean KEY_PROPERTIES = false;
+
+		@BitField(id = 0)
+		@NestedFieldSetting(path = "k", fieldName = "KEY_PROPERTIES")
+		final HashMap<String, MiniStruct> map = new HashMap<>();
+
+		@BitField(id = 1)
+		@ReferenceFieldTarget(label = "names")
+		String name;
+	}
+
+	@Test
+	public void testReferenceToStructMap() {
+		MiniStruct mini = new MiniStruct();
+		mini.size = 3;
+
+		ReferenceToStructMap original = new ReferenceToStructMap();
+		original.name = "Tim";
+		original.map.put(original.name, mini);
+
+		ReferenceToStructMap copy = new Bitser(true).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals("Tim", copy.name);
+		assertEquals(3, copy.map.get(copy.name).size);
+	}
 }
