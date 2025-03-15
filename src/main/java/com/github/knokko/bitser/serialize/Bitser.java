@@ -216,4 +216,13 @@ public class Bitser {
 		}
 		return null;
 	}
+
+	public boolean deepEquals(Object a, Object b, Object... withAndOptions) {
+		if (a.getClass() != b.getClass()) return false;
+		return Arrays.equals(serializeToBytes(a, withAndOptions), serializeToBytes(b, withAndOptions));
+	}
+
+	public int hashCode(Object target, Object... withAndOptions) {
+		return Arrays.hashCode(serializeToBytes(target, withAndOptions));
+	}
 }
