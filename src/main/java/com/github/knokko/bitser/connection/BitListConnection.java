@@ -65,7 +65,7 @@ public class BitListConnection<T> extends BitConnection {
 			} else if (modification.action != Action.REMOVE) {
 				AbstractCollectionFieldWrapper.writeElement(
 						modification.element, elementWrapper,
-						new WriteJob(output, bitser.cache, null, new HashMap<>(), null),
+						new WriteJob(bitser, output, null, new HashMap<>(), null),
 						"This BitListConnection must not contain null values"
 				);
 			}
@@ -118,7 +118,7 @@ public class BitListConnection<T> extends BitConnection {
 				}
 			}
 		} else {
-			elementWrapper.read(new ReadJob(input, bitser.cache, null, new HashMap<>(), false), rawElement -> {
+			elementWrapper.read(new ReadJob(bitser, input, null, new HashMap<>(), false), rawElement -> {
 				@SuppressWarnings("unchecked") T element = (T) rawElement;
 				synchronized (list) {
 					if (modification.action == Action.ADD) {

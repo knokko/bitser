@@ -9,19 +9,19 @@ import java.util.Map;
 
 public class WriteJob {
 
+	public final Bitser bitser;
 	public final BitOutputStream output;
-	public final BitserCache cache;
 	public final ReferenceIdMapper idMapper;
 	public final Map<String, Object> withParameters;
 	public final LegacyClasses legacy;
 
 	public WriteJob(
-			BitOutputStream output, BitserCache cache,
+			Bitser bitser, BitOutputStream output,
 			ReferenceIdMapper idMapper, Map<String, Object> withParameters,
 			LegacyClasses legacy
 	) {
+		this.bitser = bitser;
 		this.output = output;
-		this.cache = cache;
 		this.idMapper = idMapper;
 		this.withParameters = Collections.unmodifiableMap(withParameters);
 		this.legacy = legacy;

@@ -72,7 +72,7 @@ public class BitStructConnection<T> extends BitConnection {
 			} else {
 				for (BitFieldWrapper fieldWrapper : fields) {
 					if (input.read()) {
-						fieldWrapper.read(new ReadJob(input, bitser.cache, null, new HashMap<>(), false),value -> {
+						fieldWrapper.read(new ReadJob(bitser, input, null, new HashMap<>(), false),value -> {
 							if (state != null) fieldWrapper.field.setValue.accept(state, value);
 						});
 					}
@@ -120,7 +120,7 @@ public class BitStructConnection<T> extends BitConnection {
 				numChanges += 1;
 
 				if (output != null) {
-					fieldWrapper.write(state, new WriteJob(output, bitser.cache, null, new HashMap<>(), null));
+					fieldWrapper.write(state, new WriteJob(bitser, output, null, new HashMap<>(), null));
 					updateChildConnection(fieldWrapper, index);
 				}
 			}

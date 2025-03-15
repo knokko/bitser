@@ -34,7 +34,7 @@ class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
-		write.idMapper.encodeStableId(label, value, write.output, write.cache);
+		write.idMapper.encodeStableId(label, value, write.output, write.bitser.cache);
 	}
 
 	@Override

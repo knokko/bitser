@@ -112,7 +112,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
 				encodeUniformInteger(index, 0, allowed.length - 1, write.output);
-				write.cache.getWrapper(value.getClass()).write(value, write);
+				write.bitser.cache.getWrapper(value.getClass()).write(value, write);
 				return;
 			}
 		}
@@ -129,7 +129,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 
 		if (allowed.length == 0) {
 			legacyStructs[inheritanceIndex].read(read, inheritanceIndex, setValue::consume);
-		} else read.cache.getWrapper(allowed[inheritanceIndex]).read(read, setValue);
+		} else read.bitser.cache.getWrapper(allowed[inheritanceIndex]).read(read, setValue);
 	}
 
 	@Override
@@ -139,7 +139,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			return;
 		}
 		LegacyStructInstance legacy = (LegacyStructInstance) value;
-		BitserWrapper<?> valueWrapper = read.cache.getWrapper(allowed[legacy.inheritanceIndex]);
+		BitserWrapper<?> valueWrapper = read.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
 		setValue.accept(valueWrapper.setLegacyValues(read, legacy));
 	}
 
@@ -150,7 +150,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		if (instance.inheritanceIndex >= allowed.length) throw new InvalidBitValueException(
 				"Encountered unknown subclass while loading " + field
 		);
-		read.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(read, instance);
+		read.bitser.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(read, instance);
 		if (field.referenceTargetLabel != null) {
 			read.idLoader.replace(field.referenceTargetLabel, instance, instance.newInstance);
 		}

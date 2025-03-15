@@ -8,19 +8,19 @@ import java.util.Map;
 
 public class ReadJob {
 
+	public final Bitser bitser;
 	public final BitInputStream input;
-	public final BitserCache cache;
 	public final ReferenceIdLoader idLoader;
 	public final Map<String, Object> withParameters;
 	public final boolean backwardCompatible;
 
 	public ReadJob(
-			BitInputStream input, BitserCache cache,
+			Bitser bitser, BitInputStream input,
 			ReferenceIdLoader idLoader, Map<String, Object> withParameters,
 			boolean backwardCompatible
 	) {
+		this.bitser = bitser;
 		this.input = input;
-		this.cache = cache;
 		this.idLoader = idLoader;
 		this.withParameters = Collections.unmodifiableMap(withParameters);
 		this.backwardCompatible = backwardCompatible;

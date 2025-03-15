@@ -47,7 +47,7 @@ public class Bitser {
 		}
 
 		LabelCollection labels = new LabelCollection(
-				cache, new HashSet<>(), backwardCompatible, new FunctionContext(withParameters)
+				cache, new HashSet<>(), backwardCompatible, new FunctionContext(this, withParameters)
 		);
 		wrapper.collectReferenceLabels(labels);
 
@@ -85,7 +85,7 @@ public class Bitser {
 
 		idMapper.save(output);
 
-		wrapper.write(object, new WriteJob(output, cache, idMapper, withParameters, legacy));
+		wrapper.write(object, new WriteJob(this, output, idMapper, withParameters, legacy));
 	}
 
 	public byte[] serializeToBytes(Object object, Object... withAndOptions) {
@@ -131,7 +131,8 @@ public class Bitser {
 				continue;
 			}
 			cache.getWrapper(withObject.getClass()).collectReferenceLabels(new LabelCollection(
-					cache, labels.declaredTargets, false, new FunctionContext(withParameters)
+					cache, labels.declaredTargets, false,
+					new FunctionContext(this, withParameters)
 			));
 		}
 
@@ -144,7 +145,7 @@ public class Bitser {
 		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels);
 
 		List<T> result = new ArrayList<>(1);
-		ReadJob readJob = new ReadJob(input, cache, idLoader, withParameters, backwardCompatible);
+		ReadJob readJob = new ReadJob(this, input, idLoader, withParameters, backwardCompatible);
 		if (legacy != null) {
 			LegacyStructInstance[] pLegacy = { null };
 			legacy.getRoot().read(readJob, -1, element -> pLegacy[0] = element);

@@ -213,7 +213,7 @@ class SingleClassWrapper {
 		for (FieldWrapper field : getFields(write.legacy != null)) {
 			field.bitField.write(object, write);
 		}
-		FunctionContext functionContext = new FunctionContext(write.withParameters);
+		FunctionContext functionContext = new FunctionContext(write.bitser, write.withParameters);
 		for (FunctionWrapper function : functions) {
 			function.bitField.writeValue(function.computeValue(object, functionContext), write);
 		}

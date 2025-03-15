@@ -132,7 +132,10 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				});
 
 				if (valuesWrapper.field.referenceTargetLabel != null) {
-					read.idLoader.register(valuesWrapper.field.referenceTargetLabel, rememberElement.get(0), read.input, read.cache);
+					read.idLoader.register(
+							valuesWrapper.field.referenceTargetLabel, rememberElement.get(0),
+							read.input, read.bitser.cache
+					);
 				}
 			}
 		}

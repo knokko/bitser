@@ -150,7 +150,10 @@ class MapFieldWrapper extends BitFieldWrapper {
 			});
 
 			if (wrapper.field.referenceTargetLabel != null) {
-				read.idLoader.register(wrapper.field.referenceTargetLabel, rememberElement.get(0), read.input, read.cache);
+				read.idLoader.register(
+						wrapper.field.referenceTargetLabel,
+						rememberElement.get(0), read.input, read.bitser.cache
+				);
 			}
 		}
 	}

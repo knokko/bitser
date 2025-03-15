@@ -146,7 +146,7 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		if (object instanceof BitPostInit) {
 			read.idLoader.addPostResolveCallback(() -> ((BitPostInit) object).postInit(
 					new BitPostInit.Context(
-							serializedFunctionValues, null,
+							read.bitser, serializedFunctionValues, null,
 							null, read.withParameters
 					)
 			));
@@ -174,9 +174,9 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 					legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
 					legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
 				}
-				((BitPostInit) legacy.newInstance).postInit(
-						new BitPostInit.Context(functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters)
-				);
+				((BitPostInit) legacy.newInstance).postInit(new BitPostInit.Context(
+						read.bitser, functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters
+				));
 			});
 		}
 
