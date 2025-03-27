@@ -8,6 +8,7 @@ import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.io.LayeredBitOutputStream;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
@@ -49,7 +50,6 @@ public class Bitser {
 		LabelCollection labels = new LabelCollection(
 				cache, new HashSet<>(), backwardCompatible, new FunctionContext(this, withParameters)
 		);
-		wrapper.collectReferenceLabels(labels);
 
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
@@ -58,16 +58,13 @@ public class Bitser {
 			legacy.functionContext = labels.functionContext;
 			legacy.setRoot(wrapper.registerClasses(object, legacy));
 
-			LabelCollection usedLabels = new LabelCollection(
-					cache, new HashSet<>(), false, legacy.functionContext
-			);
-			wrapper.collectUsedReferenceLabels(usedLabels, object);
-			for (String label : labels.unstable) {
-				if (!usedLabels.unstable.contains(label)) legacy.addUnstableLabel(label);
-			}
+			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
+			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
+			serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
+			legacyOutput.finish();
 
-			serialize(legacy, output, new WithParameter("legacy-classes", legacy));
-		}
+			deserializeFromBytes(LegacyClasses.class, legacyBytes.toByteArray()).collectReferenceLabels(labels);
+		} else wrapper.collectReferenceLabels(labels);
 
 		for (Object withObject : withAndOptions) {
 			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;

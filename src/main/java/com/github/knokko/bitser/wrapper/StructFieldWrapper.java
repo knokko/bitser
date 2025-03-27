@@ -87,14 +87,6 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
-		super.collectUsedReferenceLabels(labels, value);
-		if (value != null) {
-			labels.cache.getWrapper(value.getClass()).collectUsedReferenceLabels(labels, value);
-		}
-	}
-
-	@Override
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
 		super.registerReferenceTargets(value, cache, idMapper);
 		if (value != null) cache.getWrapper(value.getClass()).registerReferenceTargets(value, cache, idMapper);

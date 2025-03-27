@@ -1,7 +1,6 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
@@ -10,7 +9,6 @@ import com.github.knokko.bitser.serialize.LabelCollection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 // Ironically, I don't think I can make this backward-compatible
@@ -33,9 +31,6 @@ public class LegacyClasses {
 	public BitserCache cache;
 	public FunctionContext functionContext;
 
-	@BitField
-	private final HashSet<String> remainingUnstableReferenceLabels = new HashSet<>();
-
 	public void setRoot(LegacyStruct root) {
 		if (this.root != null) throw new IllegalStateException();
 		this.root = root;
@@ -43,11 +38,6 @@ public class LegacyClasses {
 
 	public void collectReferenceLabels(LabelCollection labels) {
 		for (LegacyClass legacyClass : classes) legacyClass.collectReferenceLabels(labels);
-		labels.unstable.addAll(remainingUnstableReferenceLabels);
-	}
-
-	public void addUnstableLabel(String label) {
-		remainingUnstableReferenceLabels.add(label);
 	}
 
 	public LegacyStruct getRoot() {

@@ -27,12 +27,6 @@ class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	}
 
 	@Override
-	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
-		super.collectReferenceLabels(labels);
-		if (value != null) labels.stable.add(label);
-	}
-
-	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		write.idMapper.encodeStableId(label, value, write.output, write.bitser.cache);
 	}

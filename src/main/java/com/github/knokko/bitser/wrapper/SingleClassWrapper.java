@@ -172,15 +172,6 @@ class SingleClassWrapper {
 		}
 	}
 
-	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
-		for (FieldWrapper field : getFields(labels.backwardCompatible)) {
-			field.bitField.collectUsedReferenceLabels(labels, field.bitField.field.getValue.apply(value));
-		}
-		for (FunctionWrapper function : functions) {
-			function.bitField.collectUsedReferenceLabels(labels, function.computeValue(value, labels.functionContext));
-		}
-	}
-
 	void registerReferenceTargets(Object object, BitserCache cache, ReferenceIdMapper mapper) {
 		for (FieldWrapper field : fields) {
 			field.bitField.registerReferenceTargets(field.bitField.field.getValue.apply(object), cache, mapper);

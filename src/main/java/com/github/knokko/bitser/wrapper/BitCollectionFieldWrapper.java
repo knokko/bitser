@@ -66,22 +66,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
-		super.collectReferenceLabels(labels);
-		if (value == null) return;
-		if (field.type.isArray()) {
-			int size = Array.getLength(value);
-			for (int index = 0; index < size; index++) {
-				valuesWrapper.collectUsedReferenceLabels(labels, Array.get(value, index));
-			}
-		} else {
-			for (Object element : (Collection<?>) value) {
-				valuesWrapper.collectUsedReferenceLabels(labels, element);
-			}
-		}
-	}
-
-	@Override
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
 		super.registerReferenceTargets(value, cache, idMapper);
 		if (value == null) return;

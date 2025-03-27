@@ -47,12 +47,6 @@ public abstract class BitFieldWrapper {
 		if (field.referenceTargetLabel != null) labels.declaredTargets.add(field.referenceTargetLabel);
 	}
 
-	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
-		if (value != null && field.referenceTargetLabel != null) {
-			labels.declaredTargets.add(field.referenceTargetLabel);
-		}
-	}
-
 	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
 		if (field.referenceTargetLabel != null && value != null) {
 			idMapper.register(field.referenceTargetLabel, value, cache);

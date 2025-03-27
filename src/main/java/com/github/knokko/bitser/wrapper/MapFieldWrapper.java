@@ -77,19 +77,6 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	public void collectUsedReferenceLabels(LabelCollection labels, Object rawValue) {
-		super.collectReferenceLabels(labels);
-		keysWrapper.collectReferenceLabels(labels);
-		valuesWrapper.collectReferenceLabels(labels);
-		if (rawValue == null) return;
-		Map<?, ?> map = (Map<?, ?>) rawValue;
-		for (Map.Entry<?, ?> entry : map.entrySet()) {
-			keysWrapper.collectUsedReferenceLabels(labels, entry.getKey());
-			valuesWrapper.collectUsedReferenceLabels(labels, entry.getValue());
-		}
-	}
-
-	@Override
 	void registerReferenceTargets(Object rawValue, BitserCache cache, ReferenceIdMapper idMapper) {
 		super.registerReferenceTargets(rawValue, cache, idMapper);
 		if (rawValue == null) return;

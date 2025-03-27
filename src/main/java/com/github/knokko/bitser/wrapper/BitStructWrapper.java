@@ -35,7 +35,13 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 
 		try {
 			this.constructor = objectClass.getDeclaredConstructor();
-			if (!Modifier.isPublic(constructor.getModifiers())) constructor.setAccessible(true);
+			try {
+				constructor.newInstance();
+			} catch (IllegalAccessException e) {
+				constructor.setAccessible(true);
+			} catch (InvocationTargetException | InstantiationException shouldNotHappen) {
+				throw new Error(shouldNotHappen);
+			}
 		} catch (NoSuchMethodException e) {
 			throw new Error(objectClass + " must have a constructor without parameters");
 		}
@@ -73,15 +79,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		labels.visitedStructs.add(this);
 		for (SingleClassWrapper currentClass : classHierarchy) {
 			currentClass.collectReferenceLabels(labels);
-		}
-	}
-
-	@Override
-	public void collectUsedReferenceLabels(LabelCollection labels, Object value) {
-		if (labels.visitedStructs.contains(this)) return;
-		labels.visitedStructs.add(this);
-		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.collectUsedReferenceLabels(labels, value);
 		}
 	}
 

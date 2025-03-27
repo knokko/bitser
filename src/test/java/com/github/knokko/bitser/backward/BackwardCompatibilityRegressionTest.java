@@ -195,4 +195,35 @@ public class BackwardCompatibilityRegressionTest {
 		assertNull(copy.monster);
 		assertEquals(1234, copy.kills);
 	}
+
+	@BitStruct(backwardCompatible = true)
+	static class OptionalClass {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "combatants")
+		final String state = "state";
+
+		@BitField(id = 1)
+		@ReferenceField(stable = false, label = "combatants")
+		final String target = state;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	static class TestClass {
+		@BitField(id = 0, optional = true)
+		private OptionalClass state;
+
+		@BitField(id = 1)
+		@IntegerField(expectUniform = false)
+		int test;
+	}
+
+	@Test
+	public void testMardekRegression3() {
+		Bitser bitser = new Bitser(false);
+		TestClass instance = new TestClass();
+		instance.test = 1234;
+		TestClass copy = bitser.deepCopy(instance, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(1234, copy.test);
+	}
 }

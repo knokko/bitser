@@ -26,8 +26,6 @@ public abstract class BitserWrapper<T> {
 
 	public abstract void collectReferenceLabels(LabelCollection labels);
 
-	public abstract void collectUsedReferenceLabels(LabelCollection labels, Object value);
-
 	public abstract void registerReferenceTargets(
 			Object object, BitserCache cache, ReferenceIdMapper idMapper
 	);
