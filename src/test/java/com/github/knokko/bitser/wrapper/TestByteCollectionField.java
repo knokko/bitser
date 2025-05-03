@@ -3,7 +3,6 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.NestedFieldSetting;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -60,6 +59,28 @@ public class TestByteCollectionField {
 		array.data = new byte[]{-128, -1, 0, 1, 127};
 		loaded = bitser.deepCopy(array);
 		assertArrayEquals(new byte[]{-128, -1, 0, 1, 127}, loaded.data);
+	}
+
+	@Test
+	public void testByteArrayDeepEqualsAndHashCode() {
+		ByteArray a = new ByteArray();
+		ByteArray b = new ByteArray();
+
+		Bitser bitser = new Bitser(true);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.data = new byte[] { 12 };
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.data = new byte[] { 12 };
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.data[0] = 13;
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
 	}
 
 	@BitStruct(backwardCompatible = false)

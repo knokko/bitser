@@ -73,6 +73,52 @@ public class TestMapField {
 		assertEquals(10, counter.getCounter());
 	}
 
+	@Test
+	public void testIntMapDeepEqualsAndHashCode() {
+		IntMap a = new IntMap();
+		IntMap b = new IntMap();
+
+		Bitser bitser = new Bitser(false);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.map = new TreeMap<>();
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.map = new TreeMap<>();
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.map.put(12, (byte) 34);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.map.put(12, (byte) 45);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.map.put(12, (byte) 34);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.map.put(51, (byte) 100);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.map.put(52, (byte) 100);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.map.put(51, (byte) 100);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.map.remove(52);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+	}
+
 	@BitStruct(backwardCompatible = false)
 	static class KeyFieldMap {
 
@@ -314,5 +360,35 @@ public class TestMapField {
 		ReferenceToStructMap copy = new Bitser(true).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals("Tim", copy.name);
 		assertEquals(3, copy.map.get(copy.name).size);
+	}
+
+	@Test
+	public void testReferenceToStructDeepEqualsAndHashCode() {
+		MiniStruct miniA = new MiniStruct();
+		miniA.size = 12;
+
+		MiniStruct miniB = new MiniStruct();
+		miniB.size = 12;
+
+		String keyA = "key";
+		@SuppressWarnings("StringOperationCanBeSimplified")
+		String keyB = new String(keyA);
+
+		ReferenceToStructMap a = new ReferenceToStructMap();
+		a.map.put(keyA, miniA);
+
+		ReferenceToStructMap b = new ReferenceToStructMap();
+		b.map.put(keyB, miniB);
+
+		Bitser bitser = new Bitser(false);
+		assertFalse(bitser.deepEquals(a, b));
+
+		b.map.remove(keyB);
+		b.map.put(keyA, miniB);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		miniB.size = 20;
+		assertFalse(bitser.deepEquals(a, b));
 	}
 }

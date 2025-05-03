@@ -12,6 +12,7 @@ import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public abstract class BitFieldWrapper {
@@ -106,16 +107,6 @@ public abstract class BitFieldWrapper {
 
 	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
 
-	Object readLegacyValue(ReadJob read) throws IOException {
-		Object[] pResult = { null, null };
-		readValue(read, value -> {
-			pResult[0] = value;
-			pResult[1] = this;
-		});
-		if (pResult[1] == null) throw new Error("readValue of " + getClass().getSimpleName() + " must be instant");
-		return pResult[0];
-	}
-
 	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {
 			throw new InvalidBitValueException("Legacy value for field " + field + " is null, which is no longer allowed");
@@ -131,5 +122,13 @@ public abstract class BitFieldWrapper {
 
 	public boolean isReference() {
 		return false;
+	}
+
+	boolean deepEquals(Object a, Object b, BitserCache cache) {
+		return Objects.equals(a, b);
+	}
+
+	int hashCode(Object value, BitserCache cache) {
+		return Objects.hashCode(value);
 	}
 }

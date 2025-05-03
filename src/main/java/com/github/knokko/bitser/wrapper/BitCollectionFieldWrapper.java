@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -171,5 +172,47 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		for (int index = 0; index < size; index++) {
 			valuesWrapper.fixLegacyTypes(read, Array.get(legacyInstance.legacyArray, index));
 		}
+	}
+
+	@Override
+	boolean deepEquals(Object a, Object b, BitserCache cache) {
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		if (field.type.isArray()) {
+			int length = Array.getLength(a);
+			if (Array.getLength(b) != length) return false;
+			for (int index = 0; index < length; index++) {
+				if (!valuesWrapper.deepEquals(Array.get(a, index), Array.get(b, index), cache)) return false;
+			}
+		} else {
+			Iterator<?> iteratorA = ((Collection<?>) a).iterator();
+			Iterator<?> iteratorB = ((Collection<?>) b).iterator();
+			while (true) {
+				if (iteratorA.hasNext() != iteratorB.hasNext()) return false;
+				if (!iteratorA.hasNext()) break;
+				if (!valuesWrapper.deepEquals(iteratorA.next(), iteratorB.next(), cache)) return false;
+			}
+		}
+
+		return true;
+	}
+
+	@Override
+	int hashCode(Object value, BitserCache cache) {
+		if (value == null) return -10;
+
+		int code = 7;
+		if (field.type.isArray()) {
+			int length = Array.getLength(value);
+			for (int index = 0; index < length; index++) {
+				code = 29 * code + valuesWrapper.hashCode(Array.get(value, index), cache);
+			}
+		} else {
+			for (Object element : (Collection<?>) value) {
+				code = 23 * code + valuesWrapper.hashCode(element, cache);
+			}
+		}
+
+		return code;
 	}
 }

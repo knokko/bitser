@@ -6,6 +6,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.NestedFieldSetting;
+import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -52,6 +53,61 @@ public class TestBitCollectionField {
 		assertArrayEquals(new String[]{"test1234"}, strings.array);
 		assertEquals(1, strings.list.size());
 		assertEquals("hello, world!", strings.list.get(0));
+	}
+
+	@Test
+	public void testStringArrayDeepEqualsAndHashCode() {
+		Strings a = new Strings();
+		Strings b = new Strings();
+
+		Bitser bitser = new Bitser(false);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.array = new String[] { "hello" };
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.array = new String[] { "hello" };
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.array = new String[] { "hello", "a" };
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.array = new String[] { "hello", "b" };
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+	}
+
+	@Test
+	public void testStringListDeepEqualsAndHashCode() {
+		Strings a = new Strings();
+		Strings b = new Strings();
+
+		Bitser bitser = new Bitser(false);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.list = new ArrayList<>();
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+		a.list.add("hello");
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.list = new ArrayList<>();
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+		b.list.add("hello");
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.list.add("a");
+		b.list.add("b");
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -224,5 +280,40 @@ public class TestBitCollectionField {
 		).getMessage();
 		assertContains(errorMessage, "Field type must not be abstract or an interface");
 		assertContains(errorMessage, "WithAbstractList.list");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class ReferenceList {
+
+		@ReferenceField(stable = false, label = "refs")
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		final ArrayList<String> list = new ArrayList<>();
+	}
+
+	@Test
+	public void testReferenceListDeepEqualsAndHashCode() {
+		ReferenceList a = new ReferenceList();
+		ReferenceList b = new ReferenceList();
+
+		Bitser bitser = new Bitser(true);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+		assertTrue(bitser.deepEquals(null, null));
+		assertEquals(0, bitser.hashCode(null));
+		assertFalse(bitser.deepEquals(null, b));
+		assertNotEquals(bitser.hashCode(null), bitser.hashCode(b));
+
+		String hello1 = "hello";
+		@SuppressWarnings("StringOperationCanBeSimplified")
+		String hello2 = new String(hello1);
+
+		a.list.add(hello1);
+		assertFalse(bitser.deepEquals(a, b));
+		b.list.add(hello1);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+		a.list.add(hello1);
+		b.list.add(hello2);
+		assertFalse(bitser.deepEquals(a, b));
 	}
 }

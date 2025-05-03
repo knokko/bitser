@@ -290,6 +290,24 @@ class SingleClassWrapper {
 		}
 	}
 
+	boolean deepEquals(Object a, Object b, BitserCache cache) {
+		for (FieldWrapper fieldWrapper : fields) {
+			if (!fieldWrapper.bitField.deepEquals(
+					fieldWrapper.bitField.field.getValue.apply(a),
+					fieldWrapper.bitField.field.getValue.apply(b), cache
+			)) return false;
+		}
+		return true;
+	}
+
+	int hashCode(Object value, BitserCache cache) {
+		int code = 5;
+		for (FieldWrapper fieldWrapper : fields) {
+			code = 31 * code + fieldWrapper.bitField.hashCode(fieldWrapper.bitField.field.getValue.apply(value), cache);
+		}
+		return code;
+	}
+
 	static class FieldWrapper {
 
 		final int id;

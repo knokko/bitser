@@ -237,4 +237,33 @@ class MapFieldWrapper extends BitFieldWrapper {
 			maybeInsert();
 		}
 	}
+
+	@Override
+	boolean deepEquals(Object a, Object b, BitserCache cache) {
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		Iterator<? extends Map.Entry<?, ?>> iteratorA = ((Map<?, ?>) a).entrySet().iterator();
+		Iterator<? extends Map.Entry<?, ?>> iteratorB = ((Map<?, ?>) b).entrySet().iterator();
+		while (true) {
+			if (iteratorA.hasNext() != iteratorB.hasNext()) return false;
+			if (!iteratorA.hasNext()) return true;
+			Map.Entry<?, ?> entryA = iteratorA.next();
+			Map.Entry<?, ?> entryB = iteratorB.next();
+			if (!keysWrapper.deepEquals(entryA.getKey(), entryB.getKey(), cache)) return false;
+			if (!valuesWrapper.deepEquals(entryA.getValue(), entryB.getValue(), cache)) return false;
+		}
+	}
+
+	@Override
+	int hashCode(Object value, BitserCache cache) {
+		if (value == null) return -12;
+
+		int code = 15;
+		for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+			code = 3 * code + keysWrapper.hashCode(entry.getKey(), cache);
+			code = 5 * code + valuesWrapper.hashCode(entry.getValue(), cache);
+		}
+
+		return code;
+	}
 }

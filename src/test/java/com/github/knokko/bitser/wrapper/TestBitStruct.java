@@ -4,9 +4,12 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -77,6 +80,43 @@ public class TestBitStruct {
 		assertEquals(10, root.properties.strength);
 		assertEquals(2, root.next.properties.strength);
 		assertNull(root.next.next);
+	}
+
+	@Test
+	public void testDeepEqualsAndHashCode() {
+		Chain a = new Chain();
+		Chain b = new Chain();
+
+		Bitser bitser = new Bitser(true);
+		assertFalse(bitser.deepEquals(a, null));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(null));
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.properties = new Chain.Properties(5);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.properties = new Chain.Properties(5);
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.next = new Chain();
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.next = new Chain();
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.next.properties = new Chain.Properties(2);
+		b.next.properties = new Chain.Properties(3);
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.next.properties.strength = 3;
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -176,5 +216,27 @@ public class TestBitStruct {
 		assertContains(errorMessage, "DuplicateIDs");
 		assertContains(errorMessage, "multiple @BitField");
 		assertContains(errorMessage, "id 1");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class ReferenceStruct {
+
+		@ReferenceField(stable = false, label = "id")
+		UUID id;
+	}
+
+	@Test
+	public void testReferenceStructDeepEqualsAndHashCode() {
+		ReferenceStruct a = new ReferenceStruct();
+		a.id = new UUID(12, 34);
+		ReferenceStruct b = new ReferenceStruct();
+		b.id = new UUID(12, 34);
+
+		Bitser bitser = new Bitser(false);
+		assertFalse(bitser.deepEquals(a, b));
+
+		a.id = b.id;
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
 	}
 }

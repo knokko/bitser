@@ -147,4 +147,19 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			read.idLoader.replace(field.referenceTargetLabel, instance, instance.newInstance);
 		}
 	}
+
+	@Override
+	boolean deepEquals(Object a, Object b, BitserCache cache) {
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		BitStructWrapper<?> wrapperA = cache.getWrapper(a.getClass());
+		BitStructWrapper<?> wrapperB = cache.getWrapper(b.getClass());
+		return wrapperA == wrapperB && wrapperA.deepEquals(a, b, cache);
+	}
+
+	@Override
+	int hashCode(Object value, BitserCache cache) {
+		if (value == null) return 17;
+		return cache.getWrapper(value.getClass()).hashCode(value, cache);
+	}
 }

@@ -196,6 +196,22 @@ public class BitStructWrapper<T> {
 		return copy;
 	}
 
+	public boolean deepEquals(Object a, Object b, BitserCache cache) {
+		for (SingleClassWrapper currentClass : classHierarchy) {
+			if (!currentClass.deepEquals(a, b, cache)) return false;
+		}
+		return true;
+	}
+
+	public int hashCode(Object value, BitserCache cache) {
+		if (value == null) return 1;
+		int code = 2;
+		for (SingleClassWrapper currentClass : classHierarchy) {
+			code = 13 * code + currentClass.hashCode(value, cache);
+		}
+		return code;
+	}
+
 	public <C> BitStructConnection<C> createConnection(
 			Bitser bitser, C object, Consumer<BitStructConnection.ChangeListener> reportChanges
 	) {

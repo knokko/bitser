@@ -4,12 +4,14 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.instance.LegacyCollectionInstance;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.lang.Byte.toUnsignedInt;
@@ -305,5 +307,22 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (field.type == long[].class) return legacyNumber.longValue();
 		if (field.type == double[].class) return legacyNumber.doubleValue();
 		throw new Error("Unexpected write-as-bytes type " + field.type);
+	}
+
+	@Override
+	boolean deepEquals(Object a, Object b, BitserCache cache) {
+		return Objects.deepEquals(a, b);
+	}
+
+	@Override
+	int hashCode(Object value, BitserCache cache) {
+		if (value == null) return -9;
+
+		int code = 9;
+		int length = Array.getLength(value);
+		for (int index = 0; index < length; index++) {
+			code = 37 * code + Array.get(value, index).hashCode();
+		}
+		return code;
 	}
 }

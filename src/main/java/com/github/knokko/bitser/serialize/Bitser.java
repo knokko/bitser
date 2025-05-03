@@ -214,12 +214,16 @@ public class Bitser {
 		return null;
 	}
 
-	public boolean deepEquals(Object a, Object b, Object... withAndOptions) {
-		if (a.getClass() != b.getClass()) return false;
-		return Arrays.equals(serializeToBytes(a, withAndOptions), serializeToBytes(b, withAndOptions));
+	public boolean deepEquals(Object a, Object b) {
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		BitStructWrapper<?> wrapperA = cache.getWrapper(a.getClass());
+		BitStructWrapper<?> wrapperB = cache.getWrapper(b.getClass());
+		return wrapperA == wrapperB && wrapperA.deepEquals(a, b, cache);
 	}
 
-	public int hashCode(Object target, Object... withAndOptions) {
-		return Arrays.hashCode(serializeToBytes(target, withAndOptions));
+	public int hashCode(Object value) {
+		if (value == null) return 0;
+		return cache.getWrapper(value.getClass()).hashCode(value, cache);
 	}
 }
