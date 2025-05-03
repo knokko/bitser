@@ -131,7 +131,7 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			return;
 		}
 		LegacyStructInstance legacy = (LegacyStructInstance) value;
-		BitserWrapper<?> valueWrapper = read.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
+		BitStructWrapper<?> valueWrapper = read.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
 		setValue.accept(valueWrapper.setLegacyValues(read, legacy));
 	}
 

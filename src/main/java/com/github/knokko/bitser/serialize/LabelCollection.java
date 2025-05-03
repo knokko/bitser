@@ -1,7 +1,7 @@
 package com.github.knokko.bitser.serialize;
 
 import com.github.knokko.bitser.field.FunctionContext;
-import com.github.knokko.bitser.wrapper.BitserWrapper;
+import com.github.knokko.bitser.wrapper.BitStructWrapper;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,7 +10,7 @@ public class LabelCollection {
 
 	public final BitserCache cache;
 	public final Set<String> declaredTargets, stable, unstable;
-	public final Set<BitserWrapper<?>> visitedStructs;
+	public final Set<BitStructWrapper<?>> visitedStructs;
 	public final boolean backwardCompatible;
 	public final FunctionContext functionContext;
 

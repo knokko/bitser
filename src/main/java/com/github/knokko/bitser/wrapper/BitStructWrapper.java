@@ -16,7 +16,14 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.Consumer;
 
-class BitStructWrapper<T> extends BitserWrapper<T> {
+public class BitStructWrapper<T> {
+
+	public static <T> BitStructWrapper<T> wrap(Class<T> objectClass) {
+		BitStruct bitStruct = objectClass.getAnnotation(BitStruct.class);
+		if (bitStruct != null) return new BitStructWrapper<>(objectClass, bitStruct);
+
+		throw new InvalidBitFieldException(objectClass + " is not a BitStruct");
+	}
 
 	private final BitStruct bitStruct;
 	private final List<SingleClassWrapper> classHierarchy;
@@ -73,7 +80,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		return stableIdField;
 	}
 
-	@Override
 	public void collectReferenceLabels(LabelCollection labels) {
 		if (labels.visitedStructs.contains(this)) return;
 		labels.visitedStructs.add(this);
@@ -82,14 +88,12 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		}
 	}
 
-	@Override
 	public void registerReferenceTargets(Object object, BitserCache cache, ReferenceIdMapper mapper) {
 		for (SingleClassWrapper currentClass : classHierarchy) {
 			currentClass.registerReferenceTargets(object, cache, mapper);
 		}
 	}
 
-	@Override
 	public LegacyStruct registerClasses(Object object, LegacyClasses legacy) {
 		if (!this.bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
@@ -105,13 +109,11 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		return legacyStruct;
 	}
 
-	@Override
 	public UUID getStableId(Object target) {
 		if (stableIdField == null) throw new InvalidBitFieldException(target + " doesn't have an @StableReferenceFieldId");
 		return (UUID) stableIdField.getValue.apply(target);
 	}
 
-	@Override
 	public void write(Object object, WriteJob write) throws IOException {
 		if (write.legacy != null && !bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
@@ -133,7 +135,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		}
 	}
 
-	@Override
 	public void read(ReadJob read, ValueConsumer setValue) throws IOException {
 		T object = createEmptyInstance();
 		Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();
@@ -151,7 +152,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		setValue.consume(object);
 	}
 
-	@Override
 	public T setLegacyValues(ReadJob read, LegacyStructInstance legacy) {
 		if (legacy.valuesHierarchy.size() != classHierarchy.size()) {
 			throw new InvalidBitFieldException("Inconsistent class hierarchy");
@@ -181,7 +181,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		return (T) legacy.newInstance;
 	}
 
-	@Override
 	public void fixLegacyTypes(ReadJob read, LegacyStructInstance legacyInstance) {
 		legacyInstance.newInstance = createEmptyInstance();
 		for (int index = 0; index < classHierarchy.size(); index++) {
@@ -189,7 +188,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		}
 	}
 
-	@Override
 	public T shallowCopy(Object original) {
 		T copy = createEmptyInstance();
 		for (SingleClassWrapper currentClass : classHierarchy) {
@@ -198,7 +196,6 @@ class BitStructWrapper<T> extends BitserWrapper<T> {
 		return copy;
 	}
 
-	@Override
 	public <C> BitStructConnection<C> createConnection(
 			Bitser bitser, C object, Consumer<BitStructConnection.ChangeListener> reportChanges
 	) {

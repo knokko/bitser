@@ -12,7 +12,7 @@ import com.github.knokko.bitser.io.LayeredBitOutputStream;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
-import com.github.knokko.bitser.wrapper.BitserWrapper;
+import com.github.knokko.bitser.wrapper.BitStructWrapper;
 import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
 import java.io.ByteArrayInputStream;
@@ -32,7 +32,7 @@ public class Bitser {
 	}
 
 	public void serialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
-		BitserWrapper<?> wrapper = cache.getWrapper(object.getClass());
+		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		boolean backwardCompatible = false;
 		Map<String, Object> withParameters = new HashMap<>();
@@ -109,7 +109,7 @@ public class Bitser {
 		LegacyClasses legacy = null;
 		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input);
 
-		BitserWrapper<T> wrapper = cache.getWrapper(objectClass);
+		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
 
 		LabelCollection labels = new LabelCollection(
 				cache, new HashSet<>(), backwardCompatible, null
