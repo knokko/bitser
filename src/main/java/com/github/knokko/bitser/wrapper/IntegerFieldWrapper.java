@@ -60,8 +60,10 @@ public class IntegerFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(Object fatValue, WriteJob write) throws IOException {
 		long value = fatValue instanceof Character ? (long) ((char) fatValue) : ((Number) fatValue).longValue();
+		write.output.prepareProperty("int-value", -1);
 		if (intField.expectUniform) encodeUniformInteger(value, intField.minValue, intField.maxValue, write.output);
 		else encodeVariableInteger(value, intField.minValue, intField.maxValue, write.output);
+		write.output.finishProperty();
 	}
 
 	@Override

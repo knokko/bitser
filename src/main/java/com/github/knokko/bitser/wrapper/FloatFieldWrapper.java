@@ -56,20 +56,28 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 				encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
 
 				if ((value instanceof Float && counter.getCounter() < 32) || (value instanceof Double && counter.getCounter() < 64)) {
+					write.output.prepareProperty("float-simplified", -1);
 					write.output.write(true);
+					write.output.finishProperty();
+					write.output.prepareProperty("float-integer-value", -1);
 					encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, write.output);
+					write.output.finishProperty();
 					return;
 				}
 			}
 
+			write.output.prepareProperty("float-simplified", -1);
 			write.output.write(false);
+			write.output.finishProperty();
 		}
 
+		write.output.prepareProperty("float-value", -1);
 		if (value instanceof Float) {
 			encodeUniformInteger(Float.floatToRawIntBits((Float) value), Integer.MIN_VALUE, Integer.MAX_VALUE, write.output);
 		} else {
 			encodeUniformInteger(Double.doubleToRawLongBits((Double) value), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
 		}
+		write.output.finishProperty();
 	}
 
 	@Override

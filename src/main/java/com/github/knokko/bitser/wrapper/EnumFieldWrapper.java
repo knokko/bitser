@@ -46,11 +46,21 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		Enum<?> enumValue = (Enum<?>) value;
 		if (mode == BitEnum.Mode.Name) {
 			byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
+			write.output.prepareProperty("enum-name-length", -1);
 			encodeVariableInteger(bytes.length, 1, Integer.MAX_VALUE, write.output);
-			for (byte stringByte : bytes) encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
+			write.output.finishProperty();
+
+			int counter = 0;
+			for (byte stringByte : bytes) {
+				write.output.prepareProperty("enum-name-char", counter++);
+				encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
+				write.output.finishProperty();
+			}
 		} else if (mode == BitEnum.Mode.Ordinal) {
 			int maxOrdinal = field.type.getEnumConstants().length - 1;
+			write.output.prepareProperty("enum-ordinal", -1);
 			encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, write.output);
+			write.output.finishProperty();
 		} else throw new Error("Unknown enum mode: " + mode);
 	}
 

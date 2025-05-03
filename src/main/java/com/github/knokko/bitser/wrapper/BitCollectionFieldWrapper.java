@@ -85,11 +85,16 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		String nullErrorMessage = "Field " + field + " must not have null elements";
 		if (field.type.isArray()) {
 			for (int index = 0; index < size; index++) {
+				write.output.pushContext("element", index);
 				writeElement(Array.get(value, index), valuesWrapper, write, nullErrorMessage);
+				write.output.popContext("element", index);
 			}
 		} else {
+			int counter = 0;
 			for (Object element : (Collection<?>) value) {
+				write.output.pushContext("element", counter);
 				writeElement(element, valuesWrapper, write, nullErrorMessage);
+				write.output.popContext("element", counter++);
 			}
 		}
 	}

@@ -90,12 +90,19 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(Object rawValue, WriteJob write) throws IOException {
 		Map<?, ?> map = (Map<?, ?>) rawValue;
+		write.output.prepareProperty("map-size", -1);
 		if (sizeField.expectUniform) encodeUniformInteger(map.size(), getMinSize(), getMaxSize(), write.output);
 		else encodeVariableInteger(map.size(), getMinSize(), getMaxSize(), write.output);
+		write.output.finishProperty();
 
+		int counter = 0;
 		for (Map.Entry<?, ?> entry : map.entrySet()) {
+			write.output.pushContext("key", counter);
 			writeElement(entry.getKey(), keysWrapper, write, "Field " + field + " must not have null keys");
+			write.output.popContext("key", counter);
+			write.output.pushContext("value", counter);
 			writeElement(entry.getValue(), valuesWrapper, write, "Field " + field + " must not have null values");
+			write.output.popContext("value", counter++);
 		}
 	}
 

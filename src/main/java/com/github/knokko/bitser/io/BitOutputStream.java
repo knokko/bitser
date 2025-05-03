@@ -34,4 +34,12 @@ public class BitOutputStream {
 		byteStream.flush();
 		byteStream.close();
 	}
+
+	public void pushContext(String context, int counter) {}
+
+	public void popContext(String context, int counter) {}
+
+	public void prepareProperty(String fieldName, int counter) {}
+
+	public void finishProperty() {}
 }

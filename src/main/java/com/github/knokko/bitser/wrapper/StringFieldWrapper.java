@@ -44,11 +44,19 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	void writeValue(Object value, WriteJob write) throws IOException {
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+
+		write.output.prepareProperty("string-length", -1);
 		if (lengthField.expectUniform) {
 			encodeUniformInteger(bytes.length, lengthField.minValue, lengthField.maxValue, write.output);
 		} else encodeVariableInteger(bytes.length, lengthField.minValue, lengthField.maxValue, write.output);
+		write.output.finishProperty();
 
-		for (byte b : bytes) encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
+		int counter = 0;
+		for (byte b : bytes) {
+			write.output.prepareProperty("string-char", counter++);
+			encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
+			write.output.finishProperty();
+		}
 	}
 
 	@Override

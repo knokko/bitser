@@ -21,7 +21,9 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
+		write.output.prepareProperty("boolean-value", -1);
 		write.output.write((Boolean) value);
+		write.output.finishProperty();
 	}
 
 	@Override

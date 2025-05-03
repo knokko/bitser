@@ -59,9 +59,11 @@ public class Bitser {
 			legacy.setRoot(wrapper.registerClasses(object, legacy));
 
 			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
+			output.pushContext("legacy-classes", -1);
 			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
 			serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
 			legacyOutput.finish();
+			output.popContext("legacy-classes", -1);
 
 			deserializeFromBytes(LegacyClasses.class, legacyBytes.toByteArray()).collectReferenceLabels(labels);
 		} else wrapper.collectReferenceLabels(labels);
@@ -80,9 +82,13 @@ public class Bitser {
 			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
 		}
 
+		output.pushContext("id-mapper", -1);
 		idMapper.save(output);
+		output.popContext("id-mapper", -1);
 
+		output.pushContext("output", -1);
 		wrapper.write(object, new WriteJob(this, output, idMapper, withParameters, legacy));
+		output.popContext("output", -1);
 	}
 
 	public byte[] serializeToBytes(Object object, Object... withAndOptions) {

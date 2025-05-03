@@ -201,13 +201,19 @@ class SingleClassWrapper {
 	}
 
 	void write(Object object, WriteJob write) throws IOException {
+		write.output.pushContext(myClass.getSimpleName(), -1);
 		for (FieldWrapper field : getFields(write.legacy != null)) {
+			write.output.pushContext(field.classField.getName(), -1);
 			field.bitField.write(object, write);
+			write.output.popContext(field.classField.getName(), -1);
 		}
 		FunctionContext functionContext = new FunctionContext(write.bitser, write.withParameters);
 		for (FunctionWrapper function : functions) {
+			write.output.pushContext(function.classMethod.getName(), -1);
 			function.bitField.writeValue(function.computeValue(object, functionContext), write);
+			write.output.popContext(function.classMethod.getName(), -1);
 		}
+		write.output.popContext(myClass.getSimpleName(), -1);
 	}
 
 	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {

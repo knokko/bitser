@@ -33,8 +33,12 @@ public class UUIDFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(Object rawValue, WriteJob write) throws IOException {
 		UUID value = (UUID) rawValue;
+		write.output.prepareProperty("most-significant-bits", -1);
 		encodeUniformInteger(value.getMostSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
+		write.output.finishProperty();
+		write.output.prepareProperty("least-significant-bits", -1);
 		encodeUniformInteger(value.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
+		write.output.finishProperty();
 	}
 
 	@Override

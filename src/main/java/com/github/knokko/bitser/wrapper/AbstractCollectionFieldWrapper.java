@@ -25,7 +25,11 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	public static void writeElement(
 			Object element, BitFieldWrapper wrapper, WriteJob write, String nullErrorMessage
 	) throws IOException {
-		if (wrapper.field.optional) write.output.write(element != null);
+		if (wrapper.field.optional) {
+			write.output.prepareProperty("optional", -1);
+			write.output.write(element != null);
+			write.output.finishProperty();
+		}
 		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
 		if (element != null) {
 			wrapper.writeValue(element, write);
@@ -76,8 +80,10 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(Object value, WriteJob write) throws IOException {
 		int size = getCollectionSize(value);
+		write.output.prepareProperty("size", -1);
 		if (sizeField.expectUniform) encodeUniformInteger(size, getMinSize(), getMaxSize(), write.output);
 		else encodeVariableInteger(size, getMinSize(), getMaxSize(), write.output);
+		write.output.finishProperty();
 
 		writeElements(value, size, write);
 	}

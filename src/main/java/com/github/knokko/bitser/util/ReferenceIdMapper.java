@@ -69,7 +69,9 @@ public class ReferenceIdMapper {
 				"Can't find unstable reference target with label " + label + " and value " + value
 		);
 
+		output.prepareProperty("unstable-id", -1);
 		encodeUniformInteger(id, 0, mappings.unstable.size() - 1, output);
+		output.finishProperty();
 	}
 
 	public void encodeStableId(String label, Object value, BitOutputStream output, BitserCache cache) throws IOException {
@@ -90,8 +92,12 @@ public class ReferenceIdMapper {
 				"Stable reference target " + value + " has the same ID as " + mappedValue
 		);
 
+		output.prepareProperty("most-significant-bits", -1);
 		encodeUniformInteger(id.getMostSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
+		output.finishProperty();
+		output.prepareProperty("least-significant-bits", -1);
 		encodeUniformInteger(id.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
+		output.finishProperty();
 	}
 
 	public void shareWith(ReferenceIdLoader loader) {
@@ -115,10 +121,13 @@ public class ReferenceIdMapper {
 		}
 		Arrays.sort(sortedLabels);
 
+		int propertyCounter = 0;
 		for (String label : sortedLabels) {
 			Mappings mappings = labelMappings.get(label);
 			if (mappings.unstable != null) {
+				output.prepareProperty("unstable-size", propertyCounter++);
 				encodeVariableInteger(mappings.unstable.size(), 0, Integer.MAX_VALUE, output);
+				output.finishProperty();
 			}
 		}
 	}

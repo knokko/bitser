@@ -66,7 +66,11 @@ public abstract class BitFieldWrapper {
 
 	void writeField(Object object, WriteJob write) throws IOException {
 		Object value = field.getValue.apply(object);
-		if (field.optional) write.output.write(value != null);
+		if (field.optional) {
+			write.output.prepareProperty("not-null", -1);
+			write.output.write(value != null);
+			write.output.finishProperty();
+		}
 		if (value == null) {
 			if (!field.optional) {
 				throw new InvalidBitValueException("Field " + field + " of " + object + " must not be null");

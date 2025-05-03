@@ -47,6 +47,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void writeElements(Object value, int size, WriteJob write) throws IOException {
+		write.output.prepareProperty("byte-values", -1);
 		if (value instanceof boolean[]) write.output.write(toByteArray((boolean[]) value));
 		else if (value instanceof byte[]) write.output.write((byte[]) value);
 		else if (value instanceof short[]) write.output.write(toByteArray((short[]) value));
@@ -56,6 +57,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		else if (value instanceof long[]) write.output.write(toByteArray((long[]) value));
 		else if (value instanceof double[]) write.output.write(toByteArray((double[]) value));
 		else throw new UnsupportedOperationException("Can't encode " + value.getClass() + " as bytes");
+		write.output.finishProperty();
 	}
 
 	private byte[] toByteArray(boolean[] booleans) {

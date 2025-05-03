@@ -22,4 +22,28 @@ public class LayeredBitOutputStream extends BitOutputStream {
 		super.write(values);
 		other.write(values);
 	}
+
+	@Override
+	public void pushContext(String context, int counter) {
+		super.pushContext(context, counter);
+		other.pushContext(context, counter);
+	}
+
+	@Override
+	public void popContext(String context, int counter) {
+		super.popContext(context, counter);
+		other.popContext(context, counter);
+	}
+
+	@Override
+	public void prepareProperty(String fieldName, int counter) {
+		super.prepareProperty(fieldName, counter);
+		other.prepareProperty(fieldName, counter);
+	}
+
+	@Override
+	public void finishProperty() {
+		super.finishProperty();
+		other.finishProperty();
+	}
 }
