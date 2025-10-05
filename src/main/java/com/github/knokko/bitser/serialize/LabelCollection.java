@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.serialize;
 
+import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.wrapper.BitStructWrapper;
 
@@ -11,6 +12,7 @@ public class LabelCollection {
 	public final BitserCache cache;
 	public final Set<String> declaredTargets, stable, unstable;
 	public final Set<BitStructWrapper<?>> visitedStructs;
+	public final Set<LegacyStruct> visitedLegacyStructs;
 	public final boolean backwardCompatible;
 	public final FunctionContext functionContext;
 
@@ -23,6 +25,7 @@ public class LabelCollection {
 		this.stable = new HashSet<>();
 		this.unstable = new HashSet<>();
 		this.visitedStructs = new HashSet<>();
+		this.visitedLegacyStructs = new HashSet<>();
 		this.backwardCompatible = backwardCompatible;
 		this.functionContext = functionContext;
 	}

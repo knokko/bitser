@@ -19,6 +19,7 @@ public class LegacyStruct {
 	public final ArrayList<LegacyClass> classHierarchy = new ArrayList<>();
 
 	public void collectReferenceLabels(LabelCollection labels) {
+		if (!labels.visitedLegacyStructs.add(this)) return;
 		for (LegacyClass legacyClass : classHierarchy) {
 			legacyClass.collectReferenceLabels(labels);
 		}
