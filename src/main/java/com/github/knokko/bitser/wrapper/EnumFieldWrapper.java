@@ -6,6 +6,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.ReadJob;
 import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.util.VirtualField;
@@ -128,5 +129,14 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			}
 			super.setLegacyValue(read, constants[ordinal], setValue);
 		} else super.setLegacyValue(read, legacyValue, setValue);
+	}
+
+	@Override
+	int hashCode(Object value, BitserCache cache) {
+		Enum<?> enumValue = (Enum<?>) value;
+		if (enumValue == null) return -192347;
+		if (mode == BitEnum.Mode.Ordinal) return 191 * enumValue.ordinal();
+		if (mode == BitEnum.Mode.Name) return -13 * enumValue.name().hashCode();
+		throw new Error("Unknown Mode " + mode);
 	}
 }
