@@ -1,14 +1,16 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
+import com.github.knokko.bitser.context.WriteContext;
+import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
@@ -41,35 +43,39 @@ public class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		String string = (String) value;
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
 
-		write.output.prepareProperty("string-length", -1);
-		if (lengthField.expectUniform) {
-			encodeUniformInteger(bytes.length, lengthField.minValue, lengthField.maxValue, write.output);
-		} else encodeVariableInteger(bytes.length, lengthField.minValue, lengthField.maxValue, write.output);
-		write.output.finishProperty();
+		recursor.runFlat("string", context -> {
+			context.output.prepareProperty("string-length", -1);
+			if (lengthField.expectUniform) {
+				encodeUniformInteger(bytes.length, lengthField.minValue, lengthField.maxValue, context.output);
+			} else encodeVariableInteger(bytes.length, lengthField.minValue, lengthField.maxValue, context.output);
+			context.output.finishProperty();
 
-		int counter = 0;
-		for (byte b : bytes) {
-			write.output.prepareProperty("string-char", counter++);
-			encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
-			write.output.finishProperty();
-		}
+			int counter = 0;
+			for (byte b : bytes) {
+				context.output.prepareProperty("string-char", counter++);
+				encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, context.output);
+				context.output.finishProperty();
+			}
+		});
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		int length;
-		if (lengthField.expectUniform) {
-			length = (int) decodeUniformInteger(lengthField.minValue, lengthField.maxValue, read.input);
-		} else length = (int) decodeVariableInteger(lengthField.minValue, lengthField.maxValue, read.input);
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		recursor.runFlat("string-value", context -> {
+			int length;
+			if (lengthField.expectUniform) {
+				length = (int) decodeUniformInteger(lengthField.minValue, lengthField.maxValue, context.input);
+			} else length = (int) decodeVariableInteger(lengthField.minValue, lengthField.maxValue, context.input);
 
-		byte[] bytes = new byte[length];
-		for (int index = 0; index < length; index++) {
-			bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, read.input);
-		}
-		setValue.consume(new String(bytes, StandardCharsets.UTF_8));
+			byte[] bytes = new byte[length];
+			for (int index = 0; index < length; index++) {
+				bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, context.input);
+			}
+			setValue.consume(new String(bytes, StandardCharsets.UTF_8));
+		});
 	}
 }

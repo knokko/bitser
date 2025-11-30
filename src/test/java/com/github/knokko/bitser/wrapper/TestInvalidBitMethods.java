@@ -5,14 +5,14 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.util.RecursorException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;
 
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestInvalidBitMethods {
 
@@ -129,10 +129,11 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateErrors() {
-		String errorMessage = assertThrows(
-				Error.class, () -> new Bitser(false).serializeToBytes(new ThrowsError())
-		).getMessage();
-		assertEquals("nothing personal", errorMessage);
+		RecursorException exception = assertThrows(
+				RecursorException.class, () -> new Bitser(false).serializeToBytes(new ThrowsError())
+		);
+		assertEquals("nothing personal", exception.getCause().getMessage());
+		assertContains(exception.debugInfoStack, "-> throwsError");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -147,9 +148,12 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateUncheckedExceptions() {
-		assertThrows(
-				UnsupportedOperationException.class, () -> new Bitser(false).serializeToBytes(new ThrowsUncheckedException())
+		RecursorException exception = assertThrows(
+				RecursorException.class,
+				() -> new Bitser(false).serializeToBytes(new ThrowsUncheckedException())
 		);
+		assertInstanceOf(UnsupportedOperationException.class, exception.getCause());
+		assertContains(exception.debugInfoStack, "-> throwsError");
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -164,8 +168,9 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateCheckedExceptions() {
-		RuntimeException exception = assertThrows(
-				RuntimeException.class, () -> new Bitser(true).serializeToBytes(new ThrowsCheckedException())
+		RecursorException exception = assertThrows(
+				RecursorException.class,
+				() -> new Bitser(true).serializeToBytes(new ThrowsCheckedException())
 		);
 		IOException cause = (IOException) exception.getCause();
 		assertContains(cause.getMessage(), "nope: ");

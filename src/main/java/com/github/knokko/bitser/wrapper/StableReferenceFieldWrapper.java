@@ -1,12 +1,13 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
+import com.github.knokko.bitser.context.WriteContext;
+import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.serialize.LabelCollection;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
-
-import java.io.IOException;
 
 @BitStruct(backwardCompatible = false)
 class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
@@ -27,12 +28,16 @@ class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
-		write.idMapper.encodeStableId(label, value, write.output, write.bitser.cache);
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
+		recursor.runFlat("stable reference", context ->
+				context.idMapper.encodeStableId(label, value, context.output, recursor.info.bitser.cache)
+		);
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		read.idLoader.getStable(label, setValue, read.input);
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		recursor.runFlat("stable-reference", context ->
+				context.idLoader.getStable(label, setValue, context.input)
+		);
 	}
 }

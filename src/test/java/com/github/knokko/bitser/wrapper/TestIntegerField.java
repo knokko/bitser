@@ -2,7 +2,6 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -47,7 +46,7 @@ public class TestIntegerField {
 				() -> new Bitser(true).deepCopy(this)
 		).getMessage();
 		assertContains(errorMessage, "9 is out of range [10, 100000]");
-		assertContains(errorMessage, "TestIntegerField.varInt");
+		assertContains(errorMessage, " -> varInt");
 	}
 
 	@BitStruct(backwardCompatible = false)

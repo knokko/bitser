@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.backward.instance;
 
+import com.github.knokko.bitser.util.JobOutput;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -7,11 +9,11 @@ public class LegacyStructInstance {
 
 	public final int inheritanceIndex;
 	public final List<LegacyValues> valuesHierarchy;
-	public final UUID stableID;
+	public final JobOutput<UUID> stableID;
 	public Object newInstance;
 
 	public LegacyStructInstance(
-			int inheritanceIndex, List<LegacyValues> valuesHierarchy, UUID stableID
+			int inheritanceIndex, List<LegacyValues> valuesHierarchy, JobOutput<UUID> stableID
 	) {
 		this.inheritanceIndex = inheritanceIndex;
 		this.valuesHierarchy = valuesHierarchy;

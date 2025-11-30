@@ -1,17 +1,17 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.backward.LegacyClasses;
+import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -48,70 +48,71 @@ public abstract class BitFieldWrapper {
 		if (field.referenceTargetLabel != null) labels.declaredTargets.add(field.referenceTargetLabel);
 	}
 
-	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
+	void registerReferenceTargets(Object value, Recursor<ReferenceIdMapper, BitserCache> recursor) {
 		if (field.referenceTargetLabel != null && value != null) {
-			idMapper.register(field.referenceTargetLabel, value, cache);
+			recursor.runFlat("referenceTargetLabel", mapper ->
+					mapper.register(field.referenceTargetLabel, value, recursor.info)
+			);
 		}
 	}
 
-	void registerLegacyClasses(Object value, LegacyClasses legacy) {}
+	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {}
 
-	public final void write(Object object, WriteJob write) throws IOException {
-		try {
-			writeField(object, write);
-		} catch (InvalidBitValueException invalidValue) {
-			throw new InvalidBitValueException(invalidValue.getMessage() + " for " + field);
-		}
-	}
-
-	void writeField(Object object, WriteJob write) throws IOException {
+	void writeField(Object object, Recursor<WriteContext, WriteInfo> recursor) {
 		Object value = field.getValue.apply(object);
 		if (field.optional) {
-			write.output.prepareProperty("not-null", -1);
-			write.output.write(value != null);
-			write.output.finishProperty();
+			recursor.runFlat("not-null", context -> {
+				context.output.prepareProperty("not-null", -1);
+				context.output.write(value != null);
+				context.output.finishProperty();
+			});
 		}
 		if (value == null) {
 			if (!field.optional) {
 				throw new InvalidBitValueException("Field " + field + " of " + object + " must not be null");
 			}
 		} else {
-			writeValue(value, write);
+			writeValue(value, recursor);
 			if (field.referenceTargetLabel != null) {
-				write.idMapper.maybeEncodeUnstableId(field.referenceTargetLabel, value, write.output);
+				recursor.runFlat("referenceTargetLabel", context ->
+						context.idMapper.maybeEncodeUnstableId(field.referenceTargetLabel, value, context.output)
+				);
 			}
 		}
 	}
 
-	abstract void writeValue(Object value, WriteJob write) throws IOException;
+	abstract void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) ;
 
-	public final void read(ReadJob read, ValueConsumer setValue) throws IOException {
-		readField(read, setValue);
-	}
-
-	final void readField(ReadJob read, ValueConsumer setValue) throws IOException {
-		if (field.optional && !read.input.read()) setValue.consume(null);
-		else {
-			readValue(read, value -> {
+	public final void readField(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		JobOutput<Boolean> hasValue = recursor.computeFlat("optional", context -> {
+			if (field.optional) {
+				return context.input.read();
+			} else return true;
+		});
+		recursor.runNested("value", nested -> {
+			if (!hasValue.get()) return;
+			readValue(nested, value -> {
 				setValue.consume(value);
 				if (field.referenceTargetLabel != null) {
-					try {
-						read.idLoader.register(field.referenceTargetLabel, value, read.input, read.bitser.cache);
-					} catch (InvalidBitValueException missingID) {
-						throw new InvalidBitFieldException("Missing stable ID for legacy field with label " + field.referenceTargetLabel);
-					}
+					recursor.runFlat("referenceTargetLabel", context -> {
+						try {
+							context.idLoader.register(field.referenceTargetLabel, value, context.input, nested.info.bitser.cache);
+						} catch (InvalidBitValueException missingID) {
+							throw new InvalidBitFieldException("Missing stable ID for legacy field with label " + field.referenceTargetLabel);
+						}
+					});
 				}
 			});
-		}
+		});
 	}
 
-	final void readField(Object object, ReadJob read) throws IOException {
-		readField(read, value -> field.setValue.accept(object, value));
+	final void readField(Object object, Recursor<ReadContext, ReadInfo> recursor) {
+		readField(recursor, value -> field.setValue.accept(object, value));
 	}
 
-	abstract void readValue(ReadJob read, ValueConsumer setValue) throws IOException;
+	abstract void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue);
 
-	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
+	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {
 			throw new InvalidBitValueException("Legacy value for field " + field + " is null, which is no longer allowed");
 		}
@@ -122,7 +123,7 @@ public abstract class BitFieldWrapper {
 		}
 	}
 
-	public void fixLegacyTypes(ReadJob read, Object value) {}
+	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {}
 
 	public boolean isReference() {
 		return false;

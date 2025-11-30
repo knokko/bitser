@@ -5,10 +5,15 @@ import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.connection.BitConnection;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
+import com.github.knokko.bitser.context.*;
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.LayeredBitOutputStream;
+import com.github.knokko.bitser.util.Recursor;
+import com.github.knokko.bitser.util.RecursorException;
 import com.github.knokko.bitser.util.ReferenceIdLoader;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
@@ -31,7 +36,28 @@ public class Bitser {
 		this.cache = new BitserCache(threadSafe);
 	}
 
-	public void serialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
+	public void serialize(
+			Object object, BitOutputStream output, Object... withAndOptions
+	) throws IOException, InvalidBitValueException, InvalidBitFieldException, RecursorException {
+		try {
+			rawSerialize(object, output, withAndOptions);
+		} catch (RecursorException failure) {
+			Throwable cause = failure.getCause();
+			if (cause instanceof InvalidBitValueException) {
+				throw new InvalidBitValueException(
+						"Invalid value at " + failure.debugInfoStack + ": " + cause.getMessage()
+				);
+			}
+			if (cause instanceof InvalidBitFieldException) {
+				throw new InvalidBitFieldException(
+						"Invalid field at " + failure.debugInfoStack + ": " + cause.getMessage()
+				);
+			}
+			throw failure;
+		}
+	}
+
+	private void rawSerialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
 		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		boolean backwardCompatible = false;
@@ -54,9 +80,12 @@ public class Bitser {
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
 			legacy = new LegacyClasses();
-			legacy.cache = cache;
-			legacy.functionContext = labels.functionContext;
-			legacy.setRoot(wrapper.registerClasses(object, legacy));
+
+			final LegacyClasses rememberLegacy = legacy;
+			rememberLegacy.setRoot(Recursor.compute(
+					legacy, new LegacyInfo(cache, labels.functionContext),
+					recursor -> wrapper.registerClasses(object, recursor)
+			).get());
 
 			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
 			output.pushContext("legacy-classes", -1);
@@ -76,10 +105,14 @@ public class Bitser {
 		}
 
 		ReferenceIdMapper idMapper = new ReferenceIdMapper(labels);
-		wrapper.registerReferenceTargets(object, cache, idMapper);
+		Recursor.run(idMapper, cache, recursor ->
+				wrapper.registerReferenceTargets(object, recursor)
+		);
 		for (Object withObject : withAndOptions) {
 			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
-			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, idMapper);
+			Recursor.run(idMapper, cache, recursor ->
+					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
+			);
 		}
 
 		output.pushContext("id-mapper", -1);
@@ -87,7 +120,11 @@ public class Bitser {
 		output.popContext("id-mapper", -1);
 
 		output.pushContext("output", -1);
-		wrapper.write(object, new WriteJob(this, output, idMapper, withParameters, legacy));
+		Recursor.run(
+				new WriteContext(output, idMapper),
+				new WriteInfo(this, withParameters, legacy),
+				recursor -> wrapper.write(object, recursor)
+		);
 		output.popContext("output", -1);
 	}
 
@@ -103,7 +140,28 @@ public class Bitser {
 		}
 	}
 
-	public <T> T deserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
+	public <T> T deserialize(
+			Class<T> objectClass, BitInputStream input, Object... withAndOptions
+	) throws IOException, InvalidBitValueException, InvalidBitFieldException, RecursorException {
+		try {
+			return rawDeserialize(objectClass, input, withAndOptions);
+		} catch (RecursorException failure) {
+			Throwable cause = failure.getCause();
+			if (cause instanceof InvalidBitValueException) {
+				throw new InvalidBitValueException(
+						"Invalid value at " + failure.debugInfoStack + ": " + cause.getMessage()
+				);
+			}
+			if (cause instanceof InvalidBitFieldException) {
+				throw new InvalidBitFieldException(
+						"Invalid field at " + failure.debugInfoStack + ": " + cause.getMessage()
+				);
+			}
+			throw failure;
+		}
+	}
+
+	private <T> T rawDeserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
 		Map<String, Object> withParameters = new HashMap<>();
 		boolean backwardCompatible = false;
 		for (Object withObject : withAndOptions) {
@@ -142,26 +200,38 @@ public class Bitser {
 		ReferenceIdMapper withMapper = new ReferenceIdMapper(labels);
 		for (Object withObject : withAndOptions) {
 			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
-			cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, cache, withMapper);
+			Recursor.run(withMapper, cache, recursor ->
+					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
+			);
 		}
 
 		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels);
 
 		List<T> result = new ArrayList<>(1);
-		ReadJob readJob = new ReadJob(this, input, idLoader, withParameters, backwardCompatible);
+		ReadContext readContext = new ReadContext(input, idLoader);
+		ReadInfo readInfo = new ReadInfo(this, withParameters, backwardCompatible);
 		if (legacy != null) {
 			LegacyStructInstance[] pLegacy = { null };
-			legacy.getRoot().read(readJob, -1, element -> pLegacy[0] = element);
-			wrapper.fixLegacyTypes(readJob, pLegacy[0]);
+			final LegacyClasses rememberLegacy = legacy;
+			Recursor.run(readContext, readInfo, recursor ->
+					rememberLegacy.getRoot().read(recursor, -1, element -> pLegacy[0] = element)
+			);
+			Recursor.run(readContext, readInfo, recursor ->
+					wrapper.fixLegacyTypes(recursor, pLegacy[0])
+			);
 			//noinspection unchecked
 			result.add((T) pLegacy[0].newInstance);
 			withMapper.shareWith(idLoader);
 			idLoader.resolve();
-			wrapper.setLegacyValues(readJob, pLegacy[0]);
+			Recursor.run(readContext, readInfo, recursor ->
+					wrapper.setLegacyValues(recursor, pLegacy[0])
+			);
 			idLoader.postResolve();
 		} else {
 			//noinspection unchecked
-			wrapper.read(readJob, element -> result.add((T) element));
+			Recursor.run(readContext, readInfo, recursor ->
+					wrapper.read(recursor, element -> result.add((T) element))
+			);
 			withMapper.shareWith(idLoader);
 			idLoader.resolve();
 			idLoader.postResolve();

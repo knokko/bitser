@@ -5,11 +5,14 @@ import com.github.knokko.bitser.backward.*;
 import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
+import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.serialize.BitPostInit;
 import com.github.knokko.bitser.serialize.*;
-import com.github.knokko.bitser.util.VirtualField;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
+import com.github.knokko.bitser.util.VirtualField;
 
 import java.io.IOException;
 import java.lang.reflect.*;
@@ -88,23 +91,31 @@ public class BitStructWrapper<T> {
 		}
 	}
 
-	public void registerReferenceTargets(Object object, BitserCache cache, ReferenceIdMapper mapper) {
+	public void registerReferenceTargets(Object object, Recursor<ReferenceIdMapper, BitserCache> recursor) {
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.registerReferenceTargets(object, cache, mapper);
+			recursor.runNested(currentClass.myClass.getSimpleName(), child ->
+					currentClass.registerReferenceTargets(object, child)
+			);
 		}
 	}
 
-	public LegacyStruct registerClasses(Object object, LegacyClasses legacy) {
+	public JobOutput<LegacyStruct> registerClasses(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
 		if (!this.bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
-		LegacyStruct legacyStruct = legacy.addStruct(constructor.getDeclaringClass());
+
+		JobOutput<LegacyStruct> legacyStruct = recursor.computeFlat("declaring class", legacy ->
+				legacy.addStruct(constructor.getDeclaringClass())
+		);
 		for (int index = 0; index < classHierarchy.size(); index++) {
+			final int rememberIndex = index;
 			SingleClassWrapper currentClass = classHierarchy.get(index);
-			LegacyClass registered = currentClass.register(object, legacy);
-			if (legacyStruct.classHierarchy.size() == index) {
-				legacyStruct.classHierarchy.add(registered);
-			}
+			JobOutput<LegacyClass> registered = currentClass.register(object, recursor);
+			recursor.runFlat(currentClass.myClass.getSimpleName(), legacy -> {
+				if (legacyStruct.get().classHierarchy.size() == rememberIndex) {
+					legacyStruct.get().classHierarchy.add(registered.get());
+				}
+			});
 		}
 		return legacyStruct;
 	}
@@ -114,12 +125,12 @@ public class BitStructWrapper<T> {
 		return (UUID) stableIdField.getValue.apply(target);
 	}
 
-	public void write(Object object, WriteJob write) throws IOException {
-		if (write.legacy != null && !bitStruct.backwardCompatible()) {
+	public void write(Object object, Recursor<WriteContext, WriteInfo> recursor) {
+		if (recursor.info.legacy != null && !bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.write(object, write);
+			currentClass.write(object, recursor);
 		}
 	}
 
@@ -135,56 +146,61 @@ public class BitStructWrapper<T> {
 		}
 	}
 
-	public void read(ReadJob read, ValueConsumer setValue) throws IOException {
+	public void read(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) throws IOException {
 		T object = createEmptyInstance();
 		Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();
 		for (SingleClassWrapper currentClass : classHierarchy) {
-			serializedFunctionValues.put(currentClass.myClass, currentClass.read(object, read));
+			serializedFunctionValues.put(currentClass.myClass, currentClass.read(object, recursor));
 		}
 		if (object instanceof BitPostInit) {
-			read.idLoader.addPostResolveCallback(() -> ((BitPostInit) object).postInit(
-					new BitPostInit.Context(
-							read.bitser, serializedFunctionValues, null,
-							null, read.withParameters
-					)
-			));
+			recursor.runFlat("post-resolve", context ->
+				context.idLoader.addPostResolveCallback(() -> ((BitPostInit) object).postInit(
+						new BitPostInit.Context(
+								recursor.info.bitser, serializedFunctionValues, null,
+								null, recursor.info.withParameters
+						)
+				))
+			);
 		}
 		setValue.consume(object);
 	}
 
-	public T setLegacyValues(ReadJob read, LegacyStructInstance legacy) {
+	public T setLegacyValues(Recursor<ReadContext, ReadInfo> recursor, LegacyStructInstance legacy) {
 		if (legacy.valuesHierarchy.size() != classHierarchy.size()) {
 			throw new InvalidBitFieldException("Inconsistent class hierarchy");
 		}
 		for (int index = 0; index < classHierarchy.size(); index++) {
-			classHierarchy.get(index).setLegacyValues(read, legacy.newInstance, legacy.valuesHierarchy.get(index));
+			classHierarchy.get(index).setLegacyValues(recursor, legacy.newInstance, legacy.valuesHierarchy.get(index));
 		}
 
 		if (legacy.newInstance instanceof BitPostInit) {
-			read.idLoader.addPostResolveCallback(() -> {
-				Map<Class<?>, Object[]> functionValues = new HashMap<>();
-				Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
-				Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
-				for (int index = 0; index < classHierarchy.size(); index++) {
-					LegacyValues classLegacy = legacy.valuesHierarchy.get(index);
-					functionValues.put(classHierarchy.get(index).myClass, classLegacy.convertedFunctionValues);
-					legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
-					legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
-				}
-				((BitPostInit) legacy.newInstance).postInit(new BitPostInit.Context(
-						read.bitser, functionValues, legacyFieldValues, legacyFunctionValues, read.withParameters
-				));
-			});
+			recursor.runFlat("post-resolve", context ->
+					context.idLoader.addPostResolveCallback(() -> {
+						Map<Class<?>, Object[]> functionValues = new HashMap<>();
+						Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
+						Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
+						for (int index = 0; index < classHierarchy.size(); index++) {
+							LegacyValues classLegacy = legacy.valuesHierarchy.get(index);
+							functionValues.put(classHierarchy.get(index).myClass, classLegacy.convertedFunctionValues);
+							legacyFieldValues.put(classHierarchy.get(index).myClass, classLegacy.values);
+							legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
+						}
+						((BitPostInit) legacy.newInstance).postInit(new BitPostInit.Context(
+								recursor.info.bitser, functionValues, legacyFieldValues,
+								legacyFunctionValues, recursor.info.withParameters
+						));
+					})
+			);
 		}
 
 		//noinspection unchecked
 		return (T) legacy.newInstance;
 	}
 
-	public void fixLegacyTypes(ReadJob read, LegacyStructInstance legacyInstance) {
+	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, LegacyStructInstance legacyInstance) {
 		legacyInstance.newInstance = createEmptyInstance();
 		for (int index = 0; index < classHierarchy.size(); index++) {
-			classHierarchy.get(index).fixLegacyTypes(read, legacyInstance.valuesHierarchy.get(index));
+			classHierarchy.get(index).fixLegacyTypes(recursor, legacyInstance.valuesHierarchy.get(index));
 		}
 	}
 

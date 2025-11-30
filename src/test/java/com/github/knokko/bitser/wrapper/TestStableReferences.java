@@ -273,6 +273,7 @@ public class TestStableReferences {
 				() -> new Bitser(true).serialize(new NonStructTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Can't extract stable id from");
+		assertContains(errorMessage, "-> NonStructTarget -> id");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -304,6 +305,8 @@ public class TestStableReferences {
 				() -> new Bitser(false).serialize(target, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "doesn't have an @StableReferenceFieldId");
+		assertContains(errorMessage, "com.github.knokko.bitser.wrapper.TestStableReferences$WithoutStableId@");
+		assertContains(errorMessage, "-> StableReferenceTargetWithoutStableId -> target");
 	}
 
 	@Test

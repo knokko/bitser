@@ -3,17 +3,17 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.instance.LegacyCollectionInstance;
+import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,14 +44,25 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void registerLegacyClasses(Object value, LegacyClasses legacy) {
-		super.registerLegacyClasses(value, legacy);
+	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {
+		super.registerLegacyClasses(value, recursor);
 		if (value == null) return;
 		if (value.getClass().isArray()) {
 			int size = Array.getLength(value);
-			for (int index = 0; index < size; index++) valuesWrapper.registerLegacyClasses(Array.get(value, index), legacy);
+			for (int index = 0; index < size; index++) {
+				Object element = Array.get(value, index);
+				recursor.runNested("element " + index, nested ->
+						valuesWrapper.registerLegacyClasses(element, nested)
+				);
+			}
 		} else {
-			for (Object element : (Collection<?>) value) valuesWrapper.registerLegacyClasses(element, legacy);
+			int counter = 0;
+			for (Object element : (Collection<?>) value) {
+				recursor.runNested("element " + counter, nested ->
+						valuesWrapper.registerLegacyClasses(element, nested)
+				);
+				counter += 1;
+			}
 		}
 	}
 
@@ -67,51 +78,81 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
-		super.registerReferenceTargets(value, cache, idMapper);
+	void registerReferenceTargets(Object value, Recursor<ReferenceIdMapper, BitserCache> recursor) {
+		super.registerReferenceTargets(value, recursor);
 		if (value == null) return;
 		if (field.type.isArray()) {
 			int size = Array.getLength(value);
 			for (int index = 0; index < size; index++) {
-				valuesWrapper.registerReferenceTargets(Array.get(value, index), cache, idMapper);
+				Object element = Array.get(value, index);
+				recursor.runNested("element " + index, nested ->
+						valuesWrapper.registerReferenceTargets(element, nested)
+				);
 			}
 		} else {
-			for (Object element : (Collection<?>) value) valuesWrapper.registerReferenceTargets(element, cache, idMapper);
+			int index = 0;
+			for (Object element : (Collection<?>) value) {
+				recursor.runNested("element " + index, nested ->
+						valuesWrapper.registerReferenceTargets(element, nested)
+				);
+				index += 1;
+			}
 		}
 	}
 
 	@Override
-	void writeElements(Object value, int size, WriteJob write) throws IOException {
+	void writeElements(Object value, int size, Recursor<WriteContext, WriteInfo> recursor) {
 		String nullErrorMessage = "Field " + field + " must not have null elements";
 		if (field.type.isArray()) {
 			for (int index = 0; index < size; index++) {
-				write.output.pushContext("element", index);
-				writeElement(Array.get(value, index), valuesWrapper, write, nullErrorMessage);
-				write.output.popContext("element", index);
+				final int rememberIndex = index;
+				recursor.runFlat("pushContext", context ->
+						context.output.pushContext("element", rememberIndex)
+				);
+				recursor.runNested("element " + index, nested ->
+						writeElement(Array.get(value, rememberIndex), valuesWrapper, nested, nullErrorMessage)
+				);
+				recursor.runFlat("popContext", context ->
+						context.output.popContext("element", rememberIndex)
+				);
 			}
 		} else {
 			int counter = 0;
 			for (Object element : (Collection<?>) value) {
-				write.output.pushContext("element", counter);
-				writeElement(element, valuesWrapper, write, nullErrorMessage);
-				write.output.popContext("element", counter++);
+				final int rememberCounter = counter;
+				recursor.runFlat("pushContext", context ->
+						context.output.pushContext("element", rememberCounter)
+				);
+				recursor.runNested("element " + counter, nested ->
+						writeElement(element, valuesWrapper, nested, nullErrorMessage)
+				);
+				recursor.runFlat("popContext", context ->
+						context.output.popContext("element", rememberCounter)
+				);
+				counter += 1;
 			}
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	void readElements(Object value, int size, ReadJob read) throws IOException {
+	void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) {
 		for (int index = 0; index < size; index++) {
-			if (valuesWrapper.field.optional && !read.input.read()) {
-				if (value instanceof Collection<?>) {
-					((Collection<Object>) value).add(null);
-				} else {
-					Array.set(value, index, null);
-				}
-			} else {
-				final int rememberIndex = index;
-				List<Object> rememberElement = new ArrayList<>(1);
+			final int rememberIndex = index;
+			JobOutput<Boolean> hasValue = recursor.computeFlat("optional", context -> {
+				if (valuesWrapper.field.optional && !context.input.read()) {
+					if (value instanceof Collection<?>) {
+						((Collection<Object>) value).add(null);
+					} else {
+						Array.set(value, rememberIndex, null);
+					}
+					return false;
+				} else return true;
+			});
+
+			List<Object> rememberElement = new ArrayList<>(1);
+			recursor.runNested("elements", read -> {
+				if (!hasValue.get()) return;
 				valuesWrapper.readValue(read, element -> {
 					rememberElement.add(element);
 					if (value instanceof Collection<?>) {
@@ -120,21 +161,23 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 						Array.set(value, rememberIndex, element);
 					}
 				});
+			});
 
-				if (valuesWrapper.field.referenceTargetLabel != null) {
+			recursor.runFlat("referenceTargetLabel", read -> {
+				if (hasValue.get() && valuesWrapper.field.referenceTargetLabel != null) {
 					read.idLoader.register(
 							valuesWrapper.field.referenceTargetLabel, rememberElement.get(0),
-							read.input, read.bitser.cache
+							read.input, recursor.info.bitser.cache
 					);
 				}
-			}
+			});
 		}
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object rawLegacyInstance, Consumer<Object> setValue) {
+	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object rawLegacyInstance, Consumer<Object> setValue) {
 		if (rawLegacyInstance == null) {
-			super.setLegacyValue(read, null, setValue);
+			super.setLegacyValue(recursor, null, setValue);
 			return;
 		}
 
@@ -145,37 +188,42 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			final int rememberIndex = index;
 			final Object oldValue = Array.get(legacyInstance.legacyArray, index);
 
-			try {
-				if (legacyInstance.newCollection.getClass().isArray()) {
-					valuesWrapper.setLegacyValue(read, oldValue, newValue ->
-							Array.set(legacyInstance.newCollection, rememberIndex, newValue)
-					);
-				} else {
-					valuesWrapper.setLegacyValue(read, oldValue, newValue -> {
-						Array.set(dummyArray, 0, newValue);
-						//noinspection unchecked
-						((Collection<Object>) legacyInstance.newCollection).add(newValue);
-					});
+			recursor.runNested("elements", nested -> {
+				try {
+					if (legacyInstance.newCollection.getClass().isArray()) {
+						valuesWrapper.setLegacyValue(nested, oldValue, newValue ->
+								Array.set(legacyInstance.newCollection, rememberIndex, newValue)
+						);
+					} else {
+						valuesWrapper.setLegacyValue(nested, oldValue, newValue -> {
+							Array.set(dummyArray, 0, newValue);
+							//noinspection unchecked
+							((Collection<Object>) legacyInstance.newCollection).add(newValue);
+						});
+					}
+				} catch (IllegalArgumentException wrongType) {
+					throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
 				}
-			} catch (IllegalArgumentException wrongType) {
-				throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
-			}
+			});
 		}
 
-		super.setLegacyValue(read, legacyInstance.newCollection, setValue);
+		super.setLegacyValue(recursor, legacyInstance.newCollection, setValue);
 	}
 
 	@Override
-	public void fixLegacyTypes(ReadJob read, Object value) {
+	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value != null && !(value instanceof LegacyCollectionInstance)) {
 			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + valuesWrapper.field.type + " for field " + field);
 		}
-		super.fixLegacyTypes(read, value);
+		super.fixLegacyTypes(recursor, value);
 		if (value == null) return;
 		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
 		int size = Array.getLength(legacyInstance.legacyArray);
 		for (int index = 0; index < size; index++) {
-			valuesWrapper.fixLegacyTypes(read, Array.get(legacyInstance.legacyArray, index));
+			final int rememberIndex = index;
+			recursor.runNested("elements", nested ->
+					valuesWrapper.fixLegacyTypes(nested, Array.get(legacyInstance.legacyArray, rememberIndex))
+			);
 		}
 	}
 

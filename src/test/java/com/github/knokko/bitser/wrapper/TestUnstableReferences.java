@@ -329,6 +329,7 @@ public class TestUnstableReferences {
 				() -> new Bitser(false).serialize(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple unstable targets have identity");
+		assertContains(errorMessage, "-> ItemRoot -> types -> element 1");
 	}
 
 	@BitStruct(backwardCompatible = false)

@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.backward.instance;
 
+import com.github.knokko.bitser.util.JobOutput;
+
 import java.util.UUID;
 
 public class LegacyValues {
@@ -11,12 +13,12 @@ public class LegacyValues {
 	public Object[] convertedFunctionValues;
 	public final boolean[] hadFunctionValues;
 	public final boolean[] hadReferenceFunctions;
-	public final UUID stableID;
+	public final JobOutput<UUID> stableID;
 
 	public LegacyValues(
 			Object[] values, boolean[] hadValues, boolean[] hadReferenceValues,
 			Object[] storedFunctionValues, boolean[] hadFunctionValues,
-			boolean[] hadReferenceFunctions, UUID stableID
+			boolean[] hadReferenceFunctions, JobOutput<UUID> stableID
 	) {
 		this.values = values;
 		this.hadValues = hadValues;

@@ -4,18 +4,18 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.backward.LegacyStruct;
+import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitPostInit;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -87,26 +87,33 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	void registerReferenceTargets(Object value, BitserCache cache, ReferenceIdMapper idMapper) {
-		super.registerReferenceTargets(value, cache, idMapper);
-		if (value != null) cache.getWrapper(value.getClass()).registerReferenceTargets(value, cache, idMapper);
+	void registerReferenceTargets(Object value, Recursor<ReferenceIdMapper, BitserCache> recursor) {
+		super.registerReferenceTargets(value, recursor);
+		if (value != null) {
+			// No need to call recursor.nested, since BitStructWrapper will do that anyway
+			recursor.info.getWrapper(value.getClass()).registerReferenceTargets(value, recursor);
+		}
 	}
 
 	@Override
-	void registerLegacyClasses(Object value, LegacyClasses legacy) {
-		super.registerLegacyClasses(value, legacy);
+	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {
+		super.registerLegacyClasses(value, recursor);
 		if (value == null) return;
-		legacy.cache.getWrapper(value.getClass()).registerClasses(value, legacy);
+		recursor.info.cache.getWrapper(value.getClass()).registerClasses(value, recursor);
 	}
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
-				write.output.prepareProperty("allowed-class-index", -1);
-				encodeUniformInteger(index, 0, allowed.length - 1, write.output);
-				write.output.finishProperty();
-				write.bitser.cache.getWrapper(value.getClass()).write(value, write);
+				final int rememberIndex = index;
+				recursor.runFlat("allowed-class-index", context -> {
+					context.output.prepareProperty("allowed-class-index", -1);
+					encodeUniformInteger(rememberIndex, 0, allowed.length - 1, context.output);
+					context.output.finishProperty();
+				});
+
+				recursor.info.bitser.cache.getWrapper(value.getClass()).write(value, recursor);
 				return;
 			}
 		}
@@ -117,36 +124,43 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
 		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
-		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, read.input);
+		JobOutput<Integer> inheritanceIndex = recursor.computeFlat("inheritance-index", context ->
+				(int) decodeUniformInteger(0, length - 1, context.input)
+		);
 
-		if (allowed.length == 0) {
-			legacyStructs[inheritanceIndex].read(read, inheritanceIndex, setValue::consume);
-		} else read.bitser.cache.getWrapper(allowed[inheritanceIndex]).read(read, setValue);
+		recursor.runNested("struct", nested -> {
+			if (allowed.length == 0) {
+				legacyStructs[inheritanceIndex.get()].read(nested, inheritanceIndex.get(), setValue::consume);
+			} else nested.info.bitser.cache.getWrapper(allowed[inheritanceIndex.get()]).read(nested, setValue);
+		});
+
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
+	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (value == null) {
-			super.setLegacyValue(read, null, setValue);
+			super.setLegacyValue(recursor, null, setValue);
 			return;
 		}
 		LegacyStructInstance legacy = (LegacyStructInstance) value;
-		BitStructWrapper<?> valueWrapper = read.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
-		setValue.accept(valueWrapper.setLegacyValues(read, legacy));
+		BitStructWrapper<?> valueWrapper = recursor.info.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
+		setValue.accept(valueWrapper.setLegacyValues(recursor, legacy));
 	}
 
 	@Override
-	public void fixLegacyTypes(ReadJob read, Object value) {
+	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value == null && field.optional) return;
 		LegacyStructInstance instance = (LegacyStructInstance) value;
 		if (instance.inheritanceIndex >= allowed.length) throw new InvalidBitValueException(
 				"Encountered unknown subclass while loading " + field
 		);
-		read.bitser.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(read, instance);
+		recursor.info.bitser.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(recursor, instance);
 		if (field.referenceTargetLabel != null) {
-			read.idLoader.replace(field.referenceTargetLabel, instance, instance.newInstance);
+			recursor.runFlat("referenceTargetLabel", context ->
+					context.idLoader.replace(field.referenceTargetLabel, instance, instance.newInstance)
+			);
 		}
 	}
 

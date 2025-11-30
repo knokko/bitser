@@ -2,17 +2,17 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.backward.*;
 import com.github.knokko.bitser.backward.instance.LegacyValues;
+import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.ReferenceIdMapper;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
@@ -172,83 +172,130 @@ class SingleClassWrapper {
 		}
 	}
 
-	void registerReferenceTargets(Object object, BitserCache cache, ReferenceIdMapper mapper) {
+	void registerReferenceTargets(Object parentObject, Recursor<ReferenceIdMapper, BitserCache> recursor) {
 		for (FieldWrapper field : fields) {
-			field.bitField.registerReferenceTargets(field.bitField.field.getValue.apply(object), cache, mapper);
+			Object childObject = field.bitField.field.getValue.apply(parentObject);
+			recursor.runNested(field.classField.getName(), nested ->
+					field.bitField.registerReferenceTargets(childObject, nested)
+			);
 		}
 	}
 
-	LegacyClass register(Object object, LegacyClasses legacy) {
-		LegacyClass legacyClass = legacy.addClass(myClass);
+	JobOutput<LegacyClass> register(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
+		JobOutput<LegacyClass> legacyClass = recursor.computeFlat(myClass.getSimpleName(), legacy ->
+				legacy.addClass(myClass)
+		);
 
 		for (int index = 0; index < fieldsSortedById.size(); index++) {
 			FieldWrapper field = fieldsSortedById.get(index);
-			if (legacyClass.fields.size() == index) {
-				legacyClass.fields.add(new LegacyField(field.id, field.bitField));
-			}
-			field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), legacy);
+			final int rememberIndex = index;
+			recursor.runFlat(field.classField.getName(), legacy -> {
+				if (legacyClass.get().fields.size() == rememberIndex) {
+					legacyClass.get().fields.add(new LegacyField(field.id, field.bitField));
+				}
+			});
+			recursor.runNested(field.classField.getName(), nested ->
+					field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), nested)
+			);
 		}
 
 		for (int index = 0; index < functions.size(); index++) {
 			FunctionWrapper function = functions.get(index);
-			if (legacyClass.functions.size() == index) {
-				legacyClass.functions.add(new LegacyField(function.id, function.bitField));
-			}
-			function.bitField.registerLegacyClasses(function.computeValue(object, legacy.functionContext), legacy);
+			final int rememberIndex = index;
+			recursor.runFlat(function.classMethod.getName(), legacy -> {
+				if (legacyClass.get().functions.size() == rememberIndex) {
+					legacyClass.get().functions.add(new LegacyField(function.id, function.bitField));
+				}
+			});
+
+			recursor.runNested(function.classMethod.getName(), nested -> {
+				Object returnValue = function.computeValue(object, recursor.info.functionContext);
+				function.bitField.registerLegacyClasses(returnValue, nested);
+			});
 		}
 
 		return legacyClass;
 	}
 
-	void write(Object object, WriteJob write) throws IOException {
-		write.output.pushContext(myClass.getSimpleName(), -1);
-		for (FieldWrapper field : getFields(write.legacy != null)) {
-			write.output.pushContext(field.classField.getName(), -1);
-			field.bitField.write(object, write);
-			write.output.popContext(field.classField.getName(), -1);
+	void write(Object object, Recursor<WriteContext, WriteInfo> recursor) {
+		recursor.runFlat("pushContext", context ->
+				context.output.pushContext(myClass.getSimpleName(), -1)
+		);
+
+		for (FieldWrapper field : getFields(recursor.info.legacy != null)) {
+			recursor.runFlat("pushContext", context ->
+					context.output.pushContext(field.classField.getName(), -1)
+			);
+			recursor.runNested(field.classField.getName(), nested ->
+					field.bitField.writeField(object, nested)
+			);
+			recursor.runFlat("popContext", context ->
+					context.output.popContext(field.classField.getName(), -1)
+			);
 		}
-		FunctionContext functionContext = new FunctionContext(write.bitser, write.withParameters);
+
+		FunctionContext functionContext = new FunctionContext(recursor.info.bitser, recursor.info.withParameters);
 		for (FunctionWrapper function : functions) {
-			write.output.pushContext(function.classMethod.getName(), -1);
-			function.bitField.writeValue(function.computeValue(object, functionContext), write);
-			write.output.popContext(function.classMethod.getName(), -1);
+			recursor.runFlat("pushContext", context ->
+					context.output.pushContext(function.classMethod.getName(), -1)
+			);
+			recursor.runNested(function.classMethod.getName(), nested ->
+					function.bitField.writeValue(function.computeValue(object, functionContext), nested)
+			);
+			recursor.runFlat("popContext", context ->
+					context.output.popContext(function.classMethod.getName(), -1)
+			);
 		}
-		write.output.popContext(myClass.getSimpleName(), -1);
+
+		recursor.runFlat("popContext", context ->
+				context.output.popContext(myClass.getSimpleName(), -1)
+		);
 	}
 
-	void setLegacyValues(ReadJob read, Object target, LegacyValues legacy) {
+	void setLegacyValues(Recursor<ReadContext, ReadInfo> recursor, Object target, LegacyValues legacy) {
 		int maxFieldId = -1;
 		for (FieldWrapper field : fields) maxFieldId = max(maxFieldId, field.id);
 		for (FieldWrapper field : fieldsSortedById) {
 			if (field.id < legacy.values.length && legacy.hadValues[field.id] &&
 					legacy.hadReferenceValues[field.id] == field.bitField.isReference()
 			) {
-				field.bitField.setLegacyValue(read, legacy.values[field.id], newValue ->
-						field.bitField.field.setValue.accept(target, newValue)
+				recursor.runNested(field.classField.getName(), nested ->
+						field.bitField.setLegacyValue(nested, legacy.values[field.id], newValue ->
+								field.bitField.field.setValue.accept(target, newValue)
+						)
 				);
 			}
 		}
+
 		int maxFunctionId = -1;
 		for (FunctionWrapper function : functions) maxFunctionId = max(maxFunctionId, function.id);
 		legacy.convertedFunctionValues = new Object[max(maxFunctionId + 1, legacy.storedFunctionValues.length)];
 		for (FunctionWrapper function : functions) {
 			if (legacy.hadFunctionValues.length > function.id && legacy.hadFunctionValues[function.id]) {
-				function.bitField.setLegacyValue(
-						read, legacy.storedFunctionValues[function.id],
-						newValue -> legacy.convertedFunctionValues[function.id] = newValue
+				recursor.runNested(function.classMethod.getName(), nested ->
+						function.bitField.setLegacyValue(
+								nested, legacy.storedFunctionValues[function.id],
+								newValue -> legacy.convertedFunctionValues[function.id] = newValue
+						)
 				);
 			}
 		}
 	}
 
-	Object[] read(Object target, ReadJob read) throws IOException {
+	Object[] read(Object target, Recursor<ReadContext, ReadInfo> recursor) {
 		Object[] functionValues;
 		if (functions.isEmpty()) functionValues = new Object[0];
 		else functionValues = new Object[functions.get(functions.size() - 1).id + 1];
 
-		for (FieldWrapper field : getFields(read.backwardCompatible)) field.bitField.readField(target, read);
+		for (FieldWrapper field : getFields(recursor.info.backwardCompatible)) {
+			recursor.runNested(field.classField.getName(), nested ->
+					field.bitField.readField(target, nested)
+			);
+		}
 		for (FunctionWrapper function : functions) {
-			function.bitField.readValue(read, result -> functionValues[function.id] = result);
+			recursor.runNested(function.classMethod.getName(), nested ->
+					function.bitField.readValue(nested, result -> functionValues[function.id] = result)
+			);
 		}
 		return functionValues;
 	}
@@ -271,14 +318,16 @@ class SingleClassWrapper {
 		}
 	}
 
-	public void fixLegacyTypes(ReadJob read, LegacyValues legacyValues) {
+	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, LegacyValues legacyValues) {
 		for (FieldWrapper field : fields) {
 			if (field.id >= legacyValues.values.length) continue;
 			checkReferenceMigration(
 					legacyValues.hadReferenceValues[field.id], field.bitField,
 					legacyValues.values[field.id], field.classField::toString
 			);
-			field.bitField.fixLegacyTypes(read, legacyValues.values[field.id]);
+			recursor.runNested(field.classField.getName(), nested ->
+					field.bitField.fixLegacyTypes(nested, legacyValues.values[field.id])
+			);
 		}
 		for (FunctionWrapper function : functions) {
 			if (function.id >= legacyValues.storedFunctionValues.length) continue;
@@ -286,7 +335,9 @@ class SingleClassWrapper {
 					legacyValues.hadReferenceFunctions[function.id], function.bitField,
 					legacyValues.storedFunctionValues[function.id], function.classMethod::toString
 			);
-			function.bitField.fixLegacyTypes(read, legacyValues.storedFunctionValues[function.id]);
+			recursor.runNested(function.classMethod.getName(), nested ->
+					function.bitField.fixLegacyTypes(nested, legacyValues.storedFunctionValues[function.id])
+			);
 		}
 	}
 
@@ -339,16 +390,12 @@ class SingleClassWrapper {
 			this.bitField = bitField;
 		}
 
-		Object computeValue(Object object, FunctionContext context) {
+		Object computeValue(Object object, FunctionContext context) throws Throwable {
 			try {
 				if (classMethod.getParameterCount() == 0) return classMethod.invoke(object);
 				else return classMethod.invoke(object, context);
-			} catch (IllegalAccessException e) {
-				throw new Error(e);
 			} catch (InvocationTargetException e) {
-				if (e.getCause() instanceof RuntimeException) throw (RuntimeException) e.getCause();
-				if (e.getCause() instanceof Error) throw (Error) e.getCause();
-				throw new RuntimeException(e.getCause());
+				throw e.getCause();
 			}
 		}
 	}

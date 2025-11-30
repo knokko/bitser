@@ -1,11 +1,12 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
+import com.github.knokko.bitser.context.WriteContext;
+import com.github.knokko.bitser.context.WriteInfo;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
-
-import java.io.IOException;
 
 @BitStruct(backwardCompatible = false)
 class BooleanFieldWrapper extends BitFieldWrapper {
@@ -20,14 +21,16 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
-		write.output.prepareProperty("boolean-value", -1);
-		write.output.write((Boolean) value);
-		write.output.finishProperty();
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
+		recursor.runFlat("boolean-value", context -> {
+			context.output.prepareProperty("boolean-value", -1);
+			context.output.write((Boolean) value);
+			context.output.finishProperty();
+		});
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		setValue.consume(read.input.read());
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		recursor.runFlat("boolean-value", context -> setValue.consume(context.input.read()));
 	}
 }

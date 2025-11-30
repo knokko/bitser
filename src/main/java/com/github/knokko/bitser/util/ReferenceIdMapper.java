@@ -17,9 +17,11 @@ public class ReferenceIdMapper {
 	static UUID extractStableId(Object target, BitserCache cache) {
 		try {
 			if (target instanceof LegacyStructInstance) {
-				UUID id = ((LegacyStructInstance) target).stableID;
+				JobOutput<UUID> id = ((LegacyStructInstance) target).stableID;
 				if (id == null) throw new InvalidBitValueException("Will get better error message when more context is available");
-				return id;
+				UUID actualID = id.get();
+				if (actualID == null) throw new InvalidBitValueException("UUID was null? Should not happen");
+				return actualID;
 			}
 			UUID id = cache.getWrapper(target.getClass()).getStableId(target);
 			if (id == null) throw new InvalidBitValueException("Stable UUID of " + target + " is null, which is forbidden");

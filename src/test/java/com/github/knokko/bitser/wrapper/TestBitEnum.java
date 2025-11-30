@@ -127,6 +127,7 @@ public class TestBitEnum {
 				MissingSeasonStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum constant AUTUMN");
+		assertContains(errorMessage, "-> season -> value");
 	}
 
 	@SuppressWarnings("unused")
@@ -162,6 +163,7 @@ public class TestBitEnum {
 				MissingDirectionStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum ordinal 3");
+		assertContains(errorMessage, "-> direction -> value");
 	}
 
 	@BitStruct(backwardCompatible = false)

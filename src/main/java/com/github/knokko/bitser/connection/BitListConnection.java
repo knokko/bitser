@@ -6,15 +6,11 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.Bitser;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
-import com.github.knokko.bitser.wrapper.AbstractCollectionFieldWrapper;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 import com.github.knokko.bitser.wrapper.StructFieldWrapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -63,11 +59,11 @@ public class BitListConnection<T> extends BitConnection {
 			if (modification.changeListener != null) {
 				modification.changeListener.report(output);
 			} else if (modification.action != Action.REMOVE) {
-				AbstractCollectionFieldWrapper.writeElement(
-						modification.element, elementWrapper,
-						new WriteJob(bitser, output, null, new HashMap<>(), null),
-						"This BitListConnection must not contain null values"
-				);
+//				AbstractCollectionFieldWrapper.writeElement(
+//						modification.element, elementWrapper,
+//						new WriteJob(bitser, output, null, new HashMap<>(), null),
+//						"This BitListConnection must not contain null values"
+//				);
 			}
 			return 1;
 		});
@@ -117,36 +113,37 @@ public class BitListConnection<T> extends BitConnection {
 					if (connectionList != null) connectionList.remove(modification.index);
 				}
 			}
-		} else {
-			elementWrapper.read(new ReadJob(bitser, input, null, new HashMap<>(), false), rawElement -> {
-				@SuppressWarnings("unchecked") T element = (T) rawElement;
-				synchronized (list) {
-					if (modification.action == Action.ADD) {
-						if (modification.index >= 0) {
-							list.add(modification.index, element);
-							myList.add(modification.index, element);
-							if (connectionList != null) {
-								connectionList.add(modification.index, createChildConnection(element));
-							}
-						} else {
-							list.add(element);
-							myList.add(element);
-							if (connectionList != null) {
-								connectionList.add(createChildConnection(element));
-							}
-						}
-					} else if (modification.action == Action.REPLACE) {
-						if (modification.index < myList.size()) {
-							myList.set(modification.index, element);
-							list.set(modification.index, element);
-							if (connectionList != null) {
-								connectionList.set(modification.index, createChildConnection(element));
-							}
-						}
-					} else throw new Error("Unexpected action " + modification.action);
-				}
-			});
 		}
+//		else {
+//			elementWrapper.read(new ReadJob(bitser, input, null, new HashMap<>(), false), rawElement -> {
+//				@SuppressWarnings("unchecked") T element = (T) rawElement;
+//				synchronized (list) {
+//					if (modification.action == Action.ADD) {
+//						if (modification.index >= 0) {
+//							list.add(modification.index, element);
+//							myList.add(modification.index, element);
+//							if (connectionList != null) {
+//								connectionList.add(modification.index, createChildConnection(element));
+//							}
+//						} else {
+//							list.add(element);
+//							myList.add(element);
+//							if (connectionList != null) {
+//								connectionList.add(createChildConnection(element));
+//							}
+//						}
+//					} else if (modification.action == Action.REPLACE) {
+//						if (modification.index < myList.size()) {
+//							myList.set(modification.index, element);
+//							list.set(modification.index, element);
+//							if (connectionList != null) {
+//								connectionList.set(modification.index, createChildConnection(element));
+//							}
+//						}
+//					} else throw new Error("Unexpected action " + modification.action);
+//				}
+//			});
+//		}
 	}
 
 	@Override

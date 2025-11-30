@@ -2,15 +2,18 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.backward.instance.LegacyCollectionInstance;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
+import com.github.knokko.bitser.context.WriteContext;
+import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -23,18 +26,22 @@ import static java.lang.Math.min;
 public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	public static void writeElement(
-			Object element, BitFieldWrapper wrapper, WriteJob write, String nullErrorMessage
-	) throws IOException {
+			Object element, BitFieldWrapper wrapper, Recursor<WriteContext, WriteInfo> recursor, String nullErrorMessage
+	) {
 		if (wrapper.field.optional) {
-			write.output.prepareProperty("optional", -1);
-			write.output.write(element != null);
-			write.output.finishProperty();
+			recursor.runFlat("optional", context -> {
+				context.output.prepareProperty("optional", -1);
+				context.output.write(element != null);
+				context.output.finishProperty();
+			});
 		}
 		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
 		if (element != null) {
-			wrapper.writeValue(element, write);
+			wrapper.writeValue(element, recursor);
 			if (wrapper.field.referenceTargetLabel != null) {
-				write.idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, write.output);
+				recursor.runFlat("referenceTargetLabel", context ->
+						context.idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, context.output)
+				);
 			}
 		}
 	}
@@ -78,42 +85,51 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	abstract ArrayType determineArrayType();
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		int size = getCollectionSize(value);
-		write.output.prepareProperty("size", -1);
-		if (sizeField.expectUniform) encodeUniformInteger(size, getMinSize(), getMaxSize(), write.output);
-		else encodeVariableInteger(size, getMinSize(), getMaxSize(), write.output);
-		write.output.finishProperty();
+		recursor.runFlat("size", context -> {
+			context.output.prepareProperty("size", -1);
+			if (sizeField.expectUniform) encodeUniformInteger(size, getMinSize(), getMaxSize(), context.output);
+			else encodeVariableInteger(size, getMinSize(), getMaxSize(), context.output);
+			context.output.finishProperty();
+		});
 
-		writeElements(value, size, write);
+		writeElements(value, size, recursor);
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		int size;
-		if (sizeField.expectUniform) size = (int) decodeUniformInteger(getMinSize(), getMaxSize(), read.input);
-		else size = (int) decodeVariableInteger(getMinSize(), getMaxSize(), read.input);
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		JobOutput<Integer> size = recursor.computeFlat("size", context -> {
+			if (sizeField.expectUniform) return (int) decodeUniformInteger(getMinSize(), getMaxSize(), context.input);
+			else return (int) decodeVariableInteger(getMinSize(), getMaxSize(), context.input);
+		});
 
-		Object value = constructCollectionWithSize(size);
-		readElements(value, size, read);
+		recursor.runNested("elements", nested -> {
+			Object value = constructCollectionWithSize(size.get());
+			readElements(value, size.get(), nested);
 
-		if (read.backwardCompatible) setValue.consume(new LegacyCollectionInstance(value));
-		else setValue.consume(value);
+			nested.runFlat("add-elements", context -> {
+				if (nested.info.backwardCompatible) setValue.consume(new LegacyCollectionInstance(value));
+				else setValue.consume(value);
+			});
+		});
 	}
 
 	@Override
-	public void fixLegacyTypes(ReadJob read, Object value) {
+	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value == null) return;
 		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
 		legacyInstance.newCollection = constructCollectionWithSize(Array.getLength(legacyInstance.legacyArray));
 		if (field.referenceTargetLabel != null) {
-			read.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newCollection);
+			recursor.runFlat("referenceTargetLabel", context ->
+					context.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newCollection)
+			);
 		}
 	}
 
-	abstract void writeElements(Object value, int size, WriteJob write) throws IOException;
+	abstract void writeElements(Object value, int size, Recursor<WriteContext, WriteInfo> recursor) ;
 
-	abstract void readElements(Object value, int size, ReadJob read) throws IOException;
+	abstract void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) ;
 
 	private int getCollectionSize(Object object) {
 		if (object instanceof Collection<?>) return ((Collection<?>) object).size();

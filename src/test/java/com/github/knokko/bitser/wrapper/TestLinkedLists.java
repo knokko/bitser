@@ -5,13 +5,28 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestLinkedLists {
 
 	@BitStruct(backwardCompatible = true)
 	private static class BitLinkedList {
+
+		private static BitLinkedList generateRandom() {
+			Random rng = new Random();
+			BitLinkedList node = null;
+
+			for (int counter = 0; counter < 10_000; counter++) {
+				BitLinkedList next = new BitLinkedList();
+				next.value = "R" + rng.nextInt();
+				next.next = node;
+				node = next;
+			}
+
+			return node;
+		}
 
 		@BitField(id = 0)
 		String value = "";
@@ -49,4 +64,23 @@ public class TestLinkedLists {
 		assertEquals("world", recovered.next.value);
 		assertNull(recovered.next.next);
 	}
+
+	@Test
+	public void testLong() {
+		Bitser bitser = new Bitser(true);
+		BitLinkedList list = BitLinkedList.generateRandom();
+
+		BitLinkedList recovered = bitser.deepCopy(list);
+		int totalLength = 0;
+
+		BitLinkedList node = recovered;
+		while (node != null) {
+			totalLength += node.value.length();
+			node = node.next;
+		}
+
+		assertTrue(totalLength > 20_000);
+	}
+
+	// TODO Backward compatible
 }

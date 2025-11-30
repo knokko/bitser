@@ -2,16 +2,18 @@ package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
+import com.github.knokko.bitser.context.WriteContext;
+import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
@@ -43,26 +45,28 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
-		Enum<?> enumValue = (Enum<?>) value;
-		if (mode == BitEnum.Mode.Name) {
-			byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
-			write.output.prepareProperty("enum-name-length", -1);
-			encodeVariableInteger(bytes.length, 1, Integer.MAX_VALUE, write.output);
-			write.output.finishProperty();
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
+		recursor.runFlat("enum-value", context -> {
+			Enum<?> enumValue = (Enum<?>) value;
+			if (mode == BitEnum.Mode.Name) {
+				byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
+				context.output.prepareProperty("enum-name-length", -1);
+				encodeVariableInteger(bytes.length, 1, Integer.MAX_VALUE, context.output);
+				context.output.finishProperty();
 
-			int counter = 0;
-			for (byte stringByte : bytes) {
-				write.output.prepareProperty("enum-name-char", counter++);
-				encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, write.output);
-				write.output.finishProperty();
-			}
-		} else if (mode == BitEnum.Mode.Ordinal) {
-			int maxOrdinal = field.type.getEnumConstants().length - 1;
-			write.output.prepareProperty("enum-ordinal", -1);
-			encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, write.output);
-			write.output.finishProperty();
-		} else throw new Error("Unknown enum mode: " + mode);
+				int counter = 0;
+				for (byte stringByte : bytes) {
+					context.output.prepareProperty("enum-name-char", counter++);
+					encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, context.output);
+					context.output.finishProperty();
+				}
+			} else if (mode == BitEnum.Mode.Ordinal) {
+				int maxOrdinal = field.type.getEnumConstants().length - 1;
+				context.output.prepareProperty("enum-ordinal", -1);
+				encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, context.output);
+				context.output.finishProperty();
+			} else throw new Error("Unknown enum mode: " + mode);
+		});
 	}
 
 	private Object getConstantByName(String name) throws NoSuchFieldException {
@@ -76,48 +80,50 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		if (mode == BitEnum.Mode.Name) {
-			int numBytes = (int) decodeVariableInteger(1, Integer.MAX_VALUE, read.input);
-			byte[] stringBytes = new byte[numBytes];
-			for (int index = 0; index < numBytes; index++) {
-				stringBytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, read.input);
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		recursor.runFlat("enum-value", context -> {
+			if (mode == BitEnum.Mode.Name) {
+				int numBytes = (int) decodeVariableInteger(1, Integer.MAX_VALUE, context.input);
+				byte[] stringBytes = new byte[numBytes];
+				for (int index = 0; index < numBytes; index++) {
+					stringBytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, context.input);
+				}
+				String name = new String(stringBytes, StandardCharsets.UTF_8);
+				if (field.type == null) {
+					setValue.consume(name);
+					return;
+				}
+				try {
+					setValue.consume(getConstantByName(name));
+					return;
+				} catch (NoSuchFieldException e) {
+					throw new InvalidBitFieldException("Missing enum constant " + name + " in " + field.type);
+				}
 			}
-			String name = new String(stringBytes, StandardCharsets.UTF_8);
+
+			int ordinal;
+			if (mode == BitEnum.Mode.Ordinal) {
+				ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, context.input);
+			} else throw new Error("Unknown BitEnum mode: " + mode);
+
 			if (field.type == null) {
-				setValue.consume(name);
+				setValue.consume(ordinal);
 				return;
 			}
-			try {
-				setValue.consume(getConstantByName(name));
-				return;
-			} catch (NoSuchFieldException e) {
-				throw new InvalidBitFieldException("Missing enum constant " + name + " in " + field.type);
+
+			Object[] constants = field.type.getEnumConstants();
+			if (ordinal >= constants.length) {
+				throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + field.type);
 			}
-		}
-
-		int ordinal;
-		if (mode == BitEnum.Mode.Ordinal) {
-			ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, read.input);
-		} else throw new Error("Unknown BitEnum mode: " + mode);
-
-		if (field.type == null) {
-			setValue.consume(ordinal);
-			return;
-		}
-
-		Object[] constants = field.type.getEnumConstants();
-		if (ordinal >= constants.length) {
-			throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + field.type);
-		}
-		setValue.consume(constants[ordinal]);
+			setValue.consume(constants[ordinal]);
+		});
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object legacyValue, Consumer<Object> setValue) {
+	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object legacyValue, Consumer<Object> setValue) {
 		if (legacyValue instanceof String) {
 			try {
-				super.setLegacyValue(read, getConstantByName((String) legacyValue), setValue);
+				super.setLegacyValue(recursor, getConstantByName((String) legacyValue), setValue);
 			} catch (NoSuchFieldException e) {
 				throw new InvalidBitValueException("Missing legacy enum constant " + legacyValue + " in " + field);
 			}
@@ -127,8 +133,8 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			if (ordinal >= constants.length) {
 				throw new InvalidBitValueException("Missing legacy ordinal " + ordinal + " in " + field);
 			}
-			super.setLegacyValue(read, constants[ordinal], setValue);
-		} else super.setLegacyValue(read, legacyValue, setValue);
+			super.setLegacyValue(recursor, constants[ordinal], setValue);
+		} else super.setLegacyValue(recursor, legacyValue, setValue);
 	}
 
 	@Override

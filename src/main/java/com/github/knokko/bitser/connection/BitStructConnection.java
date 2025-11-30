@@ -3,12 +3,9 @@ package com.github.knokko.bitser.connection;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
 import com.github.knokko.bitser.wrapper.BitFieldWrapper;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,13 +67,13 @@ public class BitStructConnection<T> extends BitConnection {
 				if (childConnections[index] != null) childConnections[index].handleChanges(input);
 				else bitser.createChildConnection(field.field.getValue.apply(state), field, null).handleChanges(input);
 			} else {
-				for (BitFieldWrapper fieldWrapper : fields) {
-					if (input.read()) {
-						fieldWrapper.read(new ReadJob(bitser, input, null, new HashMap<>(), false),value -> {
-							if (state != null) fieldWrapper.field.setValue.accept(state, value);
-						});
-					}
-				}
+//				for (BitFieldWrapper fieldWrapper : fields) {
+//					if (input.read()) {
+//						fieldWrapper.read(new ReadJob(bitser, input, null, new HashMap<>(), false),value -> {
+//							if (state != null) fieldWrapper.field.setValue.accept(state, value);
+//						});
+//					}
+//				}
 				referenceState = state != null ? bitser.shallowCopy(state) : null;
 			}
 		}
@@ -120,7 +117,7 @@ public class BitStructConnection<T> extends BitConnection {
 				numChanges += 1;
 
 				if (output != null) {
-					fieldWrapper.write(state, new WriteJob(bitser, output, null, new HashMap<>(), null));
+					//fieldWrapper.write(state, new WriteJob(bitser, output, null, new HashMap<>(), null));
 					updateChildConnection(fieldWrapper, index);
 				}
 			}

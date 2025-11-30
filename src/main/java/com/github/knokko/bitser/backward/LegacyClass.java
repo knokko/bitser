@@ -2,12 +2,14 @@ package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.backward.instance.LegacyValues;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.LabelCollection;
-import com.github.knokko.bitser.serialize.ReadJob;
+import com.github.knokko.bitser.util.JobOutput;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.wrapper.UUIDFieldWrapper;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -36,20 +38,22 @@ public class LegacyClass {
 		}
 	}
 
-	public LegacyValues read(ReadJob read) throws IOException {
+	public LegacyValues read(Recursor<ReadContext, ReadInfo> recursor) {
 		int maxId = -1;
 		for (LegacyField field : fields) maxId = max(maxId, field.id);
 		Object[] artificial = new Object[maxId + 1];
 		boolean[] hadValues = new boolean[maxId + 1];
 		boolean[] hadReferenceValues = new boolean[maxId + 1];
-		UUID stableID = null;
+		JobOutput<UUID> stableID = null;
 
 		for (LegacyField field : fields) {
 			hadValues[field.id] = true;
 			if (field.bitField.isReference()) hadReferenceValues[field.id] = true;
-			field.bitField.read(read, child -> artificial[field.id] = child);
+			recursor.runNested("field " + field.id, nested ->
+					field.bitField.readField(nested, child -> artificial[field.id] = child)
+			);
 			if (field.bitField instanceof UUIDFieldWrapper && ((UUIDFieldWrapper) field.bitField).isStableReferenceId) {
-				stableID = (UUID) artificial[field.id];
+				stableID = recursor.computeFlat("stable-id", context -> (UUID) artificial[field.id]);
 			}
 		}
 
@@ -62,7 +66,9 @@ public class LegacyClass {
 		for (LegacyField function : functions) {
 			hadFunctionValues[function.id] = true;
 			if (function.bitField.isReference()) hadReferenceFunctions[function.id] = true;
-			function.bitField.read(read, value -> functionValues[function.id] = value);
+			recursor.runNested("function " + function.id, nested ->
+					function.bitField.readField(nested, value -> functionValues[function.id] = value)
+			);
 		}
 
 		return new LegacyValues(

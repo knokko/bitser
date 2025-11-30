@@ -1,17 +1,19 @@
 package com.github.knokko.bitser.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.context.ReadContext;
+import com.github.knokko.bitser.context.ReadInfo;
+import com.github.knokko.bitser.context.WriteContext;
+import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.IntegerBitser;
-import com.github.knokko.bitser.serialize.ReadJob;
-import com.github.knokko.bitser.serialize.WriteJob;
+import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.serialize.IntegerBitser.*;
@@ -45,66 +47,70 @@ public class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, WriteJob write) throws IOException {
-		if (floatField.expectMultipleOf != 0.0) {
-			double doubleValue = ((Number) value).doubleValue();
-			long count = Math.round(doubleValue / floatField.expectMultipleOf);
-			double recoveredValue = count * floatField.expectMultipleOf;
+	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
+		recursor.runFlat("float-value", context -> {
+			if (floatField.expectMultipleOf != 0.0) {
+				double doubleValue = ((Number) value).doubleValue();
+				long count = Math.round(doubleValue / floatField.expectMultipleOf);
+				double recoveredValue = count * floatField.expectMultipleOf;
 
-			if (abs(recoveredValue - doubleValue) <= floatField.errorTolerance) {
-				BitCountStream counter = new BitCountStream();
-				encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
+				if (abs(recoveredValue - doubleValue) <= floatField.errorTolerance) {
+					BitCountStream counter = new BitCountStream();
+					encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
 
-				if ((value instanceof Float && counter.getCounter() < 32) || (value instanceof Double && counter.getCounter() < 64)) {
-					write.output.prepareProperty("float-simplified", -1);
-					write.output.write(true);
-					write.output.finishProperty();
-					write.output.prepareProperty("float-integer-value", -1);
-					encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, write.output);
-					write.output.finishProperty();
-					return;
+					if ((value instanceof Float && counter.getCounter() < 32) || (value instanceof Double && counter.getCounter() < 64)) {
+						context.output.prepareProperty("float-simplified", -1);
+						context.output.write(true);
+						context.output.finishProperty();
+						context.output.prepareProperty("float-integer-value", -1);
+						encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, context.output);
+						context.output.finishProperty();
+						return;
+					}
 				}
+
+				context.output.prepareProperty("float-simplified", -1);
+				context.output.write(false);
+				context.output.finishProperty();
 			}
 
-			write.output.prepareProperty("float-simplified", -1);
-			write.output.write(false);
-			write.output.finishProperty();
-		}
-
-		write.output.prepareProperty("float-value", -1);
-		if (value instanceof Float) {
-			encodeUniformInteger(Float.floatToRawIntBits((Float) value), Integer.MIN_VALUE, Integer.MAX_VALUE, write.output);
-		} else {
-			encodeUniformInteger(Double.doubleToRawLongBits((Double) value), Long.MIN_VALUE, Long.MAX_VALUE, write.output);
-		}
-		write.output.finishProperty();
+			context.output.prepareProperty("float-value", -1);
+			if (value instanceof Float) {
+				encodeUniformInteger(Float.floatToRawIntBits((Float) value), Integer.MIN_VALUE, Integer.MAX_VALUE, context.output);
+			} else {
+				encodeUniformInteger(Double.doubleToRawLongBits((Double) value), Long.MIN_VALUE, Long.MAX_VALUE, context.output);
+			}
+			context.output.finishProperty();
+		});
 	}
 
 	@Override
-	void readValue(ReadJob read, ValueConsumer setValue) throws IOException {
-		if (floatField.expectMultipleOf != 0.0 && read.input.read()) {
-			long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input);
-			double result = count * floatField.expectMultipleOf;
-			if (isFloat) setValue.consume((float) result);
-			else setValue.consume(result);
-			return;
-		}
+	void readValue(Recursor<ReadContext, ReadInfo> recursor, ValueConsumer setValue) {
+		recursor.runFlat("float-value", context -> {
+			if (floatField.expectMultipleOf != 0.0 && context.input.read()) {
+				long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, context.input);
+				double result = count * floatField.expectMultipleOf;
+				if (isFloat) setValue.consume((float) result);
+				else setValue.consume(result);
+				return;
+			}
 
-		if (isFloat) {
-			setValue.consume(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, read.input)));
-		} else {
-			setValue.consume(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, read.input)));
-		}
+			if (isFloat) {
+				setValue.consume(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, context.input)));
+			} else {
+				setValue.consume(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, context.input)));
+			}
+		});
 	}
 
 	@Override
-	void setLegacyValue(ReadJob read, Object value, Consumer<Object> setValue) {
+	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (value == null) {
-			super.setLegacyValue(read, null, setValue);
+			super.setLegacyValue(recursor, null, setValue);
 		} else if (value instanceof Number) {
 			double d = ((Number) value).doubleValue();
-			if (isFloat) super.setLegacyValue(read, (float) d, setValue);
-			else super.setLegacyValue(read, d, setValue);
+			if (isFloat) super.setLegacyValue(recursor, (float) d, setValue);
+			else super.setLegacyValue(recursor, d, setValue);
 		} else {
 			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
