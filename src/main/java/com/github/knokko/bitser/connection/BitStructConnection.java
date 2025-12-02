@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.connection;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -42,7 +43,7 @@ public class BitStructConnection<T> extends BitConnection {
 			try {
 				if (findAndWriteChanges(null) == 0) return;
 			} catch (IOException shouldNotHappen) {
-				throw new RuntimeException(shouldNotHappen);
+				throw new UnexpectedBitserException(shouldNotHappen.getMessage());
 			}
 			reportChanges.accept(output -> {
 				output.write(false);
@@ -139,7 +140,7 @@ public class BitStructConnection<T> extends BitConnection {
 	private BitConnection getChildConnection(String fieldName) {
 		BitFieldWrapper result = nameToChildMapping.get(fieldName);
 		if (result != null) return updateChildConnection(result, fields.indexOf(result));
-		throw new IllegalArgumentException("Can't find field with name " + fieldName);
+		throw new UnexpectedBitserException("Can't find field with name " + fieldName);
 	}
 
 	private BitConnection updateChildConnection(BitFieldWrapper fieldWrapper, int index) {

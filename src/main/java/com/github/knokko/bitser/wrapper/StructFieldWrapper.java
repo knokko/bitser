@@ -7,6 +7,7 @@ import com.github.knokko.bitser.backward.LegacyStruct;
 import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitPostInit;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -152,8 +153,12 @@ public class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value == null && field.optional) return;
+		if (!(value instanceof LegacyStructInstance)) {
+			throw new LegacyBitserException("Can't convert from legacy " + value + " to a BitStruct");
+		}
+
 		LegacyStructInstance instance = (LegacyStructInstance) value;
-		if (instance.inheritanceIndex >= allowed.length) throw new InvalidBitValueException(
+		if (instance.inheritanceIndex >= allowed.length) throw new LegacyBitserException(
 				"Encountered unknown subclass while loading " + field
 		);
 		recursor.info.bitser.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(recursor, instance);

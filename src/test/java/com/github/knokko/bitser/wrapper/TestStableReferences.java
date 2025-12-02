@@ -3,6 +3,7 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -397,6 +398,28 @@ public class TestStableReferences {
 		assertContains(errorMessage, "Multiple stable targets have identity");
 	}
 
+	@Test
+	public void testLoadMultipleTargetsWithTheSameId() {
+		ItemType itemType = new ItemType("dup");
+
+		ItemRoot primaryRoot = new ItemRoot();
+		primaryRoot.types.add(itemType);
+		primaryRoot.items.add(new Item("it", itemType));
+
+		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(primaryRoot);
+
+		ItemRoot withRoot = new ItemRoot();
+		withRoot.types.add(itemType);
+
+		String errorMessage = assertThrows(
+				ReferenceBitserException.class,
+				() -> bitser.deserializeFromBytes(ItemRoot.class, bytes, withRoot)
+		).getMessage();
+		assertContains(errorMessage, "objects have id " + itemType.id);
+		assertContains(errorMessage, "TestStableReferences$ItemType@");
+	}
+
 	@BitStruct(backwardCompatible = false)
 	static class MissingTargetLabel {
 
@@ -413,5 +436,46 @@ public class TestStableReferences {
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
+	}
+
+	@Test
+	public void testMissingLegacyTargetLabel1() {
+		ItemType itemType = new ItemType("bye bye");
+
+		ItemRoot primaryRoot = new ItemRoot();
+		primaryRoot.items.add(new Item("it", itemType));
+
+		ItemRoot withRoot = new ItemRoot();
+		withRoot.types.add(itemType);
+
+		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(primaryRoot, withRoot);
+
+		String errorMessage = assertThrows(
+				ReferenceBitserException.class,
+				() -> bitser.deserializeFromBytes(ItemRoot.class, bytes)
+		).getMessage();
+		assertContains(errorMessage, "with label item types and id " + itemType.id);
+		assertContains(errorMessage, "was never saved");
+	}
+
+	@Test
+	public void testMissingLegacyTargetLabel2() {
+		ItemType itemType = new ItemType("bye bye");
+
+		Item item = new Item("it", itemType);
+
+		ItemRoot with = new ItemRoot();
+		with.types.add(itemType);
+
+		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(item, with);
+
+		String errorMessage = assertThrows(
+				ReferenceBitserException.class,
+				() -> bitser.deserializeFromBytes(Item.class, bytes)
+		).getMessage();
+		assertContains(errorMessage, "label item types was never saved");
+		assertContains(errorMessage, "-> type");
 	}
 }

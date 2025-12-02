@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.io;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -33,7 +35,7 @@ public class BitInputStream {
 			int justReadBytes = byteStream.read(destination, numReadBytes, destination.length - numReadBytes);
 			if (justReadBytes == -1) throw new IOException("End of stream reached");
 			numReadBytes += justReadBytes;
-			if (numReadBytes > destination.length) throw new Error("Too many bytes read?");
+			if (numReadBytes > destination.length) throw new UnexpectedBitserException("Too many bytes read?");
 		}
 	}
 

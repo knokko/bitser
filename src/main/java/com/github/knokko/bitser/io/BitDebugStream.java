@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.io;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -52,7 +54,7 @@ public class BitDebugStream extends BitOutputStream {
 		super.finish();
 		debug.flush();
 		debug.close();
-		if (!stack.isEmpty()) throw new IllegalStateException("Ended with stack " + stack);
+		if (!stack.isEmpty()) throw new UnexpectedBitserException("Ended with stack " + stack);
 	}
 
 	@Override
@@ -65,12 +67,12 @@ public class BitDebugStream extends BitOutputStream {
 
 	@Override
 	public void popContext(String context, int counter) {
-		if (stack.isEmpty()) throw new IllegalStateException("Tried to pop " + context + " from empty stack");
+		if (stack.isEmpty()) throw new UnexpectedBitserException("Tried to pop " + context + " from empty stack");
 
 		String expected = context;
 		if (counter >= 0) expected += counter;
 		if (!stack.get(stack.size() - 1).equals(expected)) {
-			throw new IllegalArgumentException("Tried to pop " + expected + ", but stack is " + stack);
+			throw new UnexpectedBitserException("Tried to pop " + expected + ", but stack is " + stack);
 		}
 		stack.remove(stack.size() - 1);
 		wroteLastContext = true;

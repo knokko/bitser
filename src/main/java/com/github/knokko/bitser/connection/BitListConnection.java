@@ -2,6 +2,7 @@ package com.github.knokko.bitser.connection;
 
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
@@ -88,8 +89,8 @@ public class BitListConnection<T> extends BitConnection {
 	@Override
 	public void checkForChanges() {
 		synchronized (list) {
-			if (list.size() != myList.size()) throw new Error("Detected external modification");
-			if (connectionList != null && connectionList.size() != myList.size()) throw new Error("Should not happen");
+			if (list.size() != myList.size()) throw new UnexpectedBitserException("Detected external modification");
+			if (connectionList != null && connectionList.size() != myList.size()) throw new UnexpectedBitserException("Should not happen");
 		}
 	}
 
@@ -140,7 +141,7 @@ public class BitListConnection<T> extends BitConnection {
 //								connectionList.set(modification.index, createChildConnection(element));
 //							}
 //						}
-//					} else throw new Error("Unexpected action " + modification.action);
+//					} else throw new UnexpectedBitserException("Unexpected action " + modification.action);
 //				}
 //			});
 //		}
@@ -153,7 +154,7 @@ public class BitListConnection<T> extends BitConnection {
 
 	public <C> BitStructConnection<C> getChildStruct(int index) {
 		if (connectionList == null || !(elementWrapper instanceof StructFieldWrapper)) {
-			throw new UnsupportedOperationException("This is not a list of structs");
+			throw new UnexpectedBitserException("This is not a list of structs");
 		}
 		//noinspection unchecked
 		return (BitStructConnection<C>) connectionList.get(index);
@@ -161,7 +162,7 @@ public class BitListConnection<T> extends BitConnection {
 
 	public <C> BitListConnection<C> getChildList(int index) {
 		if (connectionList == null || !List.class.isAssignableFrom(elementWrapper.field.type)) {
-			throw new UnsupportedOperationException("This is not a nested list");
+			throw new UnexpectedBitserException("This is not a nested list");
 		}
 		//noinspection unchecked
 		return (BitListConnection<C>) connectionList.get(index);

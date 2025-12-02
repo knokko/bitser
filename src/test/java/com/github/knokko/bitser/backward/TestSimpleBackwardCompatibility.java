@@ -4,6 +4,7 @@ import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.Bitser;
 import org.junit.jupiter.api.Test;
@@ -419,5 +420,18 @@ public class TestSimpleBackwardCompatibility {
 		)).getMessage();
 		assertContains(errorMessage, "is not backward compatible");
 		assertContains(errorMessage, "MissesID");
+	}
+
+	@Test
+	public void testInvalidConversionFromStringToStruct() {
+		Bitser bitser = new Bitser(true);
+		StringWrapper old = new StringWrapper();
+		byte[] bytes = bitser.serializeToBytes(old, Bitser.BACKWARD_COMPATIBLE);
+
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
+				ParentWithMissingIdChild.class, bytes, Bitser.BACKWARD_COMPATIBLE
+		)).getMessage();
+		assertContains(errorMessage, "-> child");
+		assertContains(errorMessage, "Can't convert from legacy world to a BitStruct");
 	}
 }

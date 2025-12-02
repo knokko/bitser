@@ -6,8 +6,7 @@ import com.github.knokko.bitser.connection.BitConnection;
 import com.github.knokko.bitser.connection.BitListConnection;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.context.*;
-import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.*;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -36,23 +35,42 @@ public class Bitser {
 		this.cache = new BitserCache(threadSafe);
 	}
 
+	private void rethrowRecursorException(RecursorException failure) throws IOException {
+		Throwable cause = failure.getCause();
+		if (cause instanceof InvalidBitValueException) {
+			throw new InvalidBitValueException(
+					"Invalid value at " + failure.debugInfoStack + ": " + cause.getMessage()
+			);
+		}
+		if (cause instanceof InvalidBitFieldException) {
+			throw new InvalidBitFieldException(
+					"Invalid field at " + failure.debugInfoStack + ": " + cause.getMessage()
+			);
+		}
+		if (cause instanceof LegacyBitserException) {
+			throw new LegacyBitserException(
+					"Legacy problem at " + failure.debugInfoStack + ": " + cause.getMessage()
+			);
+		}
+		if (cause instanceof ReferenceBitserException) {
+			throw new ReferenceBitserException(
+					"Reference problem at " + failure.debugInfoStack + ": " + cause.getMessage()
+			);
+		}
+		if (cause instanceof IOException) {
+			throw new IOException(
+					"IO exception at " + failure.debugInfoStack + ": " + cause.getMessage()
+			);
+		}
+	}
+
 	public void serialize(
 			Object object, BitOutputStream output, Object... withAndOptions
-	) throws IOException, InvalidBitValueException, InvalidBitFieldException, RecursorException {
+	) throws IOException, BitserException, RecursorException, IllegalArgumentException {
 		try {
 			rawSerialize(object, output, withAndOptions);
 		} catch (RecursorException failure) {
-			Throwable cause = failure.getCause();
-			if (cause instanceof InvalidBitValueException) {
-				throw new InvalidBitValueException(
-						"Invalid value at " + failure.debugInfoStack + ": " + cause.getMessage()
-				);
-			}
-			if (cause instanceof InvalidBitFieldException) {
-				throw new InvalidBitFieldException(
-						"Invalid field at " + failure.debugInfoStack + ": " + cause.getMessage()
-				);
-			}
+			rethrowRecursorException(failure);
 			throw failure;
 		}
 	}
@@ -136,27 +154,17 @@ public class Bitser {
 			bitOutput.finish();
 			return byteOutput.toByteArray();
 		} catch (IOException shouldNotHappen) {
-			throw new Error(shouldNotHappen);
+			throw new UnexpectedBitserException("ByteArrayOutputStream threw an IOException?");
 		}
 	}
 
 	public <T> T deserialize(
 			Class<T> objectClass, BitInputStream input, Object... withAndOptions
-	) throws IOException, InvalidBitValueException, InvalidBitFieldException, RecursorException {
+	) throws IOException, BitserException, RecursorException, IllegalArgumentException {
 		try {
 			return rawDeserialize(objectClass, input, withAndOptions);
 		} catch (RecursorException failure) {
-			Throwable cause = failure.getCause();
-			if (cause instanceof InvalidBitValueException) {
-				throw new InvalidBitValueException(
-						"Invalid value at " + failure.debugInfoStack + ": " + cause.getMessage()
-				);
-			}
-			if (cause instanceof InvalidBitFieldException) {
-				throw new InvalidBitFieldException(
-						"Invalid field at " + failure.debugInfoStack + ": " + cause.getMessage()
-				);
-			}
+			rethrowRecursorException(failure);
 			throw failure;
 		}
 	}
@@ -240,11 +248,13 @@ public class Bitser {
 		return result.get(0);
 	}
 
-	public <T> T deserializeFromBytes(Class<T> objectClass, byte[] bytes, Object... withAndOptions) {
+	public <T> T deserializeFromBytes(
+			Class<T> objectClass, byte[] bytes, Object... withAndOptions
+	) throws BitserException, RecursorException, IllegalArgumentException {
 		try {
 			return deserialize(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), withAndOptions);
 		} catch (IOException shouldNotHappen) {
-			throw new Error(shouldNotHappen);
+			throw new IllegalArgumentException("bytes is too short or invalid/corrupted");
 		}
 	}
 
@@ -253,7 +263,9 @@ public class Bitser {
 		return (T) cache.getWrapper(object.getClass()).shallowCopy(object);
 	}
 
-	public <T> T deepCopy(T object, Object... with) {
+	public <T> T deepCopy(
+			T object, Object... with
+	) throws BitserException, RecursorException, IllegalArgumentException {
 		//noinspection unchecked
 		return (T) deserializeFromBytes(object.getClass(), serializeToBytes(object, with), with);
 	}

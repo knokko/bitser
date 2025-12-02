@@ -7,6 +7,7 @@ import com.github.knokko.bitser.context.ReadInfo;
 import com.github.knokko.bitser.context.WriteContext;
 import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -46,7 +47,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (field.type == float[].class) return ArrayType.FLOAT;
 		if (field.type == long[].class) return ArrayType.LONG;
 		if (field.type == double[].class) return ArrayType.DOUBLE;
-		throw new Error("Unexpected write-as-bytes field type " + field.type);
+		throw new InvalidBitFieldException("Unexpected write-as-bytes field type " + field.type);
 	}
 
 	@Override
@@ -61,7 +62,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			else if (value instanceof float[]) context.output.write(toByteArray((float[]) value));
 			else if (value instanceof long[]) context.output.write(toByteArray((long[]) value));
 			else if (value instanceof double[]) context.output.write(toByteArray((double[]) value));
-			else throw new UnsupportedOperationException("Can't encode " + value.getClass() + " as bytes");
+			else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
 			context.output.finishProperty();
 		});
 	}
@@ -316,7 +317,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (field.type == float[].class) return legacyNumber.floatValue();
 		if (field.type == long[].class) return legacyNumber.longValue();
 		if (field.type == double[].class) return legacyNumber.doubleValue();
-		throw new Error("Unexpected write-as-bytes type " + field.type);
+		throw new UnexpectedBitserException("Unexpected write-as-bytes type " + field.type);
 	}
 
 	@Override

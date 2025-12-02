@@ -1,6 +1,7 @@
 package com.github.knokko.bitser.backward;
 
 import com.github.knokko.bitser.BitStruct;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.serialize.LabelCollection;
@@ -28,7 +29,7 @@ public class LegacyClasses {
 	private LegacyStruct root;
 
 	public void setRoot(LegacyStruct root) {
-		if (this.root != null) throw new IllegalStateException();
+		if (this.root != null) throw new UnexpectedBitserException("Root must be set exactly once");
 		this.root = root;
 	}
 

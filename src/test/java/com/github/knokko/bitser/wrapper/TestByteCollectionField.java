@@ -152,4 +152,20 @@ public class TestByteCollectionField {
 		).getMessage();
 		assertContains(errorMessage, "Value annotations are forbidden when writeAsBytes is true");
 	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class InvalidType {
+
+		@SuppressWarnings("unused")
+		@NestedFieldSetting(path = "", writeAsBytes = true)
+		final String[] data = new String[0];
+	}
+
+	@Test
+	public void testInvalidType() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).deepCopy(new InvalidType())
+		).getMessage();
+		assertContains(errorMessage, "Unexpected write-as-bytes field type class");
+	}
 }

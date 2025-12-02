@@ -1,5 +1,7 @@
 package com.github.knokko.bitser.util;
 
+import com.github.knokko.bitser.exceptions.ReferenceBitserException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
@@ -42,7 +44,7 @@ public class ReferenceIdLoader {
 
 	public void register(String label, Object value, BitInputStream input, BitserCache cache) throws IOException {
 		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
+		if (mappings == null) throw new ReferenceBitserException("Invalid bitstream: label " + label + " was never saved");
 
 		if (mappings.stable != null) mappings.registerStable(value, extractStableId(value, cache));
 		if (mappings.unstable != null) {
@@ -61,28 +63,28 @@ public class ReferenceIdLoader {
 
 	void withStable(String label, UUID id, Object target) {
 		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid with: label " + label + " was never saved");
+		if (mappings == null) throw new ReferenceBitserException("Invalid with: label " + label + " was never saved");
 
 		mappings.registerStable(target, id);
 	}
 
 	void withUnstable(String label, int id, Object target) {
 		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid with: label " + label + " was never saved");
+		if (mappings == null) throw new ReferenceBitserException("Invalid with: label " + label + " was never saved");
 
 		mappings.registerUnstable(target, mappings.ownUnstableSize + id);
 	}
 
 	public void getUnstable(String label, ValueConsumer setValue, BitInputStream input) throws IOException {
 		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
+		if (mappings == null) throw new ReferenceBitserException("Invalid bitstream: label " + label + " was never saved");
 
 		mappings.getUnstable(label, (int) decodeUniformInteger(0, mappings.unstableSize - 1, input), setValue);
 	}
 
 	public void getStable(String label, ValueConsumer setValue, BitInputStream input) throws IOException {
 		Mappings mappings = labelMappings.get(label);
-		if (mappings == null) throw new Error("Invalid bitstream: label " + label + " was never saved");
+		if (mappings == null) throw new ReferenceBitserException("Invalid bitstream: label " + label + " was never saved");
 
 		UUID id = new UUID(
 				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input),
@@ -126,19 +128,21 @@ public class ReferenceIdLoader {
 		}
 
 		void registerUnstable(Object target, int id) {
-			if (unstable.containsKey(id)) throw new Error("Duplicate id " + id);
+			if (unstable.containsKey(id)) throw new UnexpectedBitserException("Duplicate id " + id);
 			unstable.put(id, target);
 		}
 
 		void registerStable(Object target, UUID id) {
-			if (stable.containsKey(id)) throw new Error("Duplicate id " + id);
+			if (stable.containsKey(id)) throw new ReferenceBitserException(
+					"Multiple objects have id " + id + ": " + target + " and " + stable.get(id)
+			);
 			stable.put(id, target);
 		}
 
 		void getUnstable(String label, int unstableId, ValueConsumer setValue) {
 			resolveTasks.add(() -> {
 				Object value = unstable.get(unstableId);
-				if (value == null) throw new Error(
+				if (value == null) throw new ReferenceBitserException(
 						"Reference with label " + label + " and id " + unstableId + " was never saved"
 				);
 				Object replacement = replacements.get(new ReferenceIdMapper.IdWrapper(value));
@@ -150,7 +154,7 @@ public class ReferenceIdLoader {
 		void getStable(String label, UUID id, ValueConsumer setValue) {
 			resolveTasks.add(() -> {
 				Object value = stable.get(id);
-				if (value == null) throw new Error(
+				if (value == null) throw new ReferenceBitserException(
 						"Reference with label " + label + " and id " + id + " was never saved"
 				);
 				Object replacement = replacements.get(new ReferenceIdMapper.IdWrapper(value));

@@ -5,6 +5,7 @@ import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
@@ -92,14 +93,14 @@ class SingleClassWrapper {
 							try {
 								return classField.get(target);
 							} catch (IllegalAccessException e) {
-								throw new Error(e);
+								throw new UnexpectedBitserException("Failed to access " + classField);
 							}
 						},
 						(target, newValue) -> {
 							try {
 								classField.set(target, newValue);
 							} catch (IllegalAccessException e) {
-								throw new RuntimeException(e);
+								throw new UnexpectedBitserException("Failed to access " + classField);
 							}
 						}
 				);

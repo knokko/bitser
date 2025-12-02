@@ -8,6 +8,7 @@ import com.github.knokko.bitser.context.WriteContext;
 import com.github.knokko.bitser.context.WriteInfo;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.serialize.BitserCache;
@@ -65,7 +66,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 				context.output.prepareProperty("enum-ordinal", -1);
 				encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, context.output);
 				context.output.finishProperty();
-			} else throw new Error("Unknown enum mode: " + mode);
+			} else throw new UnexpectedBitserException("Unknown enum mode: " + mode);
 		});
 	}
 
@@ -75,7 +76,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			if (!Modifier.isPublic(field.type.getModifiers())) constantField.setAccessible(true);
 			return constantField.get(null);
 		} catch (IllegalAccessException e) {
-			throw new Error(e);
+			throw new UnexpectedBitserException("Failed to access enum constant " + name + " of " + field.type);
 		}
 	}
 
@@ -104,7 +105,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			int ordinal;
 			if (mode == BitEnum.Mode.Ordinal) {
 				ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, context.input);
-			} else throw new Error("Unknown BitEnum mode: " + mode);
+			} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
 
 			if (field.type == null) {
 				setValue.consume(ordinal);
@@ -143,6 +144,6 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		if (enumValue == null) return -192347;
 		if (mode == BitEnum.Mode.Ordinal) return 191 * enumValue.ordinal();
 		if (mode == BitEnum.Mode.Name) return -13 * enumValue.name().hashCode();
-		throw new Error("Unknown Mode " + mode);
+		throw new UnexpectedBitserException("Unknown Mode " + mode);
 	}
 }

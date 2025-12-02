@@ -53,10 +53,12 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 			try {
 				return fieldType.getConstructor().newInstance();
 			} catch (Exception unexpected) {
-				throw new RuntimeException(unexpected);
+				throw new InvalidBitFieldException(
+						"Failed to find constructor of " + fieldType + ": bitser requires either a constructor with " +
+								"no arguments, or a constructor with exactly 1 argument whose type is int");
 			}
-		} catch (Exception unexpected) {
-			throw new RuntimeException(unexpected);
+		} catch (Exception constructorFailed) {
+			throw new InvalidBitFieldException("Failed to instantiate " + fieldType + ": " + constructorFailed.getMessage());
 		}
 	}
 
@@ -68,7 +70,9 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	AbstractCollectionFieldWrapper(VirtualField field, IntegerField sizeField) {
 		super(field);
-		if (sizeField.minValue() > Integer.MAX_VALUE || sizeField.maxValue() < 0) throw new IllegalArgumentException();
+		if (sizeField.minValue() > Integer.MAX_VALUE || sizeField.maxValue() < 0) {
+			throw new InvalidBitFieldException("Invalid size field");
+		}
 		if (!field.type.isArray() && (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers()))) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}

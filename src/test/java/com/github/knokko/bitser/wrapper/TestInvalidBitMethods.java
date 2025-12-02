@@ -8,7 +8,6 @@ import com.github.knokko.bitser.serialize.Bitser;
 import com.github.knokko.bitser.util.RecursorException;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
@@ -161,8 +160,8 @@ public class TestInvalidBitMethods {
 
 		@SuppressWarnings("unused")
 		@BitField(id = 5)
-		private UUID throwsIO(FunctionContext context) throws IOException {
-			throw new IOException("nope: " + context);
+		private UUID throwsIO(FunctionContext context) throws Exception {
+			throw new Exception("nope: " + context);
 		}
 	}
 
@@ -172,7 +171,7 @@ public class TestInvalidBitMethods {
 				RecursorException.class,
 				() -> new Bitser(true).serializeToBytes(new ThrowsCheckedException())
 		);
-		IOException cause = (IOException) exception.getCause();
+		Exception cause = (Exception) exception.getCause();
 		assertContains(cause.getMessage(), "nope: ");
 	}
 }

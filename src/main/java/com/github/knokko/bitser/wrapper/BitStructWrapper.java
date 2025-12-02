@@ -7,6 +7,8 @@ import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.connection.BitStructConnection;
 import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.serialize.BitPostInit;
 import com.github.knokko.bitser.serialize.*;
 import com.github.knokko.bitser.util.JobOutput;
@@ -34,14 +36,17 @@ public class BitStructWrapper<T> {
 	private final VirtualField stableIdField;
 
 	BitStructWrapper(Class<T> objectClass, BitStruct bitStruct) {
-		if (bitStruct == null)
-			throw new IllegalArgumentException("Class must have a BitStruct annotation: " + objectClass);
+		if (bitStruct == null) {
+			throw new InvalidBitFieldException("Class must have a BitStruct annotation: " + objectClass);
+		}
 		this.bitStruct = bitStruct;
 
-		if (Modifier.isAbstract(objectClass.getModifiers()))
-			throw new IllegalArgumentException(objectClass + " is abstract");
-		if (Modifier.isInterface(objectClass.getModifiers()))
-			throw new IllegalArgumentException(objectClass + " is an interface");
+		if (Modifier.isAbstract(objectClass.getModifiers())) {
+			throw new InvalidBitFieldException(objectClass + " is abstract");
+		}
+		if (Modifier.isInterface(objectClass.getModifiers())) {
+			throw new InvalidBitFieldException(objectClass + " is an interface");
+		}
 
 		try {
 			this.constructor = objectClass.getDeclaredConstructor();
@@ -49,11 +54,17 @@ public class BitStructWrapper<T> {
 				constructor.newInstance();
 			} catch (IllegalAccessException e) {
 				constructor.setAccessible(true);
-			} catch (InvocationTargetException | InstantiationException shouldNotHappen) {
-				throw new Error(shouldNotHappen);
+			} catch (InstantiationException shouldNotHappen) {
+				throw new InvalidBitFieldException(
+						"Class " + objectClass + " cannot be instantiated: " + shouldNotHappen.getMessage()
+				);
+			} catch (InvocationTargetException failedConstruction) {
+				throw new InvalidBitFieldException(
+						"The constructor of " + objectClass + " failed: " + failedConstruction.getMessage()
+				);
 			}
 		} catch (NoSuchMethodException e) {
-			throw new Error(objectClass + " must have a constructor without parameters");
+			throw new InvalidBitFieldException(objectClass + " must have a constructor without parameters");
 		}
 
 		this.classHierarchy = new ArrayList<>();
@@ -138,11 +149,11 @@ public class BitStructWrapper<T> {
 		try {
 			return constructor.newInstance();
 		} catch (InstantiationException e) {
-			throw new Error("Failed to instantiate " + constructor, e);
+			throw new UnexpectedBitserException("Failed to instantiate " + constructor);
 		} catch (IllegalAccessException shouldNotHappen) {
-			throw new Error(shouldNotHappen);
+			throw new UnexpectedBitserException("Can't get access to " + constructor);
 		} catch (InvocationTargetException e) {
-			throw new RuntimeException(e);
+			throw new InvalidBitFieldException("Constructor " + constructor + " throw an exception: " + e.getMessage());
 		}
 	}
 
@@ -166,9 +177,6 @@ public class BitStructWrapper<T> {
 	}
 
 	public T setLegacyValues(Recursor<ReadContext, ReadInfo> recursor, LegacyStructInstance legacy) {
-		if (legacy.valuesHierarchy.size() != classHierarchy.size()) {
-			throw new InvalidBitFieldException("Inconsistent class hierarchy");
-		}
 		for (int index = 0; index < classHierarchy.size(); index++) {
 			classHierarchy.get(index).setLegacyValues(recursor, legacy.newInstance, legacy.valuesHierarchy.get(index));
 		}
@@ -198,6 +206,12 @@ public class BitStructWrapper<T> {
 	}
 
 	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, LegacyStructInstance legacyInstance) {
+		if (legacyInstance.valuesHierarchy.size() != classHierarchy.size()) {
+			throw new LegacyBitserException(
+					"Class hierarchy size changed from " + legacyInstance.valuesHierarchy.size() +
+							" to " + classHierarchy.size()
+			);
+		}
 		legacyInstance.newInstance = createEmptyInstance();
 		for (int index = 0; index < classHierarchy.size(); index++) {
 			classHierarchy.get(index).fixLegacyTypes(recursor, legacyInstance.valuesHierarchy.get(index));
@@ -238,7 +252,7 @@ public class BitStructWrapper<T> {
 				fields.add(field.bitField);
 				if (field.bitField instanceof StructFieldWrapper || List.class.isAssignableFrom(field.bitField.field.type)) {
 					if (nameToChildMapping.containsKey(field.classField.getName())) {
-						throw new Error("Class " + classHierarchy.get(0) + " has multiple nested fields named " + field.classField.getName());
+						throw new InvalidBitFieldException("Class " + classHierarchy.get(0) + " has multiple nested fields named " + field.classField.getName());
 					}
 					nameToChildMapping.put(field.classField.getName(), field.bitField);
 				}

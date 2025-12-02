@@ -4,6 +4,7 @@ import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
@@ -41,7 +42,7 @@ public abstract class BitFieldWrapper {
 	}
 
 	public BitFieldWrapper getChildWrapper() {
-		throw new UnsupportedOperationException("getChildWrapper only works on collection types, but this is " + getClass());
+		throw new UnexpectedBitserException("getChildWrapper only works on collection types, but this is " + getClass());
 	}
 
 	public void collectReferenceLabels(LabelCollection labels) {

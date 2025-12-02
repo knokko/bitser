@@ -3,6 +3,7 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.serialize.Bitser;
@@ -380,5 +381,46 @@ public class TestUnstableReferences {
 		assertSame(loaded.target1, loaded.unstableReference1);
 		assertSame(loaded.target2, loaded.stableReference);
 		assertSame(loaded.target2, loaded.unstableReference2);
+	}
+
+	@Test
+	public void testMissingLegacyTargetLabel1() {
+		ItemType itemType = new ItemType("bye bye");
+
+		ItemRoot primaryRoot = new ItemRoot();
+		primaryRoot.items.add(new Item("it", itemType));
+
+		ItemRoot withRoot = new ItemRoot();
+		withRoot.types.add(itemType);
+
+		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(primaryRoot, withRoot);
+
+		String errorMessage = assertThrows(
+				ReferenceBitserException.class,
+				() -> bitser.deserializeFromBytes(ItemRoot.class, bytes)
+		).getMessage();
+		assertContains(errorMessage, "with label item types and id 0");
+		assertContains(errorMessage, "was never saved");
+	}
+
+	@Test
+	public void testMissingLegacyTargetLabel2() {
+		ItemType itemType = new ItemType("bye bye");
+
+		Item item = new Item("it", itemType);
+
+		ItemRoot with = new ItemRoot();
+		with.types.add(itemType);
+
+		Bitser bitser = new Bitser(false);
+		byte[] bytes = bitser.serializeToBytes(item, with);
+
+		String errorMessage = assertThrows(
+				ReferenceBitserException.class,
+				() -> bitser.deserializeFromBytes(Item.class, bytes)
+		).getMessage();
+		assertContains(errorMessage, "label item types was never saved");
+		assertContains(errorMessage, "-> type");
 	}
 }

@@ -316,4 +316,80 @@ public class TestBitCollectionField {
 		b.list.add(hello2);
 		assertFalse(bitser.deepEquals(a, b));
 	}
+
+	private static class CollectionWithWeirdConstructors<T> extends ArrayList<T> {
+
+		CollectionWithWeirdConstructors(int left, int right) {
+			super(left + right);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class StructWithWeirdCollection {
+
+		@BitField(id = 0)
+		@SuppressWarnings("unused")
+		final CollectionWithWeirdConstructors<String> collection = new CollectionWithWeirdConstructors<>(1, 2);
+	}
+
+	@Test
+	public void testCollectionWithWeirdConstructors() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).deepCopy(new StructWithWeirdCollection())
+		).getMessage();
+		assertContains(errorMessage, "-> collection");
+		assertContains(errorMessage, "Failed to find constructor of class");
+		assertContains(errorMessage, "TestBitCollectionField$CollectionWithWeirdConstructors");
+	}
+
+	private static class AggressiveCollection<T> extends ArrayList<T> {
+
+		public AggressiveCollection() {
+			super();
+		}
+
+		@SuppressWarnings("unused")
+		public AggressiveCollection(int capacity) {
+			super(capacity);
+			throw new UnsupportedOperationException("Nah");
+		}
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class StructWithAggressiveCollection {
+
+		@BitField
+		@SuppressWarnings("unused")
+		final AggressiveCollection<UUID> collection = new AggressiveCollection<>();
+	}
+
+	@Test
+	public void testCollectionWithAggressiveConstructor() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).deepCopy(new StructWithAggressiveCollection())
+		).getMessage();
+		assertContains(errorMessage, "-> collection");
+		assertContains(errorMessage, "Failed to instantiate class");
+		assertContains(errorMessage, "TestBitCollectionField$AggressiveCollection");
+	}
+
+	private static class NotGenericCollection extends LinkedList<String> {}
+
+	@BitStruct(backwardCompatible = false)
+	private static class StructWithNotGenericCollection {
+
+		@BitField
+		@SuppressWarnings("unused")
+		final NotGenericCollection collection = new NotGenericCollection();
+	}
+
+	@Test
+	public void testNotGenericCollection() {
+		String errorMessage = assertThrows(InvalidBitFieldException.class,
+				() -> new Bitser(true).deepCopy(new StructWithNotGenericCollection())
+		).getMessage();
+		assertContains(errorMessage, "Unexpected generic type");
+		assertContains(errorMessage, "NotGenericCollection");
+		assertContains(errorMessage, "TestBitCollectionField$StructWithNotGenericCollection.collection");
+	}
 }

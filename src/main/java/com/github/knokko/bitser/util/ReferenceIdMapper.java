@@ -3,6 +3,7 @@ package com.github.knokko.bitser.util;
 import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
 import com.github.knokko.bitser.serialize.LabelCollection;
@@ -47,17 +48,17 @@ public class ReferenceIdMapper {
 	}
 
 	public void register(String referenceTargetLabel, Object value, BitserCache cache) {
-		if (readOnly) throw new IllegalStateException("This mapper has become read-only");
+		if (readOnly) throw new UnexpectedBitserException("This mapper has become read-only");
 
 		Mappings mappings = this.labelMappings.get(referenceTargetLabel);
-		if (mappings == null) throw new Error(
+		if (mappings == null) throw new UnexpectedBitserException(
 				"Unexpected target label " + referenceTargetLabel + ": expected one of " + labelMappings.keySet()
 		);
 		mappings.register(value, cache);
 	}
 
 	public void maybeEncodeUnstableId(String label, Object value, BitOutputStream output) throws IOException {
-		if (!readOnly) throw new IllegalStateException("You can't call encodeUnstableId until the mapper is read-only");
+		if (!readOnly) throw new UnexpectedBitserException("You can't call encodeUnstableId until the mapper is read-only");
 
 		Mappings mappings = this.labelMappings.get(label);
 		if (mappings == null) throw new InvalidBitFieldException(
@@ -77,7 +78,7 @@ public class ReferenceIdMapper {
 	}
 
 	public void encodeStableId(String label, Object value, BitOutputStream output, BitserCache cache) throws IOException {
-		if (!readOnly) throw new IllegalStateException("You can't call encodeStableId until the mapper is read-only");
+		if (!readOnly) throw new UnexpectedBitserException("You can't call encodeStableId until the mapper is read-only");
 
 		Mappings mappings = this.labelMappings.get(label);
 		if (mappings == null) throw new InvalidBitFieldException(

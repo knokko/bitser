@@ -3,6 +3,7 @@ package com.github.knokko.bitser.wrapper;
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.util.VirtualField;
 
@@ -132,7 +133,7 @@ class WrapperFactory {
 				return new ChildType(Array.newInstance(
 						(Class<?>) ((ParameterizedType) elementType).getRawType(), 0
 				).getClass(), new VirtualField.NoAnnotations(), arrayType);
-			} else throw new RuntimeException("element type is " + elementType + " and array type is " + arrayType);
+			} else throw new UnexpectedBitserException("element type is " + elementType + " and array type is " + arrayType);
 		} else {
 			throw new InvalidBitFieldException(
 					"Unexpected generic type for " + field + ": " + actualTypeArgument.getClass()
@@ -223,7 +224,7 @@ class WrapperFactory {
 					throw new InvalidBitFieldException("writeAsBytes is not allowed on Maps: field is " + field);
 				}
 				if (childWrappers.length != 1) {
-					throw new Error("Expected exactly 1 child wrapper, but got " + Arrays.toString(childWrappers));
+					throw new UnexpectedBitserException("Expected exactly 1 child wrapper, but got " + Arrays.toString(childWrappers));
 				}
 				if (childWrappers[0] != null) {
 					throw new InvalidBitFieldException("Value annotations are forbidden when writeAsBytes is true: " + field);
@@ -231,13 +232,13 @@ class WrapperFactory {
 				return new ByteCollectionFieldWrapper(parentField, parentSettings.sizeField());
 			} else if (Map.class.isAssignableFrom(field.type)) {
 				if (childWrappers.length != 2) {
-					throw new Error("Expected exactly 2 child wrappers, but got " + Arrays.toString(childWrappers));
+					throw new UnexpectedBitserException("Expected exactly 2 child wrappers, but got " + Arrays.toString(childWrappers));
 				}
 				IntegerField sizeField = parentSettings != null ? parentSettings.sizeField() : DEFAULT_SIZE_FIELD;
 				return new MapFieldWrapper(parentField, sizeField, childWrappers[0], childWrappers[1]);
 			} else {
 				if (childWrappers.length != 1) {
-					throw new Error("Expected exactly 1 child wrapper, but got " + Arrays.toString(childWrappers));
+					throw new UnexpectedBitserException("Expected exactly 1 child wrapper, but got " + Arrays.toString(childWrappers));
 				}
 				IntegerField sizeField = parentSettings != null ? parentSettings.sizeField() : DEFAULT_SIZE_FIELD;
 				return new BitCollectionFieldWrapper(parentField, sizeField, childWrappers[0]);
@@ -319,7 +320,7 @@ class WrapperFactory {
 		if (field.type == String.class && stringField == null) result.add(new StringFieldWrapper(field, null));
 
 		if (result.isEmpty()) throw new InvalidBitFieldException("Missing annotations for " + field);
-		if (result.size() > 1) throw new Error("Too many annotations on " + field);
+		if (result.size() > 1) throw new UnexpectedBitserException("Too many annotations on " + field);
 		return result.get(0);
 	}
 }

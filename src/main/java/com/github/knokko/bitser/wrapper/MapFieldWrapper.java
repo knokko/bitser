@@ -5,6 +5,7 @@ import com.github.knokko.bitser.backward.LegacyClasses;
 import com.github.knokko.bitser.backward.instance.LegacyMapInstance;
 import com.github.knokko.bitser.context.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -42,7 +43,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 	MapFieldWrapper(VirtualField field, IntegerField sizeField, BitFieldWrapper keysWrapper, BitFieldWrapper valuesWrapper) {
 		super(field);
-		if (sizeField.minValue() > Integer.MAX_VALUE || sizeField.maxValue() < 0) throw new IllegalArgumentException();
+		if (sizeField.minValue() > Integer.MAX_VALUE || sizeField.maxValue() < 0) {
+			throw new InvalidBitFieldException("Invalid sizeField bounds");
+		}
 		if (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers())) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
@@ -287,14 +290,14 @@ class MapFieldWrapper extends BitFieldWrapper {
 		}
 
 		void setKey(Object key) {
-			if (hasKey) throw new IllegalStateException();
+			if (hasKey) throw new UnexpectedBitserException("Already has key");
 			hasKey = true;
 			this.key = key;
 			maybeInsert();
 		}
 
 		void setValue(Object value) {
-			if (hasValue) throw new IllegalStateException();
+			if (hasValue) throw new UnexpectedBitserException("Already has value");
 			hasValue = true;
 			this.value = value;
 			maybeInsert();

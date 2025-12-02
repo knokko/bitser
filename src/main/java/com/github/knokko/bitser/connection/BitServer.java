@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.connection;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.Bitser;
 
@@ -72,12 +73,12 @@ public class BitServer<T> {
 					try {
 						root.handleChanges(new BitInputStream(new ByteArrayInputStream(changes)));
 					} catch (IOException shouldNotHappen) {
-						throw new RuntimeException(shouldNotHappen);
+						throw new UnexpectedBitserException(shouldNotHappen.getMessage());
 					}
 				}
 			}
 		} catch (InterruptedException shouldNotHappen) {
-			throw new RuntimeException(shouldNotHappen);
+			throw new UnexpectedBitserException(shouldNotHappen.getMessage());
 		} finally {
 			stopCallback.run();
 		}
@@ -128,7 +129,7 @@ public class BitServer<T> {
 			} catch (IOException io) {
 				System.out.println("Connection output thread encountered IO exception: " + io.getMessage());
 			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
+				throw new UnexpectedBitserException("interrupted");
 			}
 		}
 	}
