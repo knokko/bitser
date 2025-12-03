@@ -1,9 +1,11 @@
 package com.github.knokko.bitser.util;
 
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.serialize.BitserCache;
+import com.github.knokko.bitser.serialize.CollectionSizeLimit;
 import com.github.knokko.bitser.serialize.LabelCollection;
 import com.github.knokko.bitser.wrapper.ValueConsumer;
 
@@ -16,7 +18,9 @@ import static com.github.knokko.bitser.util.ReferenceIdMapper.extractStableId;
 
 public class ReferenceIdLoader {
 
-	public static ReferenceIdLoader load(BitInputStream input, LabelCollection labels) throws IOException {
+	public static ReferenceIdLoader load(
+			BitInputStream input, LabelCollection labels, CollectionSizeLimit sizeLimit
+	) throws IOException {
 		String[] sortedLabels = new String[labels.declaredTargets.size()];
 		int index = 0;
 		for (String label : labels.declaredTargets) {
@@ -28,7 +32,13 @@ public class ReferenceIdLoader {
 		Map<String, Mappings> labelMappings = new HashMap<>(labels.declaredTargets.size());
 		for (String label : sortedLabels) {
 			int unstableSize = 0;
-			if (labels.unstable.contains(label)) unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+			if (labels.unstable.contains(label)) {
+				unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
+				if (sizeLimit != null && unstableSize > sizeLimit.maxSize) {
+					throw new InvalidBitValueException("Number of unstable targets (" + unstableSize + ") with label " +
+							label + " exceeds the CollectionSizeLimit " + sizeLimit.maxSize);
+				}
+			}
 			labelMappings.put(label, new Mappings(unstableSize, labels.stable.contains(label)));
 		}
 

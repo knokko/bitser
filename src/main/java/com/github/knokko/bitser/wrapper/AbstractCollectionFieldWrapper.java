@@ -10,6 +10,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.serialize.CollectionSizeLimit;
 import com.github.knokko.bitser.util.JobOutput;
 import com.github.knokko.bitser.util.Recursor;
 import com.github.knokko.bitser.util.VirtualField;
@@ -46,7 +47,10 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		}
 	}
 
-	static Object constructCollectionWithSize(Class<?> fieldType, int size) {
+	static Object constructCollectionWithSize(Class<?> fieldType, int size, CollectionSizeLimit limit) {
+		if (limit != null && size > limit.maxSize) {
+			throw new InvalidBitValueException("Size of " + size + " exceeds the size limit of " + limit.maxSize);
+		}
 		try {
 			return fieldType.getConstructor(int.class).newInstance(size);
 		} catch (NoSuchMethodException noIntConstructor) {
@@ -109,7 +113,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		});
 
 		recursor.runNested("elements", nested -> {
-			Object value = constructCollectionWithSize(size.get());
+			Object value = constructCollectionWithSize(size.get(), recursor.info.sizeLimit);
 			readElements(value, size.get(), nested);
 
 			nested.runFlat("add-elements", context -> {
@@ -123,7 +127,9 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	public void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value == null) return;
 		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
-		legacyInstance.newCollection = constructCollectionWithSize(Array.getLength(legacyInstance.legacyArray));
+		legacyInstance.newCollection = constructCollectionWithSize(
+				Array.getLength(legacyInstance.legacyArray), recursor.info.sizeLimit
+		);
 		if (field.referenceTargetLabel != null) {
 			recursor.runFlat("referenceTargetLabel", context ->
 					context.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newCollection)
@@ -140,7 +146,7 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		return Array.getLength(object);
 	}
 
-	private Object constructCollectionWithSize(int size) {
+	private Object constructCollectionWithSize(int size, CollectionSizeLimit limit) {
 		if (field.type == null) {
 			if (arrayType == null) return new Object[size];
 			switch (arrayType) {
@@ -155,9 +161,12 @@ public abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 			}
 		}
 		if (field.type.isArray()) {
+			if (limit != null && size > limit.maxSize) {
+				throw new InvalidBitValueException("Size of " + size + " exceeds the size limit of " + limit.maxSize);
+			}
 			return Array.newInstance(field.type.getComponentType(), size);
 		} else {
-			return constructCollectionWithSize(field.type, size);
+			return constructCollectionWithSize(field.type, size, limit);
 		}
 	}
 

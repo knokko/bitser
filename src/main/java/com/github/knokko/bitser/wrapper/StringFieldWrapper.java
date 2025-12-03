@@ -5,6 +5,7 @@ import com.github.knokko.bitser.context.ReadContext;
 import com.github.knokko.bitser.context.ReadInfo;
 import com.github.knokko.bitser.context.WriteContext;
 import com.github.knokko.bitser.context.WriteInfo;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
@@ -70,6 +71,12 @@ public class StringFieldWrapper extends BitFieldWrapper {
 			if (lengthField.expectUniform) {
 				length = (int) decodeUniformInteger(lengthField.minValue, lengthField.maxValue, context.input);
 			} else length = (int) decodeVariableInteger(lengthField.minValue, lengthField.maxValue, context.input);
+
+			if (recursor.info.sizeLimit != null && length > recursor.info.sizeLimit.maxSize) {
+				throw new InvalidBitValueException(
+						"String length of " + length + " exceeds the limit of " + recursor.info.sizeLimit.maxSize
+				);
+			}
 
 			byte[] bytes = new byte[length];
 			for (int index = 0; index < length; index++) {

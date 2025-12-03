@@ -5,9 +5,16 @@ import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
+import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.CollectionSizeLimit;
+import com.github.knokko.bitser.serialize.IntegerBitser;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
 @BitStruct(backwardCompatible = false)
@@ -38,5 +45,25 @@ public class TestStringField {
 		TestStringField loaded = new Bitser(false).deepCopy(this);
 		assertEquals(this.a, loaded.a);
 		assertEquals(this.b, loaded.b);
+	}
+
+	@Test
+	public void testLargeMemoryAllocationAttack() throws IOException {
+		Bitser bitser = new Bitser(true);
+
+		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+		bitOutput.write(true);
+		IntegerBitser.encodeVariableInteger(Integer.MAX_VALUE, 0L, Integer.MAX_VALUE, bitOutput);
+		bitOutput.finish();
+
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				TestStringField.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
+		)).getMessage();
+		assertContains(errorMessage, "length of 2147483647");
+		assertContains(errorMessage, "exceeds the limit of");
+		assertContains(errorMessage, "1234");
+		assertContains(errorMessage, "-> string-value");
+		assertContains(errorMessage, "-> a ->");
 	}
 }

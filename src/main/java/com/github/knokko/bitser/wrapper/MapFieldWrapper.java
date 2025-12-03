@@ -142,7 +142,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 		recursor.runNested("elements", nested -> {
 			Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(
-					field.type != null ? field.type : HashMap.class, size.get()
+					field.type != null ? field.type : HashMap.class, size.get(), recursor.info.sizeLimit
 			);
 
 			LegacyMapInstance legacyInstance = nested.info.backwardCompatible ?
@@ -250,7 +250,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 		assert rawLegacyInstance != null;
 		LegacyMapInstance legacyInstance = (LegacyMapInstance) rawLegacyInstance;
 		legacyInstance.newMap = (Map<?, ?>) constructCollectionWithSize(
-				field.type, legacyInstance.legacyMap.size()
+				field.type, legacyInstance.legacyMap.size(), recursor.info.sizeLimit
 		);
 		if (field.referenceTargetLabel != null) {
 			recursor.runFlat("referenceTargetLabel", context ->

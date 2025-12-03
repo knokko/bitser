@@ -10,9 +10,13 @@ import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.CollectionSizeLimit;
+import com.github.knokko.bitser.serialize.IntegerBitser;
+import com.github.knokko.bitser.util.RecursorException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 import static com.github.knokko.bitser.wrapper.TestHelper.assertContains;
@@ -391,5 +395,44 @@ public class TestBitCollectionField {
 		assertContains(errorMessage, "Unexpected generic type");
 		assertContains(errorMessage, "NotGenericCollection");
 		assertContains(errorMessage, "TestBitCollectionField$StructWithNotGenericCollection.collection");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class StringList {
+
+		@BitField
+		@SuppressWarnings("unused")
+		final ArrayList<String> strings = new ArrayList<>();
+	}
+
+	@Test
+	public void testLargeMemoryAllocationAttack() throws IOException {
+		Bitser bitser = new Bitser(false);
+
+		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+		IntegerBitser.encodeVariableInteger(Integer.MAX_VALUE, 0L, Integer.MAX_VALUE, bitOutput);
+		bitOutput.finish();
+
+		// Without limit
+		RecursorException exception = assertThrows(
+				RecursorException.class,
+				() -> bitser.deserializeFromBytes(Strings.class, byteOutput.toByteArray())
+		);
+		assertInstanceOf(OutOfMemoryError.class, exception.getCause());
+
+		// With limit: String[]
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				Strings.class, byteOutput.toByteArray(), new CollectionSizeLimit(1000)
+		)).getMessage();
+		assertContains(errorMessage, "-> array");
+		assertContains(errorMessage, "2147483647 exceeds the size limit of 1000");
+
+		// With limit: ArrayList<String>
+		errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				StringList.class, byteOutput.toByteArray(), new CollectionSizeLimit(1000)
+		)).getMessage();
+		assertContains(errorMessage, "-> strings");
+		assertContains(errorMessage, "2147483647 exceeds the size limit of 1000");
 	}
 }

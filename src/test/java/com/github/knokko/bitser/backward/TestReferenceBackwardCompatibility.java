@@ -5,9 +5,7 @@ import com.github.knokko.bitser.backward.instance.LegacyStructInstance;
 import com.github.knokko.bitser.backward.instance.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.serialize.BitPostInit;
-import com.github.knokko.bitser.serialize.WithParameter;
-import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;

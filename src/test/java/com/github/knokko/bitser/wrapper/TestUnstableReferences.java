@@ -6,9 +6,14 @@ import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
+import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.serialize.CollectionSizeLimit;
+import com.github.knokko.bitser.serialize.IntegerBitser;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -422,5 +427,22 @@ public class TestUnstableReferences {
 		).getMessage();
 		assertContains(errorMessage, "label item types was never saved");
 		assertContains(errorMessage, "-> type");
+	}
+
+	@Test
+	public void testLargeMemoryAllocationAttack() throws IOException {
+		Bitser bitser = new Bitser(true);
+
+		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+		IntegerBitser.encodeVariableInteger(Integer.MAX_VALUE, 0L, Integer.MAX_VALUE, bitOutput);
+		bitOutput.finish();
+
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+				NonStructReferences.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
+		)).getMessage();
+		assertContains(errorMessage, "of unstable targets (2147483647)");
+		assertContains(errorMessage, "with label no struct");
+		assertContains(errorMessage, "1234");
 	}
 }

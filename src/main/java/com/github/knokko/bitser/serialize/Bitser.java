@@ -170,16 +170,21 @@ public class Bitser {
 	}
 
 	private <T> T rawDeserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
-		Map<String, Object> withParameters = new HashMap<>();
+		CollectionSizeLimit sizeLimit = null;
 		boolean backwardCompatible = false;
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) {
 				backwardCompatible = true;
 				break;
 			}
+			if (withObject instanceof CollectionSizeLimit) {
+				if (sizeLimit != null) throw new IllegalArgumentException("Encountered multiple size limits");
+				sizeLimit = (CollectionSizeLimit) withObject;
+			}
 		}
+
 		LegacyClasses legacy = null;
-		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input);
+		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input, sizeLimit);
 
 		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
 
@@ -189,8 +194,11 @@ public class Bitser {
 		if (legacy == null) wrapper.collectReferenceLabels(labels);
 		else legacy.collectReferenceLabels(labels);
 
+		Map<String, Object> withParameters = new HashMap<>();
 		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject == null || withObject == BACKWARD_COMPATIBLE || withObject instanceof CollectionSizeLimit) {
+				continue;
+			}
 			if (withObject instanceof WithParameter) {
 				WithParameter parameter = (WithParameter) withObject;
 				if (withParameters.containsKey(parameter.key)) {
@@ -207,17 +215,19 @@ public class Bitser {
 
 		ReferenceIdMapper withMapper = new ReferenceIdMapper(labels);
 		for (Object withObject : withAndOptions) {
-			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject == null || withObject instanceof WithParameter ||
+					withObject == BACKWARD_COMPATIBLE || withObject instanceof CollectionSizeLimit) continue;
+
 			Recursor.run(withMapper, cache, recursor ->
 					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
 			);
 		}
 
-		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels);
+		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels, sizeLimit);
 
 		List<T> result = new ArrayList<>(1);
 		ReadContext readContext = new ReadContext(input, idLoader);
-		ReadInfo readInfo = new ReadInfo(this, withParameters, backwardCompatible);
+		ReadInfo readInfo = new ReadInfo(this, withParameters, backwardCompatible, sizeLimit);
 		if (legacy != null) {
 			LegacyStructInstance[] pLegacy = { null };
 			final LegacyClasses rememberLegacy = legacy;
