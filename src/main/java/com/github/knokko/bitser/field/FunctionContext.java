@@ -1,6 +1,6 @@
 package com.github.knokko.bitser.field;
 
-import com.github.knokko.bitser.serialize.Bitser;
+import com.github.knokko.bitser.Bitser;
 
 import java.util.Map;
 import java.util.Objects;
