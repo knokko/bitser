@@ -82,5 +82,19 @@ public class TestLinkedLists {
 		assertTrue(totalLength > 20_000);
 	}
 
-	// TODO Backward compatible
+	@Test
+    public void testLongBackwardCompatible() {
+		Bitser bitser = new Bitser(true);
+		BitLinkedList list = BitLinkedList.generateRandom();
+
+		BitLinkedList recovered = bitser.deepCopy(list, Bitser.BACKWARD_COMPATIBLE);
+		int totalLength = 0;
+
+		BitLinkedList node = recovered;
+		while (node != null) {
+			totalLength += node.value.length();
+			node = node.next;
+		}
+		assertTrue(totalLength > 20_000);
+	}
 }
