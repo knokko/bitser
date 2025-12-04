@@ -39,8 +39,12 @@ abstract class BitFieldWrapper {
 		throw new UnexpectedBitserException("getChildWrapper only works on collection types, but this is " + getClass());
 	}
 
-	void collectReferenceLabels(LabelCollection labels) {
-		if (field.referenceTargetLabel != null) labels.declaredTargets.add(field.referenceTargetLabel);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		if (field.referenceTargetLabel != null) {
+			recursor.runFlat("referenceTargetLabel", context ->
+					context.declaredTargets.add(field.referenceTargetLabel)
+			);
+		}
 	}
 
 	void registerReferenceTargets(Object value, Recursor<ReferenceIdMapper, BitserCache> recursor) {

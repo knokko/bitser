@@ -17,7 +17,7 @@ import static com.github.knokko.bitser.ReferenceIdMapper.extractStableId;
 class ReferenceIdLoader {
 
 	static ReferenceIdLoader load(
-			BitInputStream input, LabelCollection labels, CollectionSizeLimit sizeLimit
+			BitInputStream input, LabelContext labels, CollectionSizeLimit sizeLimit
 	) throws IOException {
 		String[] sortedLabels = new String[labels.declaredTargets.size()];
 		int index = 0;

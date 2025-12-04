@@ -17,9 +17,9 @@ class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceLabels(LabelCollection labels) {
-		super.collectReferenceLabels(labels);
-		labels.stable.add(label);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		super.collectReferenceLabels(recursor);
+		recursor.runFlat("stable", labels -> labels.stable.add(label));
 	}
 
 	@Override

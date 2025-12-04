@@ -70,10 +70,10 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceLabels(LabelCollection labels) {
-		super.collectReferenceLabels(labels);
-		keysWrapper.collectReferenceLabels(labels);
-		valuesWrapper.collectReferenceLabels(labels);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		super.collectReferenceLabels(recursor);
+		recursor.runNested("keys", keysWrapper::collectReferenceLabels);
+		recursor.runNested("values", valuesWrapper::collectReferenceLabels);
 	}
 
 	@Override

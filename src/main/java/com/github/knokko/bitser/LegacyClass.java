@@ -24,12 +24,12 @@ class LegacyClass {
 		return "LegacyClass(#fields=" + fields.size() + ",#functions=" + functions.size() + ")";
 	}
 
-	void collectReferenceLabels(LabelCollection labels) {
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
 		for (LegacyField field : fields) {
-			field.bitField.collectReferenceLabels(labels);
+			field.bitField.collectReferenceLabels(recursor);
 		}
 		for (LegacyField field : functions) {
-			field.bitField.collectReferenceLabels(labels);
+			field.bitField.collectReferenceLabels(recursor);
 		}
 	}
 

@@ -16,10 +16,16 @@ class LegacyStruct {
 	@ReferenceField(stable = false, label = "classes")
 	final ArrayList<LegacyClass> classHierarchy = new ArrayList<>();
 
-	void collectReferenceLabels(LabelCollection labels) {
-		if (!labels.visitedLegacyStructs.add(this)) return;
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		JobOutput<Boolean> alreadyContainedThisStruct = recursor.computeFlat(
+				"already-container", context -> !context.visitedLegacyStructs.add(this)
+		);
 		for (LegacyClass legacyClass : classHierarchy) {
-			legacyClass.collectReferenceLabels(labels);
+			recursor.runNested("legacy-class", nested -> {
+				if (!alreadyContainedThisStruct.get()) {
+					legacyClass.collectReferenceLabels(nested);
+				}
+			});
 		}
 	}
 

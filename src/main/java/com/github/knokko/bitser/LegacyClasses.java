@@ -3,6 +3,7 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
+import com.github.knokko.bitser.util.Recursor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,8 +32,8 @@ class LegacyClasses {
 		this.root = root;
 	}
 
-	void collectReferenceLabels(LabelCollection labels) {
-		for (LegacyClass legacyClass : classes) legacyClass.collectReferenceLabels(labels);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		for (LegacyClass legacyClass : classes) legacyClass.collectReferenceLabels(recursor);
 	}
 
 	LegacyStruct getRoot() {

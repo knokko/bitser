@@ -17,9 +17,9 @@ class UnstableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceLabels(LabelCollection labels) {
-		super.collectReferenceLabels(labels);
-		labels.unstable.add(label);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		super.collectReferenceLabels(recursor);
+		recursor.runFlat("unstable", context -> context.unstable.add(label));
 	}
 
 	@Override

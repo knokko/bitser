@@ -82,9 +82,8 @@ public class Bitser {
 			}
 		}
 
-		LabelCollection labels = new LabelCollection(
-				cache, new HashSet<>(), backwardCompatible, new FunctionContext(this, withParameters)
-		);
+		LabelInfo labelInfo = new LabelInfo(cache, backwardCompatible, new FunctionContext(this, withParameters));
+		LabelContext labelContext = new LabelContext(new HashSet<>());
 
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
@@ -92,7 +91,7 @@ public class Bitser {
 
 			final LegacyClasses rememberLegacy = legacy;
 			rememberLegacy.setRoot(Recursor.compute(
-					legacy, new LegacyInfo(cache, labels.functionContext),
+					legacy, new LegacyInfo(cache, labelInfo.functionContext),
 					recursor -> wrapper.registerClasses(object, recursor)
 			).get());
 
@@ -103,17 +102,23 @@ public class Bitser {
 			legacyOutput.finish();
 			output.popContext("legacy-classes", -1);
 
-			deserializeFromBytes(LegacyClasses.class, legacyBytes.toByteArray()).collectReferenceLabels(labels);
-		} else wrapper.collectReferenceLabels(labels);
+			Recursor.run(labelContext, labelInfo, deserializeFromBytes(
+					LegacyClasses.class, legacyBytes.toByteArray()
+			)::collectReferenceLabels);
+		} else {
+			Recursor.run(labelContext, labelInfo, wrapper::collectReferenceLabels);
+		}
 
 		for (Object withObject : withAndOptions) {
 			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
-			cache.getWrapper(withObject.getClass()).collectReferenceLabels(new LabelCollection(
-					cache, labels.declaredTargets, false, labels.functionContext
-			));
+			Recursor.run(
+					new LabelContext(labelContext.declaredTargets),
+					new LabelInfo(cache, false, labelInfo.functionContext),
+					cache.getWrapper(withObject.getClass())::collectReferenceLabels
+			);
 		}
 
-		ReferenceIdMapper idMapper = new ReferenceIdMapper(labels);
+		ReferenceIdMapper idMapper = new ReferenceIdMapper(labelContext);
 		Recursor.run(idMapper, cache, recursor ->
 				wrapper.registerReferenceTargets(object, recursor)
 		);
@@ -179,11 +184,11 @@ public class Bitser {
 
 		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
 
-		LabelCollection labels = new LabelCollection(
-				cache, new HashSet<>(), backwardCompatible, null
+		LabelContext labelContext = new LabelContext(new HashSet<>());
+		LabelInfo labelInfo = new LabelInfo(cache, backwardCompatible, null);
+		Recursor.run(labelContext, labelInfo, legacy == null ? wrapper::collectReferenceLabels :
+				legacy::collectReferenceLabels
 		);
-		if (legacy == null) wrapper.collectReferenceLabels(labels);
-		else legacy.collectReferenceLabels(labels);
 
 		Map<String, Object> withParameters = new HashMap<>();
 		for (Object withObject : withAndOptions) {
@@ -198,13 +203,14 @@ public class Bitser {
 				withParameters.put(parameter.key, parameter.value);
 				continue;
 			}
-			cache.getWrapper(withObject.getClass()).collectReferenceLabels(new LabelCollection(
-					cache, labels.declaredTargets, false,
-					new FunctionContext(this, withParameters)
-			));
+			Recursor.run(
+					new LabelContext(labelContext.declaredTargets),
+					new LabelInfo(cache, false, new FunctionContext(this, withParameters)),
+					cache.getWrapper(withObject.getClass())::collectReferenceLabels
+			);
 		}
 
-		ReferenceIdMapper withMapper = new ReferenceIdMapper(labels);
+		ReferenceIdMapper withMapper = new ReferenceIdMapper(labelContext);
 		for (Object withObject : withAndOptions) {
 			if (withObject == null || withObject instanceof WithParameter ||
 					withObject == BACKWARD_COMPATIBLE || withObject instanceof CollectionSizeLimit) continue;
@@ -214,7 +220,7 @@ public class Bitser {
 			);
 		}
 
-		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labels, sizeLimit);
+		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labelContext, sizeLimit);
 
 		List<T> result = new ArrayList<>(1);
 		ReadContext readContext = new ReadContext(input, idLoader);

@@ -39,7 +39,7 @@ class ReferenceIdMapper {
 
 	private boolean readOnly;
 
-	ReferenceIdMapper(LabelCollection labels) {
+	ReferenceIdMapper(LabelContext labels) {
 		this.labelMappings = new HashMap<>(labels.declaredTargets.size());
 		for (String label : labels.declaredTargets) {
 			this.labelMappings.put(label, new Mappings(labels.stable.contains(label), labels.unstable.contains(label)));

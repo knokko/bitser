@@ -158,12 +158,12 @@ class SingleClassWrapper {
 		return myClass.getName();
 	}
 
-	void collectReferenceLabels(LabelCollection labels) {
-		for (FieldWrapper field : getFields(labels.backwardCompatible)) {
-			field.bitField.collectReferenceLabels(labels);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		for (FieldWrapper field : getFields(recursor.info.backwardCompatible)) {
+			field.bitField.collectReferenceLabels(recursor);
 		}
 		for (FunctionWrapper function : functions) {
-			function.bitField.collectReferenceLabels(labels);
+			function.bitField.collectReferenceLabels(recursor);
 		}
 	}
 

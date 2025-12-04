@@ -1,30 +1,19 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.field.FunctionContext;
-
 import java.util.HashSet;
 import java.util.Set;
 
-class LabelCollection {
+public class LabelContext {
 
-	final BitserCache cache;
 	final Set<String> declaredTargets, stable, unstable;
 	final Set<BitStructWrapper<?>> visitedStructs;
 	final Set<LegacyStruct> visitedLegacyStructs;
-	final boolean backwardCompatible;
-	final FunctionContext functionContext;
 
-	LabelCollection(
-			BitserCache cache, Set<String> declaredTargetLabels,
-			boolean backwardCompatible, FunctionContext functionContext
-	) {
-		this.cache = cache;
+	LabelContext(Set<String> declaredTargetLabels) {
 		this.declaredTargets = declaredTargetLabels;
 		this.stable = new HashSet<>();
 		this.unstable = new HashSet<>();
 		this.visitedStructs = new HashSet<>();
 		this.visitedLegacyStructs = new HashSet<>();
-		this.backwardCompatible = backwardCompatible;
-		this.functionContext = functionContext;
 	}
 }

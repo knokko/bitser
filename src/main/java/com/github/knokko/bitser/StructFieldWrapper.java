@@ -62,19 +62,18 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	public void postInit(BitPostInit.Context context) {
 		this.legacyStructs = (LegacyStruct[]) context.functionValues.get(StructFieldWrapper.class)[0];
-		//for (LegacyStruct legacy : legacyStructs) Objects.requireNonNull(legacy);
 	}
 
 	@Override
-	void collectReferenceLabels(LabelCollection labels) {
-		super.collectReferenceLabels(labels);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		super.collectReferenceLabels(recursor);
 		if (allowed.length == 0) {
 			for (LegacyStruct legacy : legacyStructs) {
-				if (legacy != null) legacy.collectReferenceLabels(labels);
+				if (legacy != null) legacy.collectReferenceLabels(recursor);
 			}
 		}
 		for (Class<?> structClass : allowed) {
-			labels.cache.getWrapper(structClass).collectReferenceLabels(labels);
+			recursor.info.cache.getWrapper(structClass).collectReferenceLabels(recursor);
 		}
 	}
 

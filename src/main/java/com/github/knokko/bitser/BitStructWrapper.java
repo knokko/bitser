@@ -27,6 +27,8 @@ class BitStructWrapper<T> {
 	private final Constructor<T> constructor;
 	private final VirtualField stableIdField;
 
+	private Set<String> stableReferenceLabels, unstableReferenceLabels, referenceTargetLabels;
+
 	BitStructWrapper(Class<T> objectClass, BitStruct bitStruct) {
 		if (bitStruct == null) {
 			throw new InvalidBitFieldException("Class must have a BitStruct annotation: " + objectClass);
@@ -86,11 +88,39 @@ class BitStructWrapper<T> {
 		return stableIdField;
 	}
 
-	void collectReferenceLabels(LabelCollection labels) {
-		if (labels.visitedStructs.contains(this)) return;
-		labels.visitedStructs.add(this);
-		for (SingleClassWrapper currentClass : classHierarchy) {
-			currentClass.collectReferenceLabels(labels);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		if (this.stableReferenceLabels != null) {
+			recursor.runFlat("cached", context -> {
+				context.stable.addAll(stableReferenceLabels);
+				context.unstable.addAll(unstableReferenceLabels);
+				context.declaredTargets.addAll(referenceTargetLabels);
+			});
+		} else {
+			JobOutput<Boolean> everythingIsMine = recursor.computeFlat("can-claim", labels ->
+					labels.stable.isEmpty() && labels.unstable.isEmpty() && labels.declaredTargets.isEmpty()
+			);
+
+			JobOutput<Boolean> alreadyContainsThis = recursor.computeFlat("already-contains", labels -> {
+				if (labels.visitedStructs.contains(this)) return true;
+				labels.visitedStructs.add(this);
+				return false;
+			});
+
+			for (SingleClassWrapper currentClass : classHierarchy) {
+				recursor.runNested(currentClass.myClass.getSimpleName(), nested -> {
+					if (!alreadyContainsThis.get()) {
+						currentClass.collectReferenceLabels(nested);
+					}
+				});
+			}
+
+			recursor.runFlat("store-cache", labels -> {
+				if (everythingIsMine.get() && !alreadyContainsThis.get()) {
+					this.stableReferenceLabels = Collections.unmodifiableSet(new HashSet<>(labels.stable));
+					this.unstableReferenceLabels = Collections.unmodifiableSet(new HashSet<>(labels.unstable));
+					this.referenceTargetLabels = Collections.unmodifiableSet(new HashSet<>(labels.declaredTargets));
+				}
+			});
 		}
 	}
 

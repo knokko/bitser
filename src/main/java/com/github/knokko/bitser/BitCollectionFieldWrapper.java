@@ -65,9 +65,9 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void collectReferenceLabels(LabelCollection labels) {
-		super.collectReferenceLabels(labels);
-		valuesWrapper.collectReferenceLabels(labels);
+	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
+		super.collectReferenceLabels(recursor);
+		recursor.runNested("values", valuesWrapper::collectReferenceLabels);
 	}
 
 	@Override
