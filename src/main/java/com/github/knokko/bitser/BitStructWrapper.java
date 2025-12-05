@@ -189,8 +189,9 @@ class BitStructWrapper<T> {
 			recursor.runFlat("post-resolve", context ->
 				context.idLoader.addPostResolveCallback(() -> ((BitPostInit) object).postInit(
 						new BitPostInit.Context(
-								recursor.info.bitser, serializedFunctionValues, null,
-								null, recursor.info.withParameters
+								recursor.info.bitser, recursor.info.backwardCompatible,
+								serializedFunctionValues, null, null,
+								recursor.info.withParameters
 						)
 				))
 			);
@@ -216,8 +217,9 @@ class BitStructWrapper<T> {
 							legacyFunctionValues.put(classHierarchy.get(index).myClass, classLegacy.storedFunctionValues);
 						}
 						((BitPostInit) legacy.newInstance).postInit(new BitPostInit.Context(
-								recursor.info.bitser, functionValues, legacyFieldValues,
-								legacyFunctionValues, recursor.info.withParameters
+								recursor.info.bitser, recursor.info.backwardCompatible,
+								functionValues, legacyFieldValues, legacyFunctionValues,
+								recursor.info.withParameters
 						));
 					})
 			);

@@ -22,6 +22,9 @@ package com.github.knokko.bitser.exceptions;
  */
 public class LegacyBitserException extends BitserException {
 
+	/**
+	 * See {@link LegacyBitserException}
+	 */
 	public LegacyBitserException(String message) {
 		super(message);
 	}

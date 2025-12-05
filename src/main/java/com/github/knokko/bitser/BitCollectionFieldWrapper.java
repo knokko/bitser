@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.ClassField;
@@ -195,7 +196,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 						});
 					}
 				} catch (IllegalArgumentException wrongType) {
-					throw new InvalidBitFieldException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
+					throw new LegacyBitserException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
 				}
 			});
 		}
@@ -206,7 +207,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value != null && !(value instanceof LegacyCollectionInstance)) {
-			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + valuesWrapper.field.type + " for field " + field);
+			throw new LegacyBitserException("Can't convert from legacy " + value + " to " + valuesWrapper.field.type + " for field " + field);
 		}
 		super.fixLegacyTypes(recursor, value);
 		if (value == null) return;

@@ -242,6 +242,30 @@ class WrapperFactory {
 			}
 		}
 
+		if (field.type == SimpleLazyBits.class) {
+			if (genericType instanceof ParameterizedType) {
+				Type[] typeArguments = ((ParameterizedType) genericType).getActualTypeArguments();
+				if (typeArguments.length != 1) {
+					throw new UnexpectedBitserException("Expected exactly 1 type argument for " + field);
+				}
+				if (typeArguments[0] instanceof Class<?>) {
+					Class<?> valueClass = (Class<?>) typeArguments[0];
+					if (!valueClass.isAnnotationPresent(BitStruct.class)) {
+						throw new InvalidBitFieldException("Generic type of " + field + " must be a BitStruct");
+					}
+					return new LazyFieldWrapper(field, valueClass);
+				} else {
+					throw new InvalidBitFieldException(
+							"Unexpected generic type " + genericType + " for " + field + ": type must be a BitStruct"
+					);
+				}
+			} else {
+				throw new UnexpectedBitserException(
+						"Unexpected generic type " + genericType + " for " + field + ": must be a BitStruct"
+				);
+			}
+		}
+
 		return createSimpleWrapper(field, expectNothing);
 	}
 

@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.io.BitCountStream;
@@ -105,7 +106,7 @@ class FloatFieldWrapper extends BitFieldWrapper {
 			if (isFloat) super.setLegacyValue(recursor, (float) d, setValue);
 			else super.setLegacyValue(recursor, d, setValue);
 		} else {
-			throw new InvalidBitValueException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
+			throw new LegacyBitserException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}
 }

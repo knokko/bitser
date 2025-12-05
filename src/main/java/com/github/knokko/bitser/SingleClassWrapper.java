@@ -45,9 +45,9 @@ class SingleClassWrapper {
 		this.myClass = myClass;
 
 		Class<?>[] otherFields = {
-				ClassField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
+				ClassField.class, EnumField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
 				NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
-				StableReferenceFieldId.class, StringField.class, EnumField.class
+				StableReferenceFieldId.class, StringField.class
 		};
 
 		Set<Integer> IDs = new HashSet<>();
@@ -62,6 +62,7 @@ class SingleClassWrapper {
 						break;
 					}
 				}
+				if (classField.getType() == SimpleLazyBits.class) bitField = DEFAULT_BIT_FIELD;
 			}
 
 			if (bitField != null) {
@@ -229,7 +230,9 @@ class SingleClassWrapper {
 			);
 		}
 
-		FunctionContext functionContext = new FunctionContext(recursor.info.bitser, recursor.info.withParameters);
+		FunctionContext functionContext = new FunctionContext(
+				recursor.info.bitser, recursor.info.legacy != null, recursor.info.withParameters
+		);
 		for (FunctionWrapper function : functions) {
 			recursor.runFlat("pushContext", context ->
 					context.output.pushContext(function.classMethod.getName(), -1)

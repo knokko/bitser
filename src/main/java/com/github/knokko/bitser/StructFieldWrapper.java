@@ -1,5 +1,7 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
+import com.github.knokko.bitser.legacy.LegacyLazyBytes;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
@@ -135,6 +137,15 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			super.setLegacyValue(recursor, null, setValue);
 			return;
 		}
+		if (value instanceof LegacyLazyBytes) {
+			if (allowed.length != 1) throw new UnexpectedBitserException(
+					"LegacyLazyBytes should have been denied at fixLegacyTypes"
+			);
+			setValue.accept(recursor.info.bitser.deserializeFromBytes(
+					allowed[0], ((LegacyLazyBytes) value).bytes, Bitser.BACKWARD_COMPATIBLE
+			));
+			return;
+		}
 		LegacyStructInstance legacy = (LegacyStructInstance) value;
 		BitStructWrapper<?> valueWrapper = recursor.info.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
 		setValue.accept(valueWrapper.setLegacyValues(recursor, legacy));
@@ -143,6 +154,7 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
 		if (value == null && field.optional) return;
+		if (value instanceof LegacyLazyBytes && allowed.length == 1) return;
 		if (!(value instanceof LegacyStructInstance)) {
 			throw new LegacyBitserException("Can't convert from legacy " + value + " to a BitStruct");
 		}

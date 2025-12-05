@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.LegacyMapInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
@@ -215,12 +216,12 @@ class MapFieldWrapper extends BitFieldWrapper {
 				try {
 					Array.set(dummyKeyArray, 0, newKey);
 				} catch (IllegalArgumentException wrongType) {
-					throw new InvalidBitFieldException("Can't convert from legacy " + legacyKey + " to " + keysWrapper.field.type + " for field " + field);
+					throw new LegacyBitserException("Can't convert from legacy " + legacyKey + " to " + keysWrapper.field.type + " for field " + field);
 				}
 				try {
 					Array.set(dummyValueArray, 0, newValue);
 				} catch (IllegalArgumentException wrongType) {
-					throw new InvalidBitFieldException("Can't convert from legacy " + legacyValue + " to " + valuesWrapper.field.type + " for field " + field);
+					throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + valuesWrapper.field.type + " for field " + field);
 				}
 
 				//noinspection unchecked

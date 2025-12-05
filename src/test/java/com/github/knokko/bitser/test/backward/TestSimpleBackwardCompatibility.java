@@ -226,7 +226,7 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testInvalidFullIntToPartialInt() {
 		Bitser bitser = new Bitser(false);
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
 				PartialInt.class, bitser.serializeToBytes(new FullInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "value 1000000 is out of range");
@@ -236,7 +236,7 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testInvalidPartialIntToFullByte() {
 		Bitser bitser = new Bitser(false);
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
 				FullByte.class, bitser.serializeToBytes(new PartialInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "value 150 is out of range");
@@ -354,7 +354,7 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testInvalidConversionFromStringToUUID() {
 		Bitser bitser = new Bitser(false);
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
 				IdWrapper.class, bitser.serializeToBytes(new StringWrapper(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "from legacy world");

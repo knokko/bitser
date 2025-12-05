@@ -21,6 +21,9 @@ package com.github.knokko.bitser.exceptions;
  */
 public class ReferenceBitserException extends BitserException {
 
+	/**
+	 * See {@link ReferenceBitserException}
+	 */
 	public ReferenceBitserException(String message) {
 		super(message);
 	}

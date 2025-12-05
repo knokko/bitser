@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.util.JobOutput;
@@ -17,6 +18,7 @@ abstract class BitFieldWrapper {
 			BooleanFieldWrapper.class, IntegerFieldWrapper.class, FloatFieldWrapper.class,
 			StringFieldWrapper.class, UUIDFieldWrapper.class, EnumFieldWrapper.class,
 			StructFieldWrapper.class,
+			LazyFieldWrapper.class,
 			BitCollectionFieldWrapper.class, ByteCollectionFieldWrapper.class, MapFieldWrapper.class,
 			StableReferenceFieldWrapper.class, UnstableReferenceFieldWrapper.class
 	};
@@ -113,12 +115,12 @@ abstract class BitFieldWrapper {
 
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {
-			throw new InvalidBitValueException("Legacy value for field " + field + " is null, which is no longer allowed");
+			throw new LegacyBitserException("Legacy value for field " + field + " is null, which is no longer allowed");
 		}
 		try {
 			setValue.accept(value);
 		} catch (IllegalArgumentException invalidType) {
-			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
+			throw new LegacyBitserException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}
 

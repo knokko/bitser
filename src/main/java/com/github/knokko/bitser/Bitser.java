@@ -82,7 +82,9 @@ public class Bitser {
 			}
 		}
 
-		LabelInfo labelInfo = new LabelInfo(cache, backwardCompatible, new FunctionContext(this, withParameters));
+		LabelInfo labelInfo = new LabelInfo(cache, backwardCompatible, new FunctionContext(
+				this, backwardCompatible, withParameters
+		));
 		LabelContext labelContext = new LabelContext(new HashSet<>());
 
 		LegacyClasses legacy = null;
@@ -205,7 +207,9 @@ public class Bitser {
 			}
 			Recursor.run(
 					new LabelContext(labelContext.declaredTargets),
-					new LabelInfo(cache, false, new FunctionContext(this, withParameters)),
+					new LabelInfo(cache, false, new FunctionContext(
+							this, backwardCompatible, withParameters
+					)),
 					cache.getWrapper(withObject.getClass())::collectReferenceLabels
 			);
 		}

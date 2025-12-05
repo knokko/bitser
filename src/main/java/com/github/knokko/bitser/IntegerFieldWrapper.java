@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.util.Recursor;
@@ -87,7 +88,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 		} else if (value instanceof Number || value instanceof Character) {
 			long l = value instanceof Number ? ((Number) value).longValue() : (long) ((char) value);
 			if (l < intField.minValue || l > intField.maxValue) {
-				throw new InvalidBitValueException("Legacy value " + value + " is out of range for field " + field);
+				throw new LegacyBitserException("Legacy value " + value + " is out of range for field " + field);
 			}
 
 			Class<?> type = field.type;
@@ -97,7 +98,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 			else if (type == int.class || type == Integer.class) super.setLegacyValue(recursor, (int) l, setValue);
 			else super.setLegacyValue(recursor, l, setValue);
 		} else {
-			throw new InvalidBitFieldException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
+			throw new LegacyBitserException("Can't convert from legacy " + value + " to " + field.type + " for field " + field);
 		}
 	}
 }
