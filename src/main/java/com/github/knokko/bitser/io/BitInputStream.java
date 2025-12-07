@@ -5,9 +5,14 @@ import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static java.lang.Math.min;
+
 public class BitInputStream {
 
+	private final byte[] myBuffer = new byte[100];
 	private final InputStream byteStream;
+	private int bufferIndex;
+	private int bufferLimit;
 	private int currentByte;
 	private int boolIndex = 8;
 
@@ -15,22 +20,40 @@ public class BitInputStream {
 		this.byteStream = byteStream;
 	}
 
-	public boolean read() throws IOException {
-		if (boolIndex == 8) {
-			currentByte = byteStream.read();
-			if (currentByte == -1) {
-				throw new IOException("End of stream reached");
-			}
-			boolIndex = 0;
+	private void readNextByte() throws IOException {
+		if (bufferIndex >= bufferLimit) {
+			bufferLimit = byteStream.read(myBuffer);
+			bufferIndex = 0;
+			if (bufferLimit == -1) throw new IOException("End of stream reached");
 		}
+		currentByte = myBuffer[bufferIndex++] & 0xFF;
+		boolIndex -= 8;
+	}
 
+	public boolean read() throws IOException {
+		if (boolIndex == 8) readNextByte();
 		return (currentByte & (1 << boolIndex++)) != 0;
+	}
+
+	public int read(int numBits) throws IOException {
+		int value = (currentByte >> boolIndex) & ((1 << numBits) - 1);
+		boolIndex += numBits;
+		if (boolIndex > 8) {
+			readNextByte();
+			int remainingBits = boolIndex;
+			int usedBits = numBits - remainingBits;
+			value |= (currentByte & ((1 << remainingBits) - 1)) << usedBits;
+		}
+		return value;
 	}
 
 	public void read(byte[] destination) throws IOException {
 		boolIndex = 8;
 
-		int numReadBytes = 0;
+		int numReadBytes = min(bufferLimit - bufferIndex, destination.length);
+		System.arraycopy(myBuffer, bufferIndex, destination, 0, numReadBytes);
+		bufferIndex += numReadBytes;
+
 		while (numReadBytes < destination.length) {
 			int justReadBytes = byteStream.read(destination, numReadBytes, destination.length - numReadBytes);
 			if (justReadBytes == -1) throw new IOException("End of stream reached");

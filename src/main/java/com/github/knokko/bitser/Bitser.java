@@ -8,8 +8,7 @@ import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.io.LayeredBitOutputStream;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.options.WithParameter;
-import com.github.knokko.bitser.util.Recursor;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.util.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,7 +49,7 @@ public class Bitser {
 		}
 		if (cause instanceof IOException) {
 			throw new IOException(
-					"IO exception at " + failure.debugInfoStack + ": " + cause.getMessage()
+					"IO exception at " + failure.debugInfoStack + ": " + cause.getMessage(), cause
 			);
 		}
 	}
@@ -70,9 +69,18 @@ public class Bitser {
 		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		boolean backwardCompatible = false;
+		IntegerDistributionTracker integerDistribution = null;
+		FloatDistributionTracker floatDistribution = null;
 		Map<String, Object> withParameters = new HashMap<>();
+
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) backwardCompatible = true;
+			if (withObject instanceof IntegerDistributionTracker) {
+				integerDistribution = (IntegerDistributionTracker) withObject;
+			}
+			if (withObject instanceof FloatDistributionTracker) {
+				floatDistribution = (FloatDistributionTracker) withObject;
+			}
 			if (withObject instanceof WithParameter) {
 				WithParameter parameter = (WithParameter) withObject;
 				if (withParameters.containsKey(parameter.key)) {
@@ -112,7 +120,9 @@ public class Bitser {
 		}
 
 		for (Object withObject : withAndOptions) {
-			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE
+					|| withObject instanceof DistributionTracker
+			) continue;
 			Recursor.run(
 					new LabelContext(labelContext.declaredTargets),
 					new LabelInfo(cache, false, labelInfo.functionContext),
@@ -125,7 +135,9 @@ public class Bitser {
 				wrapper.registerReferenceTargets(object, recursor)
 		);
 		for (Object withObject : withAndOptions) {
-			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE
+					|| withObject instanceof DistributionTracker
+			) continue;
 			Recursor.run(idMapper, cache, recursor ->
 					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
 			);
@@ -137,8 +149,8 @@ public class Bitser {
 
 		output.pushContext("output", -1);
 		Recursor.run(
-				new WriteContext(output, idMapper),
-				new WriteInfo(this, withParameters, legacy),
+				new WriteContext(output, idMapper, integerDistribution, floatDistribution),
+				new WriteInfo(this, withParameters, legacy, output.usesContextInfo()),
 				recursor -> wrapper.write(object, recursor)
 		);
 		output.popContext("output", -1);
@@ -265,7 +277,7 @@ public class Bitser {
 		try {
 			return deserialize(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), withAndOptions);
 		} catch (IOException shouldNotHappen) {
-			throw new IllegalArgumentException("bytes is too short or invalid/corrupted");
+			throw new IllegalArgumentException("bytes is too short or invalid/corrupted", shouldNotHappen);
 		}
 	}
 

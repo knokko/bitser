@@ -16,6 +16,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSimpleBackwardCompatibility {
 
+	@BitStruct(backwardCompatible = true)
+	private static class Empty {
+
+	}
+
+	@Test
+	public void testMinimal() {
+		new Bitser(true).deepCopy(new Empty(), Bitser.BACKWARD_COMPATIBLE);
+	}
+
 	private enum OldPet {
 		DOG,
 		CAT

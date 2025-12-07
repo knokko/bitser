@@ -7,8 +7,8 @@ import com.github.knokko.bitser.util.Recursor;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static com.github.knokko.bitser.IntegerBitser.decodeUniformInteger;
-import static com.github.knokko.bitser.IntegerBitser.encodeUniformInteger;
+import static com.github.knokko.bitser.IntegerBitser.decodeFullLong;
+import static com.github.knokko.bitser.IntegerBitser.encodeFullLong;
 
 @BitStruct(backwardCompatible = false)
 class UUIDFieldWrapper extends BitFieldWrapper {
@@ -33,10 +33,10 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 
 		recursor.runFlat("uuid", context -> {
 			context.output.prepareProperty("most-significant-bits", -1);
-			encodeUniformInteger(value.getMostSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, context.output);
+			encodeFullLong(value.getMostSignificantBits(), context.output);
 			context.output.finishProperty();
 			context.output.prepareProperty("least-significant-bits", -1);
-			encodeUniformInteger(value.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, context.output);
+			encodeFullLong(value.getLeastSignificantBits(), context.output);
 			context.output.finishProperty();
 		});
 	}
@@ -44,10 +44,7 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("uuid-value", context ->
-			setValue.accept(new UUID(
-					decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, context.input),
-					decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, context.input)
-			))
+			setValue.accept(new UUID(decodeFullLong(context.input), decodeFullLong(context.input)))
 		);
 	}
 }

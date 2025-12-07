@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface StringField {
 
-	IntegerField length() default @IntegerField(expectUniform = false);
+	IntegerField length() default @IntegerField(expectUniform = false, minValue = 0, maxValue = Integer.MAX_VALUE);
 }

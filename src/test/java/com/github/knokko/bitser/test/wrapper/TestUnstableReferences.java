@@ -335,7 +335,7 @@ public class TestUnstableReferences {
 				() -> new Bitser(false).serialize(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple unstable targets have identity");
-		assertContains(errorMessage, "-> ItemRoot -> types -> element 1");
+		assertContains(errorMessage, "-> ItemRoot -> types");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -435,14 +435,14 @@ public class TestUnstableReferences {
 
 		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
-		IntegerBitser.encodeVariableInteger(Integer.MAX_VALUE, 0L, Integer.MAX_VALUE, bitOutput);
+		IntegerBitser.encodeUnknownLength(Integer.MAX_VALUE, bitOutput);
 		bitOutput.finish();
 
 		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
 				NonStructReferences.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
 		)).getMessage();
-		assertContains(errorMessage, "of unstable targets (2147483647)");
-		assertContains(errorMessage, "with label no struct");
+		assertContains(errorMessage, "amount 2147483647");
+		assertContains(errorMessage, "with label \"no struct\"");
 		assertContains(errorMessage, "1234");
 	}
 }

@@ -2,10 +2,8 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.util.JobOutput;
 import com.github.knokko.bitser.util.Recursor;
 
@@ -15,37 +13,12 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.IntegerBitser.*;
-import static com.github.knokko.bitser.IntegerBitser.decodeVariableInteger;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
-	static void writeElement(
-			Object element, BitFieldWrapper wrapper, Recursor<WriteContext, WriteInfo> recursor, String nullErrorMessage
-	) {
-		if (wrapper.field.optional) {
-			recursor.runFlat("optional", context -> {
-				context.output.prepareProperty("optional", -1);
-				context.output.write(element != null);
-				context.output.finishProperty();
-			});
-		}
-		else if (element == null) throw new InvalidBitValueException(nullErrorMessage);
-		if (element != null) {
-			wrapper.writeValue(element, recursor);
-			if (wrapper.field.referenceTargetLabel != null) {
-				recursor.runFlat("referenceTargetLabel", context ->
-						context.idMapper.maybeEncodeUnstableId(wrapper.field.referenceTargetLabel, element, context.output)
-				);
-			}
-		}
-	}
-
-	static Object constructCollectionWithSize(Class<?> fieldType, int size, CollectionSizeLimit limit) {
-		if (limit != null && size > limit.maxSize) {
-			throw new InvalidBitValueException("Size of " + size + " exceeds the size limit of " + limit.maxSize);
-		}
+	static Object constructCollectionWithSize(Class<?> fieldType, int size) {
 		try {
 			return fieldType.getConstructor(int.class).newInstance(size);
 		} catch (NoSuchMethodException noIntConstructor) {
@@ -75,7 +48,10 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (!field.type.isArray() && (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers()))) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
-		this.sizeField = new IntegerField.Properties(sizeField);
+		this.sizeField = new IntegerField.Properties(
+				max(0, sizeField.minValue()), min(Integer.MAX_VALUE, sizeField.maxValue()),
+				sizeField.expectUniform(), IntegerField.DIGIT_SIZE_TERMINATORS, sizeField.commonValues()
+		);
 		this.arrayType = determineArrayType();
 	}
 
@@ -91,25 +67,27 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		int size = getCollectionSize(value);
 		recursor.runFlat("size", context -> {
+			if (context.integerDistribution != null) {
+				context.integerDistribution.insert(field + " collection size", (long) size, sizeField);
+				context.integerDistribution.insert("collection size", (long) size, sizeField);
+			}
 			context.output.prepareProperty("size", -1);
-			if (sizeField.expectUniform) encodeUniformInteger(size, getMinSize(), getMaxSize(), context.output);
-			else encodeVariableInteger(size, getMinSize(), getMaxSize(), context.output);
+			encodeInteger(size, sizeField, context.output);
 			context.output.finishProperty();
 		});
 
-		writeElements(value, size, recursor);
+		if (size > 0) writeElements(value, size, recursor);
 	}
 
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		JobOutput<Integer> size = recursor.computeFlat("size", context -> {
-			if (sizeField.expectUniform) return (int) decodeUniformInteger(getMinSize(), getMaxSize(), context.input);
-			else return (int) decodeVariableInteger(getMinSize(), getMaxSize(), context.input);
-		});
+		JobOutput<Integer> size = recursor.computeFlat("size", context ->
+				decodeLength(sizeField, recursor.info.sizeLimit, "collection size", context.input)
+		);
 
 		recursor.runNested("elements", nested -> {
-			Object value = constructCollectionWithSize(size.get(), recursor.info.sizeLimit);
-			readElements(value, size.get(), nested);
+			Object value = constructCollectionWithSize(size.get());
+			if (size.get() > 0) readElements(value, size.get(), nested);
 
 			nested.runFlat("add-elements", context -> {
 				if (nested.info.backwardCompatible) setValue.accept(new LegacyCollectionInstance(value));
@@ -123,7 +101,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (value == null) return;
 		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
 		legacyInstance.newCollection = constructCollectionWithSize(
-				Array.getLength(legacyInstance.legacyArray), recursor.info.sizeLimit
+				Array.getLength(legacyInstance.legacyArray)
 		);
 		if (field.referenceTargetLabel != null) {
 			recursor.runFlat("referenceTargetLabel", context ->
@@ -141,7 +119,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		return Array.getLength(object);
 	}
 
-	private Object constructCollectionWithSize(int size, CollectionSizeLimit limit) {
+	private Object constructCollectionWithSize(int size) {
 		if (field.type == null) {
 			if (arrayType == null) return new Object[size];
 			switch (arrayType) {
@@ -156,21 +134,10 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 			}
 		}
 		if (field.type.isArray()) {
-			if (limit != null && size > limit.maxSize) {
-				throw new InvalidBitValueException("Size of " + size + " exceeds the size limit of " + limit.maxSize);
-			}
 			return Array.newInstance(field.type.getComponentType(), size);
 		} else {
-			return constructCollectionWithSize(field.type, size, limit);
+			return constructCollectionWithSize(field.type, size);
 		}
-	}
-
-	private int getMinSize() {
-		return (int) max(0, sizeField.minValue);
-	}
-
-	private int getMaxSize() {
-		return (int) min(Integer.MAX_VALUE, sizeField.maxValue);
 	}
 
 	@BitEnum(mode = BitEnum.Mode.Ordinal)

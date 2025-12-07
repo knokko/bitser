@@ -1,6 +1,5 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
@@ -10,8 +9,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static com.github.knokko.bitser.IntegerBitser.decodeUniformInteger;
-import static com.github.knokko.bitser.IntegerBitser.decodeVariableInteger;
+import static com.github.knokko.bitser.IntegerBitser.*;
 import static com.github.knokko.bitser.ReferenceIdMapper.extractStableId;
 
 class ReferenceIdLoader {
@@ -30,13 +28,9 @@ class ReferenceIdLoader {
 		Map<String, Mappings> labelMappings = new HashMap<>(labels.declaredTargets.size());
 		for (String label : sortedLabels) {
 			int unstableSize = 0;
-			if (labels.unstable.contains(label)) {
-				unstableSize = (int) decodeVariableInteger(0, Integer.MAX_VALUE, input);
-				if (sizeLimit != null && unstableSize > sizeLimit.maxSize) {
-					throw new InvalidBitValueException("Number of unstable targets (" + unstableSize + ") with label " +
-							label + " exceeds the CollectionSizeLimit " + sizeLimit.maxSize);
-				}
-			}
+			if (labels.unstable.contains(label)) unstableSize = decodeUnknownLength(
+					sizeLimit, "unstable targets with label \"" + label + "\": amount", input
+			);
 			labelMappings.put(label, new Mappings(unstableSize, labels.stable.contains(label)));
 		}
 
@@ -94,10 +88,7 @@ class ReferenceIdLoader {
 		Mappings mappings = labelMappings.get(label);
 		if (mappings == null) throw new ReferenceBitserException("Invalid bitstream: label " + label + " was never saved");
 
-		UUID id = new UUID(
-				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input),
-				decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, input)
-		);
+		UUID id = new UUID(decodeFullLong(input), decodeFullLong(input));
 		mappings.getStable(label, id, setValue);
 	}
 

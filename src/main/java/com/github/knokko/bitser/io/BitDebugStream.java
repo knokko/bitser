@@ -19,6 +19,11 @@ public class BitDebugStream extends BitOutputStream {
 		this.debug = debug;
 	}
 
+	@Override
+	public boolean usesContextInfo() {
+		return true;
+	}
+
 	private void useLastContext() {
 		if (!wroteLastContext) {
 			for (int counter = 0; counter < stack.size() - 1; counter++) debug.print("  ");
@@ -37,6 +42,14 @@ public class BitDebugStream extends BitOutputStream {
 	public void write(boolean value) throws IOException {
 		super.write(value);
 		debug.print(value ? '1' : '0');
+	}
+
+	@Override
+	public void write(int value, int numBits) throws IOException {
+		super.write(value, numBits);
+		for (int bit = 0; bit < numBits; bit++) {
+			debug.print((value & (1 << bit)) == 0 ? '0' : '1');
+		}
 	}
 
 	@Override

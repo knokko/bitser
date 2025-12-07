@@ -9,10 +9,11 @@ import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.IntegerBitser.*;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 @BitStruct(backwardCompatible = false)
 class EnumFieldWrapper extends BitFieldWrapper {
@@ -23,11 +24,27 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	@IntegerField(expectUniform = false, minValue = 0)
 	private final int numEnumConstants;
 
+	@IntegerField(expectUniform = false, minValue = 1)
+	private final int minNameLength;
+
+	@IntegerField(expectUniform = false, minValue = 1)
+	private final int maxNameLength;
+
 	EnumFieldWrapper(VirtualField field, BitEnum.Mode mode) {
 		super(field);
 		this.mode = mode;
 		if (!field.type.isEnum()) throw new InvalidBitFieldException("BitEnum can only be used on enums, but got " + field);
-		this.numEnumConstants = field.type.getEnumConstants().length;
+		Enum<?>[] enumConstants = (Enum<?>[]) field.type.getEnumConstants();
+		this.numEnumConstants = enumConstants.length;
+		int minNameLength = Integer.MAX_VALUE;
+		int maxNameLength = 0;
+		for (Enum<?> constant : enumConstants) {
+			int length = constant.name().length();
+			minNameLength = min(length, minNameLength);
+			maxNameLength = max(length, maxNameLength);
+		}
+		this.minNameLength = minNameLength;
+		this.maxNameLength = maxNameLength;
 	}
 
 	@SuppressWarnings("unused")
@@ -35,6 +52,8 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		super();
 		this.mode = BitEnum.Mode.Name;
 		this.numEnumConstants = 0;
+		this.minNameLength = 0;
+		this.maxNameLength = 0;
 	}
 
 	@Override
@@ -42,17 +61,10 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		recursor.runFlat("enum-value", context -> {
 			Enum<?> enumValue = (Enum<?>) value;
 			if (mode == BitEnum.Mode.Name) {
-				byte[] bytes = enumValue.name().getBytes(StandardCharsets.UTF_8);
-				context.output.prepareProperty("enum-name-length", -1);
-				encodeVariableInteger(bytes.length, 1, Integer.MAX_VALUE, context.output);
-				context.output.finishProperty();
-
-				int counter = 0;
-				for (byte stringByte : bytes) {
-					context.output.prepareProperty("enum-name-char", counter++);
-					encodeUniformInteger(stringByte, Byte.MIN_VALUE, Byte.MAX_VALUE, context.output);
-					context.output.finishProperty();
-				}
+				IntegerField.Properties lengthField = new IntegerField.Properties(
+						minNameLength, maxNameLength, true, 0, new long[0]
+				);
+				StringBitser.encode(enumValue.name(), lengthField, context.output);
 			} else if (mode == BitEnum.Mode.Ordinal) {
 				int maxOrdinal = field.type.getEnumConstants().length - 1;
 				context.output.prepareProperty("enum-ordinal", -1);
@@ -76,12 +88,10 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("enum-value", context -> {
 			if (mode == BitEnum.Mode.Name) {
-				int numBytes = (int) decodeVariableInteger(1, Integer.MAX_VALUE, context.input);
-				byte[] stringBytes = new byte[numBytes];
-				for (int index = 0; index < numBytes; index++) {
-					stringBytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, context.input);
-				}
-				String name = new String(stringBytes, StandardCharsets.UTF_8);
+				IntegerField.Properties lengthField = new IntegerField.Properties(
+						minNameLength, maxNameLength, true, 0, new long[0]
+				);
+				String name = StringBitser.decode(lengthField, recursor.info.sizeLimit, context.input);
 				if (field.type == null) {
 					setValue.accept(name);
 					return;

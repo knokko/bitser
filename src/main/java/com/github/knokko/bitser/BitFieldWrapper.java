@@ -76,7 +76,9 @@ abstract class BitFieldWrapper {
 			writeValue(value, recursor);
 			if (field.referenceTargetLabel != null) {
 				recursor.runFlat("referenceTargetLabel", context ->
-						context.idMapper.maybeEncodeUnstableId(field.referenceTargetLabel, value, context.output)
+						context.idMapper.maybeEncodeUnstableId(
+								field.referenceTargetLabel, value, context.output, -1
+						)
 				);
 			}
 		}

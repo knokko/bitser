@@ -12,9 +12,21 @@ public class LayeredBitOutputStream extends BitOutputStream {
 		this.other = other;
 	}
 
+	@Override
+	public boolean usesContextInfo() {
+		return super.usesContextInfo() || other.usesContextInfo();
+	}
+
+	@Override
 	public void write(boolean value) throws IOException {
 		super.write(value);
 		other.write(value);
+	}
+
+	@Override
+	public void write(int value, int numBits) throws IOException {
+		super.write(value, numBits);
+		other.write(value, numBits);
 	}
 
 	@Override

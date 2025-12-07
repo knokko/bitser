@@ -9,10 +9,12 @@ class WriteInfo {
 	final Bitser bitser;
 	final Map<String, Object> withParameters;
 	final LegacyClasses legacy;
+	final boolean usesContextInfo;
 
-	WriteInfo(Bitser bitser, Map<String, Object> withParameters, LegacyClasses legacy) {
+	WriteInfo(Bitser bitser, Map<String, Object> withParameters, LegacyClasses legacy, boolean usesContextInfo) {
 		this.bitser = Objects.requireNonNull(bitser);
 		this.withParameters = Collections.unmodifiableMap(withParameters);
 		this.legacy = legacy;
+		this.usesContextInfo = usesContextInfo;
 	}
 }

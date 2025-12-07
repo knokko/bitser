@@ -76,4 +76,26 @@ public class TestFloatField {
 		@SuppressWarnings("unused")
 		public int invalid;
 	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class CommonValues {
+
+		@FloatField(commonValues = { 0.0, 2.0, 5.0 })
+		float[] values;
+	}
+
+	@Test
+	public void testCommonValues() {
+		Bitser bitser = new Bitser(false);
+		CommonValues original = new CommonValues();
+		original.values = new float[] { -5f, -1f, 0.0001f, 2.1f, 3f, 5.0001f };
+
+		CommonValues loaded = bitser.deepCopy(original);
+		assertEquals(-5f, loaded.values[0]);
+		assertEquals(-1f, loaded.values[1]);
+		assertEquals(0f, loaded.values[2]); // Should be rounded to exactly 0
+		assertEquals(2.1f, loaded.values[3]);
+		assertEquals(3f, loaded.values[4]);
+		assertEquals(5f, loaded.values[5]); // Should be rounded to exactly 5
+	}
 }

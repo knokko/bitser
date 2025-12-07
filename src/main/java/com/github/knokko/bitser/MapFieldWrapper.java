@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.LegacyMapInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
@@ -17,11 +18,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.IntegerBitser.*;
-import static com.github.knokko.bitser.IntegerBitser.decodeVariableInteger;
 import static com.github.knokko.bitser.AbstractCollectionFieldWrapper.constructCollectionWithSize;
-import static com.github.knokko.bitser.AbstractCollectionFieldWrapper.writeElement;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 
 @BitStruct(backwardCompatible = false)
 class MapFieldWrapper extends BitFieldWrapper {
@@ -60,14 +57,16 @@ class MapFieldWrapper extends BitFieldWrapper {
 	void registerLegacyClasses(Object map, Recursor<LegacyClasses, LegacyInfo> recursor) {
 		super.registerLegacyClasses(map, recursor);
 		if (map == null) return;
-		((Map<?, ?>) map).forEach((key, value) -> {
-			recursor.runNested("key", nested ->
-					keysWrapper.registerLegacyClasses(key, nested)
-			);
-			recursor.runNested("value", nested ->
-					valuesWrapper.registerLegacyClasses(value, nested)
-			);
-		});
+		recursor.runNested("keys", nested ->
+				((Map<?, ?>) map).forEach((key, value) ->
+						keysWrapper.registerLegacyClasses(key, nested)
+				)
+		);
+		recursor.runNested("values", nested ->
+				((Map<?, ?>) map).forEach((key, value) ->
+						valuesWrapper.registerLegacyClasses(value, nested)
+				)
+		);
 	}
 
 	@Override
@@ -82,13 +81,80 @@ class MapFieldWrapper extends BitFieldWrapper {
 		super.registerReferenceTargets(rawValue, recursor);
 		if (rawValue == null) return;
 		Map<?, ?> map = (Map<?, ?>) rawValue;
-		for (Map.Entry<?, ?> entry : map.entrySet()) {
-			recursor.runNested("key " + entry.getKey(), nested ->
-					keysWrapper.registerReferenceTargets(entry.getKey(), nested)
-			);
-			recursor.runNested("value for " + entry.getKey(), nested ->
-					valuesWrapper.registerReferenceTargets(entry.getValue(), nested)
-			);
+		if (map.isEmpty()) return;
+		recursor.runNested("keys", nested -> {
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				keysWrapper.registerReferenceTargets(entry.getKey(), nested);
+			}
+		});
+		recursor.runNested("values", nested -> {
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				valuesWrapper.registerReferenceTargets(entry.getValue(), nested);
+			}
+		});
+	}
+
+	private void writeElementSet(
+			Recursor<WriteContext, WriteInfo> recursor,
+			BitFieldWrapper elementWrapper,
+			Collection<?> elementSet,
+			String keyOrValue,
+			String nullErrorMessage
+	) {
+		if (elementWrapper.field.optional) {
+			recursor.runFlat("optional", context -> {
+				context.output.prepareProperty("optional", -1);
+				for (Object element : elementSet) {
+					context.output.write(element != null);
+				}
+				context.output.finishProperty();
+			});
+		}
+
+		if (recursor.info.usesContextInfo) {
+			int index = 0;
+			for (Object element : elementSet) {
+				if (element == null) {
+					if (!elementWrapper.field.optional) throw new InvalidBitValueException(nullErrorMessage);
+					continue;
+				}
+
+				final int rememberIndex = index;
+				recursor.runFlat("pushContext", context ->
+						context.output.pushContext(keyOrValue, rememberIndex)
+				);
+				recursor.runNested(keyOrValue + " " + index, deeper ->
+						elementWrapper.writeValue(element, deeper)
+				);
+				recursor.runFlat("popContext", context ->
+						context.output.popContext(keyOrValue, rememberIndex)
+				);
+				index += 1;
+			}
+		} else {
+			for (Object element : elementSet) {
+				if (element == null) {
+					if (!elementWrapper.field.optional) throw new InvalidBitValueException(nullErrorMessage);
+					continue;
+				}
+
+				elementWrapper.writeValue(element, recursor);
+			}
+		}
+
+		if (elementWrapper.field.referenceTargetLabel != null) {
+			recursor.runFlat("referenceTargetLabel", context -> {
+				context.output.pushContext("reference-target-label", -1);
+				int counter = -1;
+				for (Object element : elementSet) {
+					counter += 1;
+					if (element == null) continue;
+					context.idMapper.maybeEncodeUnstableId(
+							elementWrapper.field.referenceTargetLabel, element, context.output, counter
+					);
+				}
+				context.output.popContext("reference-target-label", -1);
+			});
 		}
 	}
 
@@ -96,107 +162,114 @@ class MapFieldWrapper extends BitFieldWrapper {
 	void writeValue(Object rawValue, Recursor<WriteContext, WriteInfo> recursor) {
 		Map<?, ?> map = (Map<?, ?>) rawValue;
 		recursor.runFlat("size", context -> {
+			if (context.integerDistribution != null) {
+				context.integerDistribution.insert(field + " map size", (long) map.size(), sizeField);
+				context.integerDistribution.insert("map size", (long) map.size(), sizeField);
+			}
 			context.output.prepareProperty("map-size", -1);
-			if (sizeField.expectUniform) encodeUniformInteger(map.size(), getMinSize(), getMaxSize(), context.output);
-			else encodeVariableInteger(map.size(), getMinSize(), getMaxSize(), context.output);
+			encodeInteger(map.size(), sizeField, context.output);
 			context.output.finishProperty();
 		});
 
-		int counter = 0;
-		for (Map.Entry<?, ?> entry : map.entrySet()) {
-			final int rememberCounter = counter;
-			recursor.runFlat("pushContext", context ->
-					context.output.pushContext("key", rememberCounter)
-			);
-			recursor.runNested("key " + entry.getKey(), nested -> writeElement(
-					entry.getKey(), keysWrapper, nested,
-					"Field " + field + " must not have null keys"
-			));
-			recursor.runFlat("context", context -> {
-				context.output.popContext("key", rememberCounter);
-				context.output.pushContext("value", rememberCounter);
+		if (map.isEmpty()) return;
+		recursor.runNested("keys", nested -> writeElementSet(
+				nested, keysWrapper, map.keySet(), "key",
+				"Field " + field + " must not have null keys"
+		));
+		recursor.runNested("values", nested -> writeElementSet(
+				nested, valuesWrapper, map.values(), "value",
+				"Field " + field + " must not have null values"
+		));
+	}
+
+	private void readElementSet(
+			Recursor<ReadContext, ReadInfo> recursor,
+			RawMap raw, BitFieldWrapper elementWrapper
+	) {
+		boolean readKeys = elementWrapper == keysWrapper;
+
+		JobOutput<boolean[]> hasElements = null;
+		if (elementWrapper.field.optional) {
+			hasElements = recursor.computeFlat("optional", context -> {
+				boolean[] hadElements = new boolean[raw.delayed.length];
+				for (int index = 0; index < raw.delayed.length; index++) {
+					hadElements[index] = context.input.read();
+				}
+				return hadElements;
 			});
-			recursor.runNested("value for " + entry.getKey(), nested -> writeElement(
-					entry.getValue(), valuesWrapper, nested,
-					"Field " + field + " must not have null values"
-			));
-			recursor.runFlat("popContext", context ->
-					context.output.popContext("value", rememberCounter)
-			);
-			counter += 1;
+		}
+
+		JobOutput<boolean[]> finalHasElements = hasElements;
+		recursor.runNested("elements", nested -> {
+			for (int index = 0; index < raw.delayed.length; index++) {
+				DelayedEntry delayed = raw.delayed[index];
+				if (finalHasElements == null || finalHasElements.get()[index]) {
+					elementWrapper.readValue(nested, element -> {
+						if (readKeys) {
+							if (raw.legacy != null) raw.legacy.legacyKeys.add(element);
+							delayed.setKey(element);
+						} else {
+							if (raw.legacy != null) raw.legacy.legacyValues.add(element);
+							delayed.setValue(element);
+						}
+					});
+				} else {
+					if (readKeys) {
+						if (raw.legacy != null) raw.legacy.legacyKeys.add(null);
+						delayed.setKey(null);
+					} else {
+						if (raw.legacy != null) raw.legacy.legacyValues.add(null);
+						delayed.setValue(null);
+					}
+				}
+			}
+		});
+
+		if (elementWrapper.field.referenceTargetLabel != null) {
+			recursor.runFlat("referenceTargetLabel", context -> {
+				for (int index = 0; index < raw.delayed.length; index++) {
+					if (finalHasElements != null && !finalHasElements.get()[index]) continue;
+					DelayedEntry delayed = raw.delayed[index];
+					context.idLoader.register(
+							elementWrapper.field.referenceTargetLabel,
+							readKeys ? delayed.key : delayed.value, context.input, recursor.info.bitser.cache
+					);
+				}
+			});
 		}
 	}
 
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		JobOutput<Integer> size = recursor.computeFlat("size", context -> {
-			if (sizeField.expectUniform) return (int) decodeUniformInteger(getMinSize(), getMaxSize(), context.input);
-			else return (int) decodeVariableInteger(getMinSize(), getMaxSize(), context.input);
-		});
 
-		recursor.runNested("elements", nested -> {
-			Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(
-					field.type != null ? field.type : HashMap.class, size.get(), recursor.info.sizeLimit
-			);
-
-			LegacyMapInstance legacyInstance = nested.info.backwardCompatible ?
-					new LegacyMapInstance((HashMap<?, ?>) map) : null;
-			for (int counter = 0; counter < size.get(); counter++) {
-				DelayedEntry delayed = new DelayedEntry((key, value) -> {
+		JobOutput<RawMap> getMap = recursor.computeFlat("size", context -> {
+			int size = decodeLength(sizeField, recursor.info.sizeLimit, "map size", context.input);
+			RawMap raw = new RawMap();
+			raw.map = (Map<?, ?>) constructCollectionWithSize(field.type != null ? field.type : HashMap.class, size);
+			raw.legacy = recursor.info.backwardCompatible ?
+					new LegacyMapInstance((HashMap<?, ?>) raw.map) : null;
+			raw.delayed = new DelayedEntry[size];
+			for (int index = 0; index < size; index++) {
+				raw.delayed[index] = new DelayedEntry((key, value) -> {
 					//noinspection unchecked
-					((Map<Object, Object>) map).put(key, value);
-				});
-				readElement(keysWrapper, nested, key -> {
-					if (legacyInstance != null) legacyInstance.legacyKeys.add(key);
-					delayed.setKey(key);
-				});
-				readElement(valuesWrapper, nested, value -> {
-					if (legacyInstance != null) legacyInstance.legacyValues.add(value);
-					delayed.setValue(value);
+					((Map<Object, Object>) raw.map).put(key, value);
 				});
 			}
-
-			if (nested.info.backwardCompatible) setValue.accept(legacyInstance);
-			else setValue.accept(map);
-		});
-	}
-
-	private void readElement(BitFieldWrapper wrapper, Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		JobOutput<Boolean> hasValue = recursor.computeFlat("optional", context -> {
-			if (wrapper.field.optional) {
-				return context.input.read();
-			} else return true;
+			return raw;
 		});
 
-		recursor.runNested("key/value", nested -> {
-			if (!hasValue.get()) {
-				setValue.accept(null);
-				return;
-			}
-
-			List<Object> rememberElement = new ArrayList<>(1);
-			wrapper.readValue(nested, element -> {
-				rememberElement.add(element);
-				setValue.accept(element);
-			});
-
-			if (wrapper.field.referenceTargetLabel != null) {
-				nested.runFlat("referenceTargetLabel", context ->
-						context.idLoader.register(
-							wrapper.field.referenceTargetLabel,
-							rememberElement.get(0), context.input, nested.info.bitser.cache
-						)
-				);
+		recursor.runNested("keys", nested -> {
+			RawMap raw = getMap.get();
+			if (raw.delayed.length > 0) {
+				readElementSet(nested, raw, keysWrapper);
+				readElementSet(nested, raw, valuesWrapper);
 			}
 		});
-	}
 
-	private int getMinSize() {
-		return (int) max(0, sizeField.minValue);
-	}
-
-	private int getMaxSize() {
-		return (int) min(Integer.MAX_VALUE, sizeField.maxValue);
+		recursor.runFlat("finalize", context -> {
+			if (recursor.info.backwardCompatible) setValue.accept(getMap.get().legacy);
+			else setValue.accept(getMap.get().map);
+		});
 	}
 
 	@Override
@@ -211,28 +284,38 @@ class MapFieldWrapper extends BitFieldWrapper {
 		Object dummyKeyArray = Array.newInstance(keysWrapper.field.type, 1);
 		Object dummyValueArray = Array.newInstance(valuesWrapper.field.type, 1);
 
-		legacyInstance.legacyMap.forEach((legacyKey, legacyValue) -> {
-			DelayedEntry delayed = new DelayedEntry((newKey, newValue) -> {
+		DelayedEntry[] delayed = new DelayedEntry[legacyInstance.legacyMap.size()];
+		for (int index = 0; index < delayed.length; index++) {
+			delayed[index] = new DelayedEntry((newKey, newValue) -> {
 				try {
 					Array.set(dummyKeyArray, 0, newKey);
 				} catch (IllegalArgumentException wrongType) {
-					throw new LegacyBitserException("Can't convert from legacy " + legacyKey + " to " + keysWrapper.field.type + " for field " + field);
+					throw new LegacyBitserException("Can't convert from legacy " + newKey + " to " + keysWrapper.field.type + " for field " + field);
 				}
 				try {
 					Array.set(dummyValueArray, 0, newValue);
 				} catch (IllegalArgumentException wrongType) {
-					throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + valuesWrapper.field.type + " for field " + field);
+					throw new LegacyBitserException("Can't convert from legacy " + newValue + " to " + valuesWrapper.field.type + " for field " + field);
 				}
 
 				//noinspection unchecked
 				((Map<Object, Object>)legacyInstance.newMap).put(newKey, newValue);
 			});
-			recursor.runNested("keys", nested ->
-					keysWrapper.setLegacyValue(nested, legacyKey, delayed::setKey)
-			);
-			recursor.runNested("values", nested ->
-					valuesWrapper.setLegacyValue(nested, legacyValue, delayed::setValue)
-			);
+		}
+
+		recursor.runNested("keys", nested -> {
+			int index = 0;
+			for (Object legacyKey : legacyInstance.legacyMap.keySet()) {
+				keysWrapper.setLegacyValue(nested, legacyKey, delayed[index]::setKey);
+				index += 1;
+			}
+		});
+		recursor.runNested("values", nested -> {
+			int index = 0;
+			for (Object legacyValue : legacyInstance.legacyMap.values()) {
+				valuesWrapper.setLegacyValue(nested, legacyValue, delayed[index]::setValue);
+				index += 1;
+			}
 		});
 
 		super.setLegacyValue(recursor, legacyInstance.newMap, setValue);
@@ -244,7 +327,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 		assert rawLegacyInstance != null;
 		LegacyMapInstance legacyInstance = (LegacyMapInstance) rawLegacyInstance;
 		legacyInstance.newMap = (Map<?, ?>) constructCollectionWithSize(
-				field.type, legacyInstance.legacyMap.size(), recursor.info.sizeLimit
+				field.type, legacyInstance.legacyMap.size()
 		);
 		if (field.referenceTargetLabel != null) {
 			recursor.runFlat("referenceTargetLabel", context ->
@@ -252,16 +335,12 @@ class MapFieldWrapper extends BitFieldWrapper {
 			);
 		}
 
-		for (Object key : legacyInstance.legacyKeys) {
-			recursor.runNested("key", nested ->
-					keysWrapper.fixLegacyTypes(nested, key)
-			);
-		}
-		for (Object value : legacyInstance.legacyValues) {
-			recursor.runNested("value", nested ->
-					valuesWrapper.fixLegacyTypes(nested, value)
-			);
-		}
+		recursor.runNested("keys", nested -> {
+			for (Object key : legacyInstance.legacyKeys) keysWrapper.fixLegacyTypes(nested, key);
+		});
+		recursor.runNested("values", nested -> {
+			for (Object value : legacyInstance.legacyValues) valuesWrapper.fixLegacyTypes(nested, value);
+		});
 	}
 
 	private static class DelayedEntry {
@@ -325,5 +404,11 @@ class MapFieldWrapper extends BitFieldWrapper {
 		}
 
 		return code;
+	}
+
+	private static class RawMap {
+		Map<?, ?> map;
+		LegacyMapInstance legacy;
+		DelayedEntry[] delayed;
 	}
 }

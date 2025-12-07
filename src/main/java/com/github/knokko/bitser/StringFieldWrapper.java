@@ -1,6 +1,5 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
@@ -9,7 +8,6 @@ import com.github.knokko.bitser.util.Recursor;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
-import static com.github.knokko.bitser.IntegerBitser.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -24,12 +22,16 @@ class StringFieldWrapper extends BitFieldWrapper {
 		long minLength = 0;
 		long maxLength = Integer.MAX_VALUE;
 		boolean expectUniform = false;
+		int digitSize = IntegerField.DIGIT_SIZE_TERMINATORS;
+		long[] commonValues = new long[0];
 		if (stringField != null) {
 			minLength = max(minLength, stringField.length().minValue());
 			maxLength = min(maxLength, stringField.length().maxValue());
 			expectUniform = stringField.length().expectUniform();
+			digitSize = stringField.length().digitSize();
+			commonValues = stringField.length().commonValues();
 		}
-		this.lengthField = new IntegerField.Properties(minLength, maxLength, expectUniform);
+		this.lengthField = new IntegerField.Properties(minLength, maxLength, expectUniform, digitSize, commonValues);
 	}
 
 	@SuppressWarnings("unused")
@@ -40,44 +42,20 @@ class StringFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		String string = (String) value;
-		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
-
 		recursor.runFlat("string", context -> {
-			context.output.prepareProperty("string-length", -1);
-			if (lengthField.expectUniform) {
-				encodeUniformInteger(bytes.length, lengthField.minValue, lengthField.maxValue, context.output);
-			} else encodeVariableInteger(bytes.length, lengthField.minValue, lengthField.maxValue, context.output);
-			context.output.finishProperty();
-
-			int counter = 0;
-			for (byte b : bytes) {
-				context.output.prepareProperty("string-char", counter++);
-				encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, context.output);
-				context.output.finishProperty();
+			if (context.integerDistribution != null) {
+				long length = ((String) value).getBytes(StandardCharsets.UTF_8).length;
+				context.integerDistribution.insert(field + " string length", length, lengthField);
+				context.integerDistribution.insert("string length", length, lengthField);
 			}
+			StringBitser.encode((String) value, lengthField, context.output);
 		});
 	}
 
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("string-value", context -> {
-			int length;
-			if (lengthField.expectUniform) {
-				length = (int) decodeUniformInteger(lengthField.minValue, lengthField.maxValue, context.input);
-			} else length = (int) decodeVariableInteger(lengthField.minValue, lengthField.maxValue, context.input);
-
-			if (recursor.info.sizeLimit != null && length > recursor.info.sizeLimit.maxSize) {
-				throw new InvalidBitValueException(
-						"String length of " + length + " exceeds the limit of " + recursor.info.sizeLimit.maxSize
-				);
-			}
-
-			byte[] bytes = new byte[length];
-			for (int index = 0; index < length; index++) {
-				bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, context.input);
-			}
-			setValue.accept(new String(bytes, StandardCharsets.UTF_8));
-		});
+		recursor.runFlat("string-value", context ->
+				setValue.accept(StringBitser.decode(lengthField, recursor.info.sizeLimit, context.input))
+		);
 	}
 }

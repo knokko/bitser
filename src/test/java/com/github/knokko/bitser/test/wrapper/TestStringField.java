@@ -54,14 +54,14 @@ public class TestStringField {
 		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
 		bitOutput.write(true);
-		IntegerBitser.encodeVariableInteger(Integer.MAX_VALUE, 0L, Integer.MAX_VALUE, bitOutput);
+		IntegerBitser.encodeUnknownLength(Integer.MAX_VALUE, bitOutput);
 		bitOutput.finish();
 
 		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
 				TestStringField.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
 		)).getMessage();
-		assertContains(errorMessage, "length of 2147483647");
-		assertContains(errorMessage, "exceeds the limit of");
+		assertContains(errorMessage, "2147483647");
+		assertContains(errorMessage, "exceeds the size limit of");
 		assertContains(errorMessage, "1234");
 		assertContains(errorMessage, "-> string-value");
 		assertContains(errorMessage, "-> a ->");

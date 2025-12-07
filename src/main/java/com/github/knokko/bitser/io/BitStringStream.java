@@ -14,6 +14,11 @@ public class BitStringStream extends BitOutputStream {
 	}
 
 	@Override
+	public void write(int value, int numBits) {
+		for (int bit = 0; bit < numBits; bit++) write((value & (1 << bit)) != 0);
+	}
+
+	@Override
 	public void finish() {
 	}
 

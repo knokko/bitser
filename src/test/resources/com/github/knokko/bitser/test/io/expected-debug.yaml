@@ -1,0 +1,62 @@
+output:
+  RootStruct:
+    array:
+      size: 010100
+      element0:
+        ArrayElement:
+          weight:
+            float-value: 00000000000000000000001000000010
+      element1:
+        ArrayElement:
+          weight:
+            float-value: 00000000000000000000010100000011
+    example:
+      int-value: 01001110010000
+    list:
+      size: 010100
+      element0:
+        ListElement:
+          description:
+            string-length: 011010
+            string-char0: 01100111
+            string-char1: 10010111
+            string-char2: 01001111
+            string-char3: 11001111
+            string-char4: 00101111
+      element1:
+        ListElement:
+          description:
+            string-length: 011100
+            string-char0: 11001111
+            string-char1: 10100111
+            string-char2: 11000111
+            string-char3: 11110111
+            string-char4: 01110111
+            string-char5: 00100111
+    map:
+      map-size: 010100
+      key0:
+        MapKey:
+          address:
+            int-value: 0100110000000000000000000000000000000000000000000000000000000000
+      key1:
+        MapKey:
+          address:
+            int-value: 0011101000000000000000000000000000000000000000000000000000000000
+      value0:
+        MapValue:
+          nestedMap:
+            map-size: 00
+      value1:
+        MapValue:
+          nestedMap:
+            map-size: 10
+            key0:
+              MapKey:
+                address:
+                  int-value: 0011101000000000000000000000000000000000000000000000000000000000
+            value0:
+              most-significant-bits: 1111111111111111111111111111111111111111111111111111111111111111
+              least-significant-bits: 1000000000000000000000000000000000000000000000000000000000000000
+    padding:
+      int-value: 01001101000100

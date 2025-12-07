@@ -56,7 +56,9 @@ class ReferenceIdMapper {
 		mappings.register(value, cache);
 	}
 
-	void maybeEncodeUnstableId(String label, Object value, BitOutputStream output) throws IOException {
+	void maybeEncodeUnstableId(
+			String label, Object value, BitOutputStream output, int counter
+	) throws IOException {
 		if (!readOnly) throw new UnexpectedBitserException("You can't call encodeUnstableId until the mapper is read-only");
 
 		Mappings mappings = this.labelMappings.get(label);
@@ -71,7 +73,7 @@ class ReferenceIdMapper {
 				"Can't find unstable reference target with label " + label + " and value " + value
 		);
 
-		output.prepareProperty("unstable-id", -1);
+		output.prepareProperty("unstable-id", counter);
 		encodeUniformInteger(id, 0, mappings.unstable.size() - 1, output);
 		output.finishProperty();
 	}
@@ -95,10 +97,10 @@ class ReferenceIdMapper {
 		);
 
 		output.prepareProperty("most-significant-bits", -1);
-		encodeUniformInteger(id.getMostSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
+		encodeFullLong(id.getMostSignificantBits(), output);
 		output.finishProperty();
 		output.prepareProperty("least-significant-bits", -1);
-		encodeUniformInteger(id.getLeastSignificantBits(), Long.MIN_VALUE, Long.MAX_VALUE, output);
+		encodeFullLong(id.getLeastSignificantBits(), output);
 		output.finishProperty();
 	}
 
@@ -128,7 +130,7 @@ class ReferenceIdMapper {
 			Mappings mappings = labelMappings.get(label);
 			if (mappings.unstable != null) {
 				output.prepareProperty("unstable-size", propertyCounter++);
-				encodeVariableInteger(mappings.unstable.size(), 0, Integer.MAX_VALUE, output);
+				encodeUnknownLength(mappings.unstable.size(), output);
 				output.finishProperty();
 			}
 		}

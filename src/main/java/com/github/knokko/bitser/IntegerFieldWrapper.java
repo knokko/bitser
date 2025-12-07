@@ -1,7 +1,6 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -44,7 +43,9 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 		this.intField = new IntegerField.Properties(
 				getMinValue(intField.minValue(), field.type),
 				getMaxValue(intField.maxValue(), field.type),
-				intField.expectUniform()
+				intField.expectUniform(),
+				intField.digitSize(),
+				intField.commonValues()
 		);
 	}
 
@@ -58,19 +59,19 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 	void writeValue(Object fatValue, Recursor<WriteContext, WriteInfo> recursor) {
 		recursor.runFlat("int-value", context -> {
 			long value = fatValue instanceof Character ? (long) ((char) fatValue) : ((Number) fatValue).longValue();
+			if (context.integerDistribution != null) {
+				context.integerDistribution.insert(field.toString(), value, intField);
+			}
 			context.output.prepareProperty("int-value", -1);
-			if (intField.expectUniform) encodeUniformInteger(value, intField.minValue, intField.maxValue, context.output);
-			else encodeVariableInteger(value, intField.minValue, intField.maxValue, context.output);
+			encodeInteger(value, intField, context.output);
 			context.output.finishProperty();
 		});
 	}
 
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("int-value", read -> {
-			long longValue;
-			if (intField.expectUniform) longValue = decodeUniformInteger(intField.minValue, intField.maxValue, read.input);
-			else longValue = decodeVariableInteger(intField.minValue, intField.maxValue, read.input);
+		recursor.runFlat("int-value", context -> {
+			long longValue = decodeInteger(intField, context.input);
 
 			Class<?> type = field.type;
 			if (type == byte.class || type == Byte.class) setValue.accept((byte) longValue);
@@ -84,7 +85,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 	@Override
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (value == null) {
-			super.setLegacyValue(recursor, value, setValue);
+			super.setLegacyValue(recursor, null, setValue);
 		} else if (value instanceof Number || value instanceof Character) {
 			long l = value instanceof Number ? ((Number) value).longValue() : (long) ((char) value);
 			if (l < intField.minValue || l > intField.maxValue) {

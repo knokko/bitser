@@ -100,11 +100,13 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
 				final int rememberIndex = index;
-				recursor.runFlat("allowed-class-index", context -> {
-					context.output.prepareProperty("allowed-class-index", -1);
-					encodeUniformInteger(rememberIndex, 0, allowed.length - 1, context.output);
-					context.output.finishProperty();
-				});
+				if (allowed.length > 1) {
+					recursor.runFlat("allowed-class-index", context -> {
+						context.output.prepareProperty("allowed-class-index", -1);
+						encodeUniformInteger(rememberIndex, 0, allowed.length - 1, context.output);
+						context.output.finishProperty();
+					});
+				}
 
 				recursor.info.bitser.cache.getWrapper(value.getClass()).write(value, recursor);
 				return;
@@ -119,16 +121,21 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
-		JobOutput<Integer> inheritanceIndex = recursor.computeFlat("inheritance-index", context ->
-				(int) decodeUniformInteger(0, length - 1, context.input)
-		);
+		if (length > 1) {
+			JobOutput<Integer> inheritanceIndex = recursor.computeFlat("inheritance-index", context ->
+					(int) decodeUniformInteger(0, length - 1, context.input)
+			);
 
-		recursor.runNested("struct", nested -> {
+			recursor.runNested("struct", nested -> {
+				if (allowed.length == 0) {
+					legacyStructs[inheritanceIndex.get()].read(nested, inheritanceIndex.get(), setValue::accept);
+				} else nested.info.bitser.cache.getWrapper(allowed[inheritanceIndex.get()]).read(nested, setValue);
+			});
+		} else {
 			if (allowed.length == 0) {
-				legacyStructs[inheritanceIndex.get()].read(nested, inheritanceIndex.get(), setValue::accept);
-			} else nested.info.bitser.cache.getWrapper(allowed[inheritanceIndex.get()]).read(nested, setValue);
-		});
-
+				legacyStructs[0].read(recursor, 0, setValue::accept);
+			} else recursor.info.bitser.cache.getWrapper(allowed[0]).read(recursor, setValue);
+		}
 	}
 
 	@Override

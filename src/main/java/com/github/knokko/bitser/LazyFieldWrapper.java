@@ -7,8 +7,8 @@ import com.github.knokko.bitser.util.Recursor;
 
 import java.util.function.Consumer;
 
-import static com.github.knokko.bitser.IntegerBitser.decodeVariableInteger;
-import static com.github.knokko.bitser.IntegerBitser.encodeVariableInteger;
+import static com.github.knokko.bitser.IntegerBitser.decodeUnknownLength;
+import static com.github.knokko.bitser.IntegerBitser.encodeUnknownLength;
 
 @BitStruct(backwardCompatible = false)
 class LazyFieldWrapper extends BitFieldWrapper {
@@ -34,7 +34,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 				Object[] options = SimpleLazyBits.getOptions(recursor.info.legacy != null);
 				byte[] bytes = lazy.bytes;
 				if (bytes == null) bytes = recursor.info.bitser.serializeToBytes(lazy.get(), options);
-				encodeVariableInteger(bytes.length, 0L, Integer.MAX_VALUE, context.output);
+				encodeUnknownLength(bytes.length, context.output);
 				context.output.write(bytes);
 			});
 		} else {
@@ -45,7 +45,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("lazy-bytes", context -> {
-			int size = (int) decodeVariableInteger(0L, Integer.MAX_VALUE, context.input);
+			int size = decodeUnknownLength(recursor.info.sizeLimit, "lazy byte[] size", context.input);
 			byte[] bytes = new byte[size];
 			context.input.read(bytes);
 

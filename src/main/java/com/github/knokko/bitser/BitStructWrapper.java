@@ -8,7 +8,6 @@ import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.util.JobOutput;
 import com.github.knokko.bitser.util.Recursor;
 
-import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.Consumer;
@@ -106,13 +105,10 @@ class BitStructWrapper<T> {
 				return false;
 			});
 
-			for (SingleClassWrapper currentClass : classHierarchy) {
-				recursor.runNested(currentClass.myClass.getSimpleName(), nested -> {
-					if (!alreadyContainsThis.get()) {
-						currentClass.collectReferenceLabels(nested);
-					}
-				});
-			}
+			recursor.runNested(constructor.getDeclaringClass().getSimpleName(), nested -> {
+				if (alreadyContainsThis.get()) return;
+				for (SingleClassWrapper currentClass : classHierarchy) currentClass.collectReferenceLabels(nested);
+			});
 
 			recursor.runFlat("store-cache", labels -> {
 				if (everythingIsMine.get() && !alreadyContainsThis.get()) {
@@ -125,11 +121,11 @@ class BitStructWrapper<T> {
 	}
 
 	void registerReferenceTargets(Object object, Recursor<ReferenceIdMapper, BitserCache> recursor) {
-		for (SingleClassWrapper currentClass : classHierarchy) {
-			recursor.runNested(currentClass.myClass.getSimpleName(), child ->
-					currentClass.registerReferenceTargets(object, child)
-			);
-		}
+		recursor.runNested(constructor.getDeclaringClass().getSimpleName(), nested -> {
+			for (SingleClassWrapper currentClass : classHierarchy) {
+				currentClass.registerReferenceTargets(object, nested);
+			}
+		});
 	}
 
 	JobOutput<LegacyStruct> registerClasses(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
@@ -179,7 +175,7 @@ class BitStructWrapper<T> {
 		}
 	}
 
-	void read(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) throws IOException {
+	void read(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		T object = createEmptyInstance();
 		Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();
 		for (SingleClassWrapper currentClass : classHierarchy) {

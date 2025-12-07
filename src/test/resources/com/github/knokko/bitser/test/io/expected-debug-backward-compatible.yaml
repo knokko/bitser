@@ -1,0 +1,502 @@
+legacy-classes:
+  id-mapper:
+    unstable-size0: 011100
+    unstable-size1: 011010
+  output:
+    LegacyClasses:
+      classes:
+        size: 011100
+        element0:
+          LegacyClass:
+            fields:
+              size: 011010
+              element0:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 0001
+                    BitCollectionFieldWrapper:
+                      valuesWrapper:
+                        allowed-class-index: 0110
+                        StructFieldWrapper:
+                          legacyStructs:
+                            size: 10
+                            optional: 1
+                            element0:
+                              unstable-id: 100
+                        BitFieldWrapper:
+                          field:
+                            VirtualField:
+                              optional:
+                                boolean-value: 0
+                              referenceTargetLabel:
+                                not-null: 0
+                    AbstractCollectionFieldWrapper:
+                      arrayType:
+                        not-null: 0
+                      sizeField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1000
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 00
+              element1:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 0001
+                    BitCollectionFieldWrapper:
+                      valuesWrapper:
+                        allowed-class-index: 0110
+                        StructFieldWrapper:
+                          legacyStructs:
+                            size: 10
+                            optional: 1
+                            element0:
+                              unstable-id: 010
+                        BitFieldWrapper:
+                          field:
+                            VirtualField:
+                              optional:
+                                boolean-value: 0
+                              referenceTargetLabel:
+                                not-null: 0
+                    AbstractCollectionFieldWrapper:
+                      arrayType:
+                        not-null: 0
+                      sizeField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1000
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 10
+              element2:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 1000
+                    IntegerFieldWrapper:
+                      intField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1001
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 010100
+              element3:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 0101
+                    MapFieldWrapper:
+                      keysWrapper:
+                        allowed-class-index: 0110
+                        StructFieldWrapper:
+                          legacyStructs:
+                            size: 10
+                            optional: 1
+                            element0:
+                              unstable-id: 110
+                        BitFieldWrapper:
+                          field:
+                            VirtualField:
+                              optional:
+                                boolean-value: 0
+                              referenceTargetLabel:
+                                not-null: 0
+                      sizeField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1000
+                      valuesWrapper:
+                        allowed-class-index: 0110
+                        StructFieldWrapper:
+                          legacyStructs:
+                            size: 10
+                            optional: 1
+                            element0:
+                              unstable-id: 001
+                        BitFieldWrapper:
+                          field:
+                            VirtualField:
+                              optional:
+                                boolean-value: 0
+                              referenceTargetLabel:
+                                not-null: 0
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 010110
+              element4:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 1000
+                    IntegerFieldWrapper:
+                      intField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1001
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 011000
+            functions:
+              size: 00
+        element1:
+          LegacyClass:
+            fields:
+              size: 10
+              element0:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 1100
+                    StringFieldWrapper:
+                      lengthField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1000
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 00
+            functions:
+              size: 00
+        element2:
+          LegacyClass:
+            fields:
+              size: 00
+            functions:
+              size: 00
+        element3:
+          LegacyClass:
+            fields:
+              size: 10
+              element0:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 0100
+                    FloatFieldWrapper:
+                      floatField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          errorTolerance:
+                            float-common: 1
+                            float-common-index: 00
+                          expectMultipleOf:
+                            float-common: 1
+                            float-common-index: 000
+                          expectedIntegerMultiple:
+                            Properties:
+                              commonValues:
+                                size: 00
+                              digitSize:
+                                int-value: 000
+                              expectUniform:
+                                boolean-value: 0
+                              maxValue:
+                                int-value: 111
+                              minValue:
+                                int-value: 1101
+                      isFloat:
+                        boolean-value: 1
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 00
+            functions:
+              size: 00
+        element4:
+          LegacyClass:
+            fields:
+              size: 10
+              element0:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 1000
+                    IntegerFieldWrapper:
+                      intField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 1
+                          maxValue:
+                            int-value: 111
+                          minValue:
+                            int-value: 1101
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 011010
+            functions:
+              size: 00
+        element5:
+          LegacyClass:
+            fields:
+              size: 10
+              element0:
+                LegacyField:
+                  bitField:
+                    allowed-class-index: 0101
+                    MapFieldWrapper:
+                      keysWrapper:
+                        allowed-class-index: 0110
+                        StructFieldWrapper:
+                          legacyStructs:
+                            size: 10
+                            optional: 1
+                            element0:
+                              unstable-id: 110
+                        BitFieldWrapper:
+                          field:
+                            VirtualField:
+                              optional:
+                                boolean-value: 0
+                              referenceTargetLabel:
+                                not-null: 0
+                      sizeField:
+                        Properties:
+                          commonValues:
+                            size: 00
+                          digitSize:
+                            int-value: 000
+                          expectUniform:
+                            boolean-value: 0
+                          maxValue:
+                            int-value: 101
+                          minValue:
+                            int-value: 1000
+                      valuesWrapper:
+                        allowed-class-index: 0010
+                        UUIDFieldWrapper:
+                          isStableReferenceId:
+                            boolean-value: 0
+                        BitFieldWrapper:
+                          field:
+                            VirtualField:
+                              optional:
+                                boolean-value: 0
+                              referenceTargetLabel:
+                                not-null: 0
+                    BitFieldWrapper:
+                      field:
+                        VirtualField:
+                          optional:
+                            boolean-value: 0
+                          referenceTargetLabel:
+                            not-null: 0
+                  id:
+                    int-value: 010100
+            functions:
+              size: 00
+        reference-target-label:
+          unstable-id0: 000
+          unstable-id1: 100
+          unstable-id2: 010
+          unstable-id3: 110
+          unstable-id4: 001
+          unstable-id5: 101
+      root:
+        unstable-id: 000
+      structs:
+        size: 011010
+        element0:
+          LegacyStruct:
+            classHierarchy:
+              size: 010100
+              element0:
+                unstable-id: 000
+              element1:
+                unstable-id: 010
+        element1:
+          LegacyStruct:
+            classHierarchy:
+              size: 010100
+              element0:
+                unstable-id: 100
+              element1:
+                unstable-id: 010
+        element2:
+          LegacyStruct:
+            classHierarchy:
+              size: 010100
+              element0:
+                unstable-id: 110
+              element1:
+                unstable-id: 010
+        element3:
+          LegacyStruct:
+            classHierarchy:
+              size: 010100
+              element0:
+                unstable-id: 001
+              element1:
+                unstable-id: 010
+        element4:
+          LegacyStruct:
+            classHierarchy:
+              size: 010100
+              element0:
+                unstable-id: 101
+              element1:
+                unstable-id: 010
+        reference-target-label:
+          unstable-id0: 000
+          unstable-id1: 100
+          unstable-id2: 010
+          unstable-id3: 110
+          unstable-id4: 001
+output:
+  RootStruct:
+    list:
+      size: 010100
+      element0:
+        ListElement:
+          description:
+            string-length: 011010
+            string-char0: 01100111
+            string-char1: 10010111
+            string-char2: 01001111
+            string-char3: 11001111
+            string-char4: 00101111
+      element1:
+        ListElement:
+          description:
+            string-length: 011100
+            string-char0: 11001111
+            string-char1: 10100111
+            string-char2: 11000111
+            string-char3: 11110111
+            string-char4: 01110111
+            string-char5: 00100111
+    array:
+      size: 010100
+      element0:
+        ArrayElement:
+          weight:
+            float-value: 00000000000000000000001000000010
+      element1:
+        ArrayElement:
+          weight:
+            float-value: 00000000000000000000010100000011
+    example:
+      int-value: 01001110010000
+    map:
+      map-size: 010100
+      key0:
+        MapKey:
+          address:
+            int-value: 0100110000000000000000000000000000000000000000000000000000000000
+      key1:
+        MapKey:
+          address:
+            int-value: 0011101000000000000000000000000000000000000000000000000000000000
+      value0:
+        MapValue:
+          nestedMap:
+            map-size: 00
+      value1:
+        MapValue:
+          nestedMap:
+            map-size: 10
+            key0:
+              MapKey:
+                address:
+                  int-value: 0011101000000000000000000000000000000000000000000000000000000000
+            value0:
+              most-significant-bits: 1111111111111111111111111111111111111111111111111111111111111111
+              least-significant-bits: 1000000000000000000000000000000000000000000000000000000000000000
+    padding:
+      int-value: 01001101000100

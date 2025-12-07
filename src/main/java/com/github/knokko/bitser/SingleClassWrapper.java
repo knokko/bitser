@@ -219,15 +219,19 @@ class SingleClassWrapper {
 		);
 
 		for (FieldWrapper field : getFields(recursor.info.legacy != null)) {
-			recursor.runFlat("pushContext", context ->
-					context.output.pushContext(field.classField.getName(), -1)
-			);
+			if (recursor.info.usesContextInfo) {
+				recursor.runFlat("pushContext", context ->
+						context.output.pushContext(field.classField.getName(), -1)
+				);
+			}
 			recursor.runNested(field.classField.getName(), nested ->
 					field.bitField.writeField(object, nested)
 			);
-			recursor.runFlat("popContext", context ->
-					context.output.popContext(field.classField.getName(), -1)
-			);
+			if (recursor.info.usesContextInfo) {
+				recursor.runFlat("popContext", context ->
+						context.output.popContext(field.classField.getName(), -1)
+				);
+			}
 		}
 
 		FunctionContext functionContext = new FunctionContext(

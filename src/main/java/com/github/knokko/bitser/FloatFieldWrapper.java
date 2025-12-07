@@ -1,17 +1,15 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
-import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.util.function.Consumer;
 
-import static com.github.knokko.bitser.IntegerBitser.*;
-import static java.lang.Math.abs;
+import static com.github.knokko.bitser.FloatBitser.decodeFloat;
+import static com.github.knokko.bitser.FloatBitser.encodeFloat;
 
 @BitStruct(backwardCompatible = false)
 class FloatFieldWrapper extends BitFieldWrapper {
@@ -43,57 +41,19 @@ class FloatFieldWrapper extends BitFieldWrapper {
 	@Override
 	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		recursor.runFlat("float-value", context -> {
-			if (floatField.expectMultipleOf != 0.0) {
-				double doubleValue = ((Number) value).doubleValue();
-				long count = Math.round(doubleValue / floatField.expectMultipleOf);
-				double recoveredValue = count * floatField.expectMultipleOf;
-
-				if (abs(recoveredValue - doubleValue) <= floatField.errorTolerance) {
-					BitCountStream counter = new BitCountStream();
-					encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, counter);
-
-					if ((value instanceof Float && counter.getCounter() < 32) || (value instanceof Double && counter.getCounter() < 64)) {
-						context.output.prepareProperty("float-simplified", -1);
-						context.output.write(true);
-						context.output.finishProperty();
-						context.output.prepareProperty("float-integer-value", -1);
-						encodeVariableInteger(count, Long.MIN_VALUE, Long.MAX_VALUE, context.output);
-						context.output.finishProperty();
-						return;
-					}
-				}
-
-				context.output.prepareProperty("float-simplified", -1);
-				context.output.write(false);
-				context.output.finishProperty();
+			if (context.floatDistribution != null) {
+				context.floatDistribution.insert(field.toString(), ((Number) value).doubleValue(), floatField);
 			}
-
-			context.output.prepareProperty("float-value", -1);
-			if (value instanceof Float) {
-				encodeUniformInteger(Float.floatToRawIntBits((Float) value), Integer.MIN_VALUE, Integer.MAX_VALUE, context.output);
-			} else {
-				encodeUniformInteger(Double.doubleToRawLongBits((Double) value), Long.MIN_VALUE, Long.MAX_VALUE, context.output);
-			}
-			context.output.finishProperty();
+			encodeFloat(((Number) value).doubleValue(), value instanceof Double, floatField, context.output);
 		});
 	}
 
 	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("float-value", context -> {
-			if (floatField.expectMultipleOf != 0.0 && context.input.read()) {
-				long count = IntegerBitser.decodeVariableInteger(Long.MIN_VALUE, Long.MAX_VALUE, context.input);
-				double result = count * floatField.expectMultipleOf;
-				if (isFloat) setValue.accept((float) result);
-				else setValue.accept(result);
-				return;
-			}
-
-			if (isFloat) {
-				setValue.accept(Float.intBitsToFloat((int) decodeUniformInteger(Integer.MIN_VALUE, Integer.MAX_VALUE, context.input)));
-			} else {
-				setValue.accept(Double.longBitsToDouble(decodeUniformInteger(Long.MIN_VALUE, Long.MAX_VALUE, context.input)));
-			}
+			double value = decodeFloat(!isFloat, floatField, context.input);
+			if (isFloat) setValue.accept((float) value);
+			else setValue.accept(value);
 		});
 	}
 

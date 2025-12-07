@@ -1,6 +1,7 @@
-package com.github.knokko.bitser.io;
+package com.github.knokko.bitser.test.io;
 
 import com.github.knokko.bitser.IntegerBitser;
+import com.github.knokko.bitser.io.BitOutputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -29,7 +30,7 @@ public class BitOutputBenchmark {
 		writeSimpleData(output, 100_000_000);
 		for (long value = 0; value < 1_000_000; value++) {
 			IntegerBitser.encodeUniformInteger(value, 0, 1000_000_000_000L, output);
-			IntegerBitser.encodeVariableInteger(value, 0, 1000_000_000_000L, output);
+			IntegerBitser.encodeVariableIntegerUsingTerminatorBits(value, 0, 1000_000_000_000L, output);
 		}
 		output.finish();
 	}

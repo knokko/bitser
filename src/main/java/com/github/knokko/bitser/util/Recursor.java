@@ -21,7 +21,7 @@ public class Recursor<Context, Info> {
 		Output rootResult;
 		Stack<Recursor<Context, Info>> stack = new Stack<>();
 		{
-			Recursor<Context, Info> rootRecursor = new Recursor<>("Recursor Root", info);
+			Recursor<Context, Info> rootRecursor = new Recursor<>("Recursor Root", info, stack);
 			try {
 				rootResult = rootMethod.run(rootRecursor);
 			} catch (Throwable jobFailed) {
@@ -44,9 +44,8 @@ public class Recursor<Context, Info> {
 					} catch (Throwable jobFailed) {
 						throw new RecursorException(createDebugInfoStack(stack, nextJob.debugInfo), jobFailed);
 					}
-				}
-				else if (nextJob instanceof NestedEntry) {
-					Recursor<Context, Info> nextContext = new Recursor<>(nextJob.debugInfo, info);
+				} else if (nextJob instanceof NestedEntry) {
+					Recursor<Context, Info> nextContext = new Recursor<>(nextJob.debugInfo, info, stack);
 					NestedEntry<Context, Info, Object> nestedJob = (NestedEntry<Context, Info, Object>) nextJob;
 					try {
 						nestedJob.output.output = nestedJob.job.run(nextContext);
@@ -72,10 +71,12 @@ public class Recursor<Context, Info> {
 	private final String debugInfo;
 	public final Info info;
 	private final Queue<Entry> jobs = new ArrayDeque<>();
+	private final Stack<Recursor<Context, Info>> stack;
 
-	private Recursor(String debugInfo, Info info) {
+	private Recursor(String debugInfo, Info info, Stack<Recursor<Context, Info>> stack ) {
 		this.debugInfo = debugInfo;
 		this.info = info;
+		this.stack = stack;
 	}
 
 	public <Output> JobOutput<Output> computeFlat(String debugInfo, ResultJob<Context, Output> job) {
@@ -102,6 +103,10 @@ public class Recursor<Context, Info> {
 			job.run(nested);
 			return null;
 		});
+	}
+
+	public String createDebugInfoStack(String lastInfo) {
+		return createDebugInfoStack(stack, lastInfo);
 	}
 
 	private static class Entry {

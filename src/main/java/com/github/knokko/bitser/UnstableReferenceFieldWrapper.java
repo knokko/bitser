@@ -25,7 +25,7 @@ class UnstableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	@Override
 	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		recursor.runFlat("unstable reference", context ->
-				context.idMapper.maybeEncodeUnstableId(label, value, context.output)
+				context.idMapper.maybeEncodeUnstableId(label, value, context.output, -1)
 		);
 	}
 

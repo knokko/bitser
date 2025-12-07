@@ -34,6 +34,16 @@ class WrapperFactory {
 		public long maxValue() {
 			return Integer.MAX_VALUE;
 		}
+
+		@Override
+		public int digitSize() {
+			return IntegerField.DIGIT_SIZE_TERMINATORS;
+		}
+
+		@Override
+		public long[] commonValues() {
+			return new long[0];
+		}
 	};
 
 	private static NestedFieldSetting getSetting(

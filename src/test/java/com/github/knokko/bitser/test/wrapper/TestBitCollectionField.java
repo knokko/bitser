@@ -411,7 +411,7 @@ public class TestBitCollectionField {
 
 		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
-		IntegerBitser.encodeVariableInteger(Integer.MAX_VALUE, 0L, Integer.MAX_VALUE, bitOutput);
+		IntegerBitser.encodeUnknownLength(Integer.MAX_VALUE, bitOutput);
 		bitOutput.finish();
 
 		// Without limit
