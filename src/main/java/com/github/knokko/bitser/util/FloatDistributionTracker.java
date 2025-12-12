@@ -17,10 +17,10 @@ import static java.lang.Math.min;
 public class FloatDistributionTracker extends DistributionTracker<Double> {
 
 	public static class Entry {
-		int digitSize;
-		double expectMultipleOf;
-		double[] commonValues;
-		int spentBits;
+		public int digitSize;
+		public double expectMultipleOf;
+		public double[] commonValues;
+		public int spentBits;
 
 		@Override
 		public String toString() {

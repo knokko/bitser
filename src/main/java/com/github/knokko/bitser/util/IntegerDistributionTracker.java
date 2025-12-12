@@ -13,9 +13,9 @@ import static java.lang.Math.min;
 public class IntegerDistributionTracker extends DistributionTracker<Long> {
 
 	public static class Entry {
-		int digitSize;
-		long[] commonValues;
-		int spentBits;
+		public int digitSize;
+		public long[] commonValues;
+		public int spentBits;
 
 		@Override
 		public String toString() {

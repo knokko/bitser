@@ -18,6 +18,7 @@ import java.util.*;
 public class Bitser {
 
 	public static final Object BACKWARD_COMPATIBLE = new Object();
+	public static final Object FORBID_LAZY_SAVING = new Object();
 
 	final BitserCache cache;
 
@@ -69,12 +70,14 @@ public class Bitser {
 		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		boolean backwardCompatible = false;
+		boolean forbidLazySaving = false;
 		IntegerDistributionTracker integerDistribution = null;
 		FloatDistributionTracker floatDistribution = null;
 		Map<String, Object> withParameters = new HashMap<>();
 
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE) backwardCompatible = true;
+			if (withObject == FORBID_LAZY_SAVING) forbidLazySaving = true;
 			if (withObject instanceof IntegerDistributionTracker) {
 				integerDistribution = (IntegerDistributionTracker) withObject;
 			}
@@ -120,9 +123,8 @@ public class Bitser {
 		}
 
 		for (Object withObject : withAndOptions) {
-			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE
-					|| withObject instanceof DistributionTracker
-			) continue;
+			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
+			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
 			Recursor.run(
 					new LabelContext(labelContext.declaredTargets),
 					new LabelInfo(cache, false, labelInfo.functionContext),
@@ -135,9 +137,8 @@ public class Bitser {
 				wrapper.registerReferenceTargets(object, recursor)
 		);
 		for (Object withObject : withAndOptions) {
-			if (withObject instanceof WithParameter || withObject == BACKWARD_COMPATIBLE
-					|| withObject instanceof DistributionTracker
-			) continue;
+			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
+			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
 			Recursor.run(idMapper, cache, recursor ->
 					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
 			);
@@ -150,7 +151,7 @@ public class Bitser {
 		output.pushContext("output", -1);
 		Recursor.run(
 				new WriteContext(output, idMapper, integerDistribution, floatDistribution),
-				new WriteInfo(this, withParameters, legacy, output.usesContextInfo()),
+				new WriteInfo(this, withParameters, legacy, output.usesContextInfo(), forbidLazySaving),
 				recursor -> wrapper.write(object, recursor)
 		);
 		output.popContext("output", -1);
@@ -206,9 +207,8 @@ public class Bitser {
 
 		Map<String, Object> withParameters = new HashMap<>();
 		for (Object withObject : withAndOptions) {
-			if (withObject == null || withObject == BACKWARD_COMPATIBLE || withObject instanceof CollectionSizeLimit) {
-				continue;
-			}
+			if (withObject == null || withObject == BACKWARD_COMPATIBLE || withObject  == FORBID_LAZY_SAVING) continue;
+			if (withObject instanceof CollectionSizeLimit || withObject instanceof DistributionTracker) continue;
 			if (withObject instanceof WithParameter) {
 				WithParameter parameter = (WithParameter) withObject;
 				if (withParameters.containsKey(parameter.key)) {
@@ -228,8 +228,16 @@ public class Bitser {
 
 		ReferenceIdMapper withMapper = new ReferenceIdMapper(labelContext);
 		for (Object withObject : withAndOptions) {
-			if (withObject == null || withObject instanceof WithParameter ||
-					withObject == BACKWARD_COMPATIBLE || withObject instanceof CollectionSizeLimit) continue;
+			if (withObject == null || withObject == BACKWARD_COMPATIBLE) continue;
+			if (withObject == FORBID_LAZY_SAVING) {
+				System.out.println("Ignoring FORBID_LAZY_SAVING option in Bitser.deserialize");
+				continue;
+			}
+			if (withObject instanceof WithParameter || withObject instanceof CollectionSizeLimit) continue;
+			if (withObject instanceof DistributionTracker) {
+				System.out.println("Ignoring DistributionTracker option in Bitser.deserialize");
+				continue;
+			}
 
 			Recursor.run(withMapper, cache, recursor ->
 					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)

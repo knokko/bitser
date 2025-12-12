@@ -32,10 +32,6 @@ public final class SimpleLazyBits<T> {
 	private static final Object[] NOT_BACKWARD_COMPATIBLE = new Object[0];
 	private static final Object[] BACKWARD_COMPATIBLE = { Bitser.BACKWARD_COMPATIBLE };
 
-	static Object[] getOptions(boolean backwardCompatible) {
-		return backwardCompatible ? BACKWARD_COMPATIBLE : NOT_BACKWARD_COMPATIBLE;
-	}
-
 	private Class<? extends T> valueClass;
 	private Bitser bitser;
 	private boolean backwardCompatible;
@@ -64,7 +60,8 @@ public final class SimpleLazyBits<T> {
 	 */
 	public T get() {
 		if (value == null) {
-			value = bitser.deserializeFromBytes(valueClass, bytes, getOptions(backwardCompatible));
+			Object[] options = backwardCompatible ? BACKWARD_COMPATIBLE : NOT_BACKWARD_COMPATIBLE;
+			value = bitser.deserializeFromBytes(valueClass, bytes, options);
 		}
 		return value;
 	}
