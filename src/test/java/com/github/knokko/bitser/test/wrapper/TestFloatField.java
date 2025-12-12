@@ -5,6 +5,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.Bitser;
+import com.github.knokko.bitser.field.IntegerField;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -112,5 +113,22 @@ public class TestFloatField {
 		ParticleSize original = new ParticleSize();
 		ParticleSize copied = new Bitser(false).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(0f, copied.growX);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class OutOfRange {
+
+		@FloatField(expectMultipleOf = 0.1, expectedIntegerMultiple = @IntegerField(
+				maxValue = 100, expectUniform = false
+		))
+		float value;
+	}
+
+	@Test
+	public void testIntegerMultipleOutOfRange() {
+		OutOfRange original = new OutOfRange();
+		original.value = 15f;
+
+		assertEquals(15f, new Bitser(true).deepCopy(original).value);
 	}
 }

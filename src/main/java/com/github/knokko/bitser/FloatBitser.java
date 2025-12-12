@@ -34,7 +34,11 @@ public class FloatBitser {
 			long count = Math.round(doubleValue / field.expectMultipleOf);
 			double recoveredValue = count * field.expectMultipleOf;
 
-			if (abs(recoveredValue - doubleValue) <= field.errorTolerance) {
+			if (
+					abs(recoveredValue - doubleValue) <= field.errorTolerance &&
+							count >= field.expectedIntegerMultiple.minValue &&
+							count <= field.expectedIntegerMultiple.maxValue
+			) {
 				BitCountStream counter = new BitCountStream();
 				encodeInteger(count, field.expectedIntegerMultiple, counter);
 
