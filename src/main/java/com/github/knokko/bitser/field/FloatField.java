@@ -22,10 +22,10 @@ public @interface FloatField {
 	@BitStruct(backwardCompatible = false)
 	class Properties {
 
-		@FloatField(commonValues = { 0.0, 0.01, 0.05, 0.1, 0.5, 1.0 })
+		@FloatField(errorTolerance = 0.0, commonValues = { 0.0, 0.01, 0.05, 0.1, 0.5, 1.0 })
 		public final double expectMultipleOf;
 
-		@FloatField(commonValues = { 0.0, 0.001, 0.01 })
+		@FloatField(errorTolerance = 0.0, commonValues = { 0.0, 0.001, 0.01 })
 		public final double errorTolerance;
 
 		@BitField

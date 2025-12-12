@@ -261,7 +261,7 @@ legacy-classes:
                             size: 00
                           errorTolerance:
                             float-common: 1
-                            float-common-index: 00
+                            float-common-index: 10
                           expectMultipleOf:
                             float-common: 1
                             float-common-index: 000

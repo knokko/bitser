@@ -98,4 +98,19 @@ public class TestFloatField {
 		assertEquals(3f, loaded.values[4]);
 		assertEquals(5f, loaded.values[5]); // Should be rounded to exactly 5
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ParticleSize {
+
+		@BitField(id = 0)
+		@FloatField(expectMultipleOf = 0.001)
+		float growX;
+	}
+
+	@Test
+	public void particleSizeRegressionTest() {
+		ParticleSize original = new ParticleSize();
+		ParticleSize copied = new Bitser(false).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(0f, copied.growX);
+	}
 }

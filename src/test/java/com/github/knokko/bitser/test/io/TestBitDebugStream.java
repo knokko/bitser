@@ -187,6 +187,7 @@ public class TestBitDebugStream {
 				TestBitDebugStream.class.getResourceAsStream("expected-debug-backward-compatible.yaml")
 		));
 
+		//System.out.println(new String(debugBytes.toByteArray()));
 		while (expectedScanner.hasNextLine()) {
 			assertEquals(expectedScanner.nextLine(), actualScanner.nextLine());
 		}
