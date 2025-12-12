@@ -42,7 +42,7 @@ class WrapperFactory {
 
 		@Override
 		public long[] commonValues() {
-			return new long[0];
+			return new long[] { 0 };
 		}
 	};
 
