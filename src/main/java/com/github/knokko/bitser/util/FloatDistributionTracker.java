@@ -125,6 +125,22 @@ public class FloatDistributionTracker extends DistributionTracker<Double> {
 					entry.spentBits = countBits(fieldData, properties);
 					entries.add(entry);
 				}
+
+				FloatField.Properties properties = new FloatField.Properties(
+						expectMultipleOf, originalProperties.errorTolerance,
+						new IntegerField.Properties(
+								originalProperties.expectedIntegerMultiple.minValue,
+								originalProperties.expectedIntegerMultiple.maxValue,
+								true, 0, new long[0]
+						),
+						commonValues
+				);
+				Entry entry = new Entry();
+				entry.digitSize = -1;
+				entry.expectMultipleOf = expectMultipleOf;
+				entry.commonValues = commonValues;
+				entry.spentBits = countBits(fieldData, properties);
+				entries.add(entry);
 			}
 		}
 
