@@ -19,6 +19,8 @@ import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.IntegerBitser.*;
 import static com.github.knokko.bitser.AbstractCollectionFieldWrapper.constructCollectionWithSize;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 @BitStruct(backwardCompatible = false)
 class MapFieldWrapper extends BitFieldWrapper {
@@ -40,7 +42,10 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (field.type.isInterface() || Modifier.isAbstract(field.type.getModifiers())) {
 			throw new InvalidBitFieldException("Field type must not be abstract or an interface: " + field);
 		}
-		this.sizeField = new IntegerField.Properties(sizeField);
+		this.sizeField = new IntegerField.Properties(
+				max(0, sizeField.minValue()), min(Integer.MAX_VALUE, sizeField.maxValue()),
+				sizeField.expectUniform(), sizeField.digitSize(), sizeField.commonValues()
+		);
 		this.keysWrapper = keysWrapper;
 		this.valuesWrapper = valuesWrapper;
 	}

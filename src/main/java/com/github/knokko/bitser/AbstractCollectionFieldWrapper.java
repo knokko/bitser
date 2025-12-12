@@ -50,7 +50,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		}
 		this.sizeField = new IntegerField.Properties(
 				max(0, sizeField.minValue()), min(Integer.MAX_VALUE, sizeField.maxValue()),
-				sizeField.expectUniform(), IntegerField.DIGIT_SIZE_TERMINATORS, sizeField.commonValues()
+				sizeField.expectUniform(), sizeField.digitSize(), sizeField.commonValues()
 		);
 		this.arrayType = determineArrayType();
 	}
