@@ -67,6 +67,7 @@ public class Bitser {
 	}
 
 	private void rawSerialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
+		output.pushContext("prepare", -1);
 		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		boolean backwardCompatible = false;
@@ -98,8 +99,10 @@ public class Bitser {
 		));
 		LabelContext labelContext = new LabelContext(new HashSet<>());
 
+		output.popContext("prepare", -1);
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
+			output.pushContext("register-legacy-classes", -1);
 			legacy = new LegacyClasses();
 
 			final LegacyClasses rememberLegacy = legacy;
@@ -108,20 +111,26 @@ public class Bitser {
 					recursor -> wrapper.registerClasses(object, recursor)
 			).get());
 
-			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
+			output.popContext("register-legacy-classes", -1);
 			output.pushContext("legacy-classes", -1);
+			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
 			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
 			serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
 			legacyOutput.finish();
 			output.popContext("legacy-classes", -1);
 
+			output.pushContext("legacy-reference-labels", -1);
 			Recursor.run(labelContext, labelInfo, deserializeFromBytes(
 					LegacyClasses.class, legacyBytes.toByteArray()
 			)::collectReferenceLabels);
+			output.popContext("legacy-reference-labels", -1);
 		} else {
+			output.pushContext("collect-reference-labels", -1);
 			Recursor.run(labelContext, labelInfo, wrapper::collectReferenceLabels);
+			output.popContext("collect-reference-labels", -1);
 		}
 
+		output.pushContext("with-reference-labels", -1);
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
 			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
@@ -131,11 +140,16 @@ public class Bitser {
 					cache.getWrapper(withObject.getClass())::collectReferenceLabels
 			);
 		}
+		output.popContext("with-reference-labels", -1);
 
+		output.pushContext("register-reference-targets", -1);
 		ReferenceIdMapper idMapper = new ReferenceIdMapper(labelContext);
 		Recursor.run(idMapper, cache, recursor ->
 				wrapper.registerReferenceTargets(object, recursor)
 		);
+		output.popContext("register-reference-targets", -1);
+
+		output.pushContext("with-reference-targets", -1);
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
 			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
@@ -143,6 +157,7 @@ public class Bitser {
 					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
 			);
 		}
+		output.popContext("with-reference-targets", -1);
 
 		output.pushContext("id-mapper", -1);
 		idMapper.save(output);
