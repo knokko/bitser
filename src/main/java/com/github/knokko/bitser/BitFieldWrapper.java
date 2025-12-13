@@ -57,7 +57,7 @@ abstract class BitFieldWrapper {
 		}
 	}
 
-	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {}
+	void registerLegacyClasses(Recursor<LegacyClasses, LegacyInfo> recursor) {}
 
 	void writeField(Object object, Recursor<WriteContext, WriteInfo> recursor) {
 		Object value = field.getValue.apply(object);

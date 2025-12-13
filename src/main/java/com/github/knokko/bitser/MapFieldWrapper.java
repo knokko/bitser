@@ -59,19 +59,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void registerLegacyClasses(Object map, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		super.registerLegacyClasses(map, recursor);
-		if (map == null) return;
-		recursor.runNested("keys", nested ->
-				((Map<?, ?>) map).forEach((key, value) ->
-						keysWrapper.registerLegacyClasses(key, nested)
-				)
-		);
-		recursor.runNested("values", nested ->
-				((Map<?, ?>) map).forEach((key, value) ->
-						valuesWrapper.registerLegacyClasses(value, nested)
-				)
-		);
+	void registerLegacyClasses(Recursor<LegacyClasses, LegacyInfo> recursor) {
+		recursor.runNested("keys", keysWrapper::registerLegacyClasses);
+		recursor.runNested("values", valuesWrapper::registerLegacyClasses);
 	}
 
 	@Override

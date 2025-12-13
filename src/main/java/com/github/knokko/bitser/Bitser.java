@@ -107,8 +107,7 @@ public class Bitser {
 
 			final LegacyClasses rememberLegacy = legacy;
 			rememberLegacy.setRoot(Recursor.compute(
-					legacy, new LegacyInfo(cache, labelInfo.functionContext),
-					recursor -> wrapper.registerClasses(object, recursor)
+					legacy, new LegacyInfo(cache, labelInfo.functionContext), wrapper::registerClasses
 			).get());
 
 			output.popContext("register-legacy-classes", -1);

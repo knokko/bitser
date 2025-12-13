@@ -177,7 +177,7 @@ class SingleClassWrapper {
 		}
 	}
 
-	JobOutput<LegacyClass> register(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
+	JobOutput<LegacyClass> register(Recursor<LegacyClasses, LegacyInfo> recursor) {
 		JobOutput<LegacyClass> legacyClass = recursor.computeFlat(myClass.getSimpleName(), legacy ->
 				legacy.addClass(myClass)
 		);
@@ -190,9 +190,7 @@ class SingleClassWrapper {
 					legacyClass.get().fields.add(new LegacyField(field.id, field.bitField));
 				}
 			});
-			recursor.runNested(field.classField.getName(), nested ->
-					field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), nested)
-			);
+			recursor.runNested(field.classField.getName(), field.bitField::registerLegacyClasses);
 		}
 
 		for (int index = 0; index < functions.size(); index++) {
@@ -204,10 +202,7 @@ class SingleClassWrapper {
 				}
 			});
 
-			recursor.runNested(function.classMethod.getName(), nested -> {
-				Object returnValue = function.computeValue(object, recursor.info.functionContext);
-				function.bitField.registerLegacyClasses(returnValue, nested);
-			});
+			recursor.runNested(function.classMethod.getName(), function.bitField::registerLegacyClasses);
 		}
 
 		return legacyClass;

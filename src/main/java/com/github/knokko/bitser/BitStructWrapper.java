@@ -128,7 +128,7 @@ class BitStructWrapper<T> {
 		});
 	}
 
-	JobOutput<LegacyStruct> registerClasses(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
+	JobOutput<LegacyStruct> registerClasses(Recursor<LegacyClasses, LegacyInfo> recursor) {
 		if (!this.bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
@@ -136,15 +136,11 @@ class BitStructWrapper<T> {
 		JobOutput<LegacyStruct> legacyStruct = recursor.computeFlat("declaring class", legacy ->
 				legacy.addStruct(constructor.getDeclaringClass())
 		);
-		for (int index = 0; index < classHierarchy.size(); index++) {
-			final int rememberIndex = index;
-			SingleClassWrapper currentClass = classHierarchy.get(index);
-			JobOutput<LegacyClass> registered = currentClass.register(object, recursor);
-			recursor.runFlat(currentClass.myClass.getSimpleName(), legacy -> {
-				if (legacyStruct.get().classHierarchy.size() == rememberIndex) {
-					legacyStruct.get().classHierarchy.add(registered.get());
-				}
-			});
+		for (SingleClassWrapper currentClass : classHierarchy) {
+			JobOutput<LegacyClass> registered = currentClass.register(recursor);
+			recursor.runFlat(currentClass.myClass.getSimpleName(), legacy ->
+					legacyStruct.get().classHierarchy.add(registered.get())
+			);
 		}
 		return legacyStruct;
 	}

@@ -89,10 +89,18 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		super.registerLegacyClasses(value, recursor);
-		if (value == null) return;
-		recursor.info.cache.getWrapper(value.getClass()).registerClasses(value, recursor);
+	void registerLegacyClasses(Recursor<LegacyClasses, LegacyInfo> recursor) {
+		super.registerLegacyClasses(recursor);
+		for (Class<?> allowedClass : allowed) {
+			JobOutput<Boolean> alreadyRegistered = recursor.computeFlat("check-struct", context ->
+					context.getStruct(allowedClass) != null
+			);
+			recursor.runNested("struct-field", nested -> {
+				if (!alreadyRegistered.get()) {
+					recursor.info.cache.getWrapper(allowedClass).registerClasses(recursor);
+				}
+			});
+		}
 	}
 
 	@Override
