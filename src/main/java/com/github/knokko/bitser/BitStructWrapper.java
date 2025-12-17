@@ -18,11 +18,11 @@ class BitStructWrapper<T> {
 		BitStruct bitStruct = objectClass.getAnnotation(BitStruct.class);
 		if (bitStruct != null) return new BitStructWrapper<>(objectClass, bitStruct);
 
-		throw new InvalidBitFieldException(objectClass + " is not a BitStruct");
+		return null;
 	}
 
 	private final BitStruct bitStruct;
-	private final List<SingleClassWrapper> classHierarchy;
+	final List<SingleClassWrapper> classHierarchy;
 	private final Constructor<T> constructor;
 	private final VirtualField stableIdField;
 
@@ -149,6 +149,10 @@ class BitStructWrapper<T> {
 		return legacyStruct;
 	}
 
+	boolean hasStableId() {
+		return stableIdField != null;
+	}
+
 	UUID getStableId(Object target) {
 		if (stableIdField == null) throw new InvalidBitFieldException(target + " doesn't have an @StableReferenceFieldId");
 		return (UUID) stableIdField.getValue.apply(target);
@@ -163,7 +167,7 @@ class BitStructWrapper<T> {
 		}
 	}
 
-	private T createEmptyInstance() {
+	T createEmptyInstance() {
 		try {
 			return constructor.newInstance();
 		} catch (InstantiationException e) {

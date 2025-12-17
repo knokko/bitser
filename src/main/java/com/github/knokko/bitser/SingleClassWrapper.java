@@ -150,7 +150,7 @@ class SingleClassWrapper {
 		functions.sort(Comparator.comparingInt(a -> a.id));
 	}
 
-	private List<FieldWrapper> getFields(boolean backwardCompatible) {
+	List<FieldWrapper> getFields(boolean backwardCompatible) {
 		return backwardCompatible ? fieldsSortedById : fields;
 	}
 
