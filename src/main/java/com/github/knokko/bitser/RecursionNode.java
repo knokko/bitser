@@ -19,7 +19,7 @@ class RecursionNode {
 	}
 
 	String generateTrace(String top) {
-		String[] labels = new String[1 + depth];
+		String[] labels = new String[depth + 1];
 
 		RecursionNode next = this;
 		while (next != null) {
@@ -28,11 +28,13 @@ class RecursionNode {
 		}
 
 		StringBuilder builder = new StringBuilder();
+		int numArrows = labels.length;
+		if (top == null) numArrows -= 1;
 		for (String label : labels) {
 			builder.append(label);
-			builder.append(" -> ");
+			if (numArrows-- > 0) builder.append(" -> ");
 		}
-		builder.append(top);
+		if (top != null) builder.append(top);
 		return builder.toString();
 	}
 }

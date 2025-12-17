@@ -115,7 +115,7 @@ abstract class BitFieldWrapper {
 
 	abstract void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue);
 
-	Object read(Deserializer deserializer) throws Throwable {
+	Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		throw new UnsupportedOperationException("TODO");
 	}
 

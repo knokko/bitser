@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ class Deserializer {
 
 	final BitserCache cache;
 	final BitInputStream input;
+	final CollectionSizeLimit sizeLimit;
 	final Object rootStruct;
 
 	final ArrayList<ReadStructJob> structJobs = new ArrayList<>();
@@ -23,9 +25,14 @@ class Deserializer {
 	final ArrayList<ReadCollectionReferenceJob> collectionReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateCollectionJob> populateCollectionJobs = new ArrayList<>();
 
-	Deserializer(BitserCache cache, BitInputStream input, BitStructWrapper<?> rootStructInfo) {
+	Deserializer(
+			BitserCache cache, BitInputStream input,
+			CollectionSizeLimit sizeLimit,
+			BitStructWrapper<?> rootStructInfo
+	) {
 		this.cache = cache;
 		this.input = input;
+		this.sizeLimit = sizeLimit;
 		this.rootStruct = rootStructInfo.createEmptyInstance();
 		this.structJobs.add(new ReadStructJob(
 				rootStruct, rootStructInfo,
@@ -36,19 +43,14 @@ class Deserializer {
 	void run() {
 		while (!structJobs.isEmpty() || !collectionJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
-				ReadStructJob job = structJobs.remove(structJobs.size() - 1);
-				try {
-					job.read(this);
-				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace("read"), failed);
-				}
+				structJobs.remove(structJobs.size() - 1).read(this);
 			}
 			if (!collectionJobs.isEmpty()) {
 				ReadCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
 				try {
 					job.read(this);
 				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace("read"), failed);
+					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
 			}
 		}
@@ -57,7 +59,7 @@ class Deserializer {
 			try {
 				referenceJob.resolve(this);
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace("resolve"), failed);
+				throw new RecursorException(referenceJob.node.generateTrace(referenceJob.classField.getName()), failed);
 			}
 		}
 		structReferenceJobs.clear();
@@ -66,7 +68,7 @@ class Deserializer {
 			try {
 				referenceJob.resolve(this);
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace("resolve"), failed);
+				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
 			}
 		}
 		collectionReferenceJobs.clear();
@@ -77,7 +79,7 @@ class Deserializer {
 			try {
 				populateJob.populate();
 			} catch (Throwable failed) {
-				throw new RecursorException(populateJob.node.generateTrace("populate"), failed);
+				throw new RecursorException(populateJob.node.generateTrace(null), failed);
 			}
 		}
 		populateCollectionJobs.clear();

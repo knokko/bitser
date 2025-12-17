@@ -180,6 +180,20 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
+		if (field.type.isArray()) {
+			// TODO ReadArrayJob
+		} else {
+			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
+			deserializer.collectionJobs.add(new ReadCollectionJob(
+					collection, size, valuesWrapper, new RecursionNode(parentNode, fieldName)
+			));
+			return collection;
+		}
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) {
 		JobOutput<boolean[]> hasValues = recursor.computeFlat("optional", context -> {

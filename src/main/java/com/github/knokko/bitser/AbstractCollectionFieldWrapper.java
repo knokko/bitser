@@ -35,7 +35,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	@BitField
-	private final IntegerField.Properties sizeField;
+	final IntegerField.Properties sizeField;
 
 	@BitField(optional = true)
 	private final ArrayType arrayType;
