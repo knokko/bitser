@@ -1,10 +1,11 @@
-package com.github.knokko.bitser.io;
+package com.github.knokko.bitser.test.io;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.NestedFieldSetting;
 import com.github.knokko.bitser.Bitser;
+import com.github.knokko.bitser.io.BitOutputStream;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -20,10 +21,10 @@ public class ArrayBenchmark {
 		SlowIntArray slowInts = new SlowIntArray(1234);
 		FastIntArray fastInts = new FastIntArray(1234);
 
-		measure("slow booleans", output -> new Bitser(false).serialize(slowBooleans, output));
-		measure("fast booleans", output -> new Bitser(false).serialize(fastBooleans, output));
-		measure("slow bytes", output -> new Bitser(false).serialize(slowBytes, output));
-		measure("fast bytes", output -> new Bitser(false).serialize(fastBytes, output));
+		measure("slow booleans", output -> new Bitser(false).serializeSimple(slowBooleans, output));
+		measure("fast booleans", output -> new Bitser(false).serializeSimple(fastBooleans, output));
+		measure("slow bytes", output -> new Bitser(false).serializeSimple(slowBytes, output));
+		measure("fast bytes", output -> new Bitser(false).serializeSimple(fastBytes, output));
 		measure("output stream bytes", output -> output.write(slowBytes.data));
 
 		File intsFile = new File("ints.bin");
@@ -37,8 +38,8 @@ public class ArrayBenchmark {
 
 		System.out.println("Took " + (endTime - startTime) / 1000_000 + " ms for data output ints");
 
-		measure("slow ints", output -> new Bitser(false).serialize(slowInts, output));
-		measure("fast ints", output -> new Bitser(false).serialize(fastInts, output));
+		measure("slow ints", output -> new Bitser(false).serializeSimple(slowInts, output));
+		measure("fast ints", output -> new Bitser(false).serializeSimple(fastInts, output));
 	}
 
 	@FunctionalInterface
@@ -66,7 +67,7 @@ public class ArrayBenchmark {
 	private static class SlowBooleanArray {
 
 		@BitField
-		final boolean[] data = new boolean[80_000_000];
+		final boolean[] data = new boolean[8_000_000];
 
 		@SuppressWarnings("unused")
 		SlowBooleanArray() {}
@@ -81,7 +82,7 @@ public class ArrayBenchmark {
 	private static class FastBooleanArray {
 
 		@NestedFieldSetting(path = "", writeAsBytes = true)
-		final boolean[] data = new boolean[80_000_000];
+		final boolean[] data = new boolean[8_000_000];
 
 		@SuppressWarnings("unused")
 		FastBooleanArray() {}
@@ -96,8 +97,8 @@ public class ArrayBenchmark {
 	private static class SlowByteArray {
 
 		@IntegerField(expectUniform = true)
-		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
-		final byte[] data = new byte[10_000_000];
+		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 1_000_000, maxValue = 1_000_000, expectUniform = true))
+		final byte[] data = new byte[1_000_000];
 
 		@SuppressWarnings("unused")
 		SlowByteArray() {}
@@ -111,7 +112,7 @@ public class ArrayBenchmark {
 	private static class FastByteArray {
 
 		@NestedFieldSetting(path = "", writeAsBytes = true)
-		final byte[] data = new byte[10_000_000];
+		final byte[] data = new byte[1_000_000];
 
 		@SuppressWarnings("unused")
 		FastByteArray() {}

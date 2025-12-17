@@ -1,27 +1,28 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.BitserCache;
-import com.github.knokko.bitser.VirtualField;
 
-abstract class ReferenceFieldWrapper extends BitFieldWrapper {
+@BitStruct(backwardCompatible = false)
+class ReferenceFieldWrapper extends BitFieldWrapper {
 
 	@BitField
 	final String label;
 
-	ReferenceFieldWrapper(VirtualField field, String label) {
+	@BitField
+	final boolean stable;
+
+	ReferenceFieldWrapper(VirtualField field, String label, boolean stable) {
 		super(field);
 		this.label = label;
+		this.stable = stable;
 	}
 
-	ReferenceFieldWrapper() {
+	@SuppressWarnings("unused")
+	private ReferenceFieldWrapper() {
 		super();
 		this.label = "";
-	}
-
-	@Override
-	boolean isReference() {
-		return true;
+		this.stable = false;
 	}
 
 	@Override
@@ -33,5 +34,28 @@ abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 	int hashCode(Object value, BitserCache cache) {
 		// I don't want the hash code to change when the referenced value changes
 		return 12345;
+	}
+
+	@Override
+	void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
+	}
+
+	@Override
+	Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
 	}
 }

@@ -5,12 +5,11 @@ import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.io.BitDebugStream;
+import com.github.knokko.bitser.options.DebugBits;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,26 +138,22 @@ public class TestBitDebugStream {
 		Bitser bitser = new Bitser(true);
 		RootStruct original = generate();
 
-		check(bitser.deepCopy(original));
-		check(bitser.deepCopy(original, Bitser.BACKWARD_COMPATIBLE));
+		check(bitser.stupidDeepCopy(original));
+		check(bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE));
 	}
 
 	@Test
-	public void testDebugWithoutBackwardCompatibility() throws IOException {
-		ByteArrayOutputStream contentBytes = new ByteArrayOutputStream();
+	public void testDebugWithoutBackwardCompatibility() {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
-		PrintWriter writer = new PrintWriter(debugBytes);
-		BitDebugStream debug = new BitDebugStream(contentBytes, writer);
-		new Bitser(false).serialize(generate(), debug);
-		debug.finish();
-		writer.flush();
-		writer.close();
+		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
 
-		check(new Bitser(true).deserializeFromBytes(RootStruct.class, contentBytes.toByteArray()));
+		byte[] contentBytes = new Bitser(false).serializeToBytesSimple(generate(), debugOption);
+
+		check(new Bitser(true).deserializeFromBytesSimple(RootStruct.class, contentBytes, debugOption));
 
 		Scanner actualScanner = new Scanner(new ByteArrayInputStream(debugBytes.toByteArray()));
 		Scanner expectedScanner = new Scanner(Objects.requireNonNull(
-				TestBitDebugStream.class.getResourceAsStream("expected-debug.yaml")
+				TestBitDebugStream.class.getResourceAsStream("expected-debug.txt")
 		));
 
 		while (expectedScanner.hasNextLine()) {
@@ -168,26 +163,23 @@ public class TestBitDebugStream {
 	}
 
 	@Test
-	public void testDebugWithBackwardCompatibility() throws IOException {
-		ByteArrayOutputStream contentBytes = new ByteArrayOutputStream();
+	public void testDebugWithBackwardCompatibility() {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
-		PrintWriter writer = new PrintWriter(debugBytes);
-		BitDebugStream debug = new BitDebugStream(contentBytes, writer);
-		new Bitser(false).serialize(generate(), debug, Bitser.BACKWARD_COMPATIBLE);
-		debug.finish();
-		writer.flush();
-		writer.close();
+		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
 
-		check(new Bitser(true).deserializeFromBytes(
-				RootStruct.class, contentBytes.toByteArray(), Bitser.BACKWARD_COMPATIBLE
+		byte[] contentBytes = new Bitser(false).serializeToBytesSimple(
+				generate(), debugOption, Bitser.BACKWARD_COMPATIBLE
+		);
+
+		check(new Bitser(true).deserializeFromBytesSimple(
+				RootStruct.class, contentBytes, debugOption, Bitser.BACKWARD_COMPATIBLE
 		));
 
 		Scanner actualScanner = new Scanner(new ByteArrayInputStream(debugBytes.toByteArray()));
 		Scanner expectedScanner = new Scanner(Objects.requireNonNull(
-				TestBitDebugStream.class.getResourceAsStream("expected-debug-backward-compatible.yaml")
+				TestBitDebugStream.class.getResourceAsStream("expected-debug-backward-compatible.txt")
 		));
 
-		//System.out.println(new String(debugBytes.toByteArray()));
 		while (expectedScanner.hasNextLine()) {
 			assertEquals(expectedScanner.nextLine(), actualScanner.nextLine());
 		}

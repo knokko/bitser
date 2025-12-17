@@ -3,7 +3,9 @@ package com.github.knokko.bitser.test;
 import com.github.knokko.bitser.BitPostInit;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
-import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
+import com.github.knokko.bitser.legacy.LegacyArrayValue;
+import com.github.knokko.bitser.legacy.LegacyIntValue;
+import com.github.knokko.bitser.legacy.LegacyStringValue;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.FunctionContext;
@@ -61,7 +63,7 @@ public class TestBitPostInit {
 		assertEquals(3, original.a);
 		assertEquals(7, original.c);
 
-		DerivedSum loaded = bitser.deepCopy(original);
+		DerivedSum loaded = bitser.stupidDeepCopy(original);
 		assertEquals(3, loaded.a);
 		assertEquals(4, loaded.b);
 		assertEquals(7, loaded.c);
@@ -101,7 +103,7 @@ public class TestBitPostInit {
 		@Override
 		public void postInit(Context context) {
 			assertEquals("world", hello);
-			long percentage = (long) context.legacyFieldValues.get(LegacyConversionAfter.class)[4];
+			long percentage = ((LegacyIntValue) context.legacyFieldValues.get(LegacyConversionAfter.class)[4]).value;
 			this.fraction = percentage * 0.01;
 		}
 	}
@@ -115,24 +117,27 @@ public class TestBitPostInit {
 		@Override
 		public void postInit(Context context) {
 			super.postInit(context);
-			this.owners = new String[] { (String) context.legacyFieldValues.get(AfterParent.class)[4]};
+			this.owners = new String[] { ((LegacyStringValue) context.legacyFieldValues.get(AfterParent.class)[4]).value };
 		}
 	}
 
 	@Test
 	public void testLegacyConversion() {
 		Bitser bitser = new Bitser(false);
-		assertEquals(0.75, bitser.deserializeFromBytes(LegacyConversionAfter.class, bitser.serializeToBytes(
-				new LegacyConversionBefore(), Bitser.BACKWARD_COMPATIBLE
-		), Bitser.BACKWARD_COMPATIBLE).fraction);
+		assertEquals(0.75, bitser.deserializeFromBytesSimple(
+				LegacyConversionAfter.class,
+				bitser.serializeToBytesSimple(new LegacyConversionBefore(), Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE).fraction
+		);
 	}
 
 	@Test
 	public void testLegacyConversionWithInheritance() {
 		Bitser bitser = new Bitser(true);
-		AfterParent parent = bitser.deserializeFromBytes(AfterParent.class, bitser.serializeToBytes(
-				new BeforeParent(), Bitser.BACKWARD_COMPATIBLE
-		), Bitser.BACKWARD_COMPATIBLE);
+		AfterParent parent = bitser.deserializeFromBytesSimple(
+				AfterParent.class, bitser.serializeToBytesSimple(new BeforeParent(), Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertArrayEquals(new String[] { "me" }, parent.owners);
 		assertEquals(0.75, parent.fraction);
 	}
@@ -155,14 +160,14 @@ public class TestBitPostInit {
 		DefaultValue customValue = new DefaultValue();
 		customValue.value = "hello";
 
-		DefaultValue defaultValue = bitser.deepCopy(
+		DefaultValue defaultValue = bitser.stupidDeepCopy(
 				new DefaultValue(), new WithParameter("default-value", "it worked"), new WithParameter("unused", 1234)
 		);
-		customValue = bitser.deepCopy(customValue);
+		customValue = bitser.stupidDeepCopy(customValue);
 		assertEquals("it worked", defaultValue.value);
 		assertEquals("hello", customValue.value);
 
-		defaultValue = bitser.deserializeFromBytes(DefaultValue.class, bitser.serializeToBytes(
+		defaultValue = bitser.deserializeFromBytesSimple(DefaultValue.class, bitser.serializeToBytesSimple(
 				new DefaultValue(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE, new WithParameter("default-value", "also backward-compatible"));
 		assertEquals("also backward-compatible", defaultValue.value);
@@ -170,18 +175,22 @@ public class TestBitPostInit {
 
 	@Test
 	public void testDuplicateDeserializeWithParameter() {
-		String errorMessage = assertThrows(IllegalArgumentException.class, () -> new Bitser(false).deserializeFromBytes(
-				AfterParent.class, new byte[0], new WithParameter("ok", 1), new WithParameter("ok", 2)
-		)).getMessage();
+		String errorMessage = assertThrows(
+				IllegalArgumentException.class,
+				() -> new Bitser(false).deserializeFromBytesSimple(
+					AfterParent.class, new byte[0], new WithParameter("ok", 1), new WithParameter("ok", 2))
+		).getMessage();
 		assertContains(errorMessage, "Duplicate with parameter");
 		assertContains(errorMessage, "ok");
 	}
 
 	@Test
 	public void testDuplicateSerializeWithParameter() {
-		String errorMessage = assertThrows(IllegalArgumentException.class, () -> new Bitser(false).serializeToBytes(
-				new AfterParent(), new WithParameter("ok", 1), new WithParameter("ok", 2)
-		)).getMessage();
+		String errorMessage = assertThrows(
+				IllegalArgumentException.class,
+				() -> new Bitser(false).serializeToBytesSimple(
+					new AfterParent(), new WithParameter("ok", 1), new WithParameter("ok", 2))
+		).getMessage();
 		assertContains(errorMessage, "Duplicate with parameter");
 		assertContains(errorMessage, "ok");
 	}
@@ -218,7 +227,7 @@ public class TestBitPostInit {
 		original.wrapped = String.class;
 		original.x = 1234;
 
-		SaveClassName loaded = new Bitser(true).deepCopy(original);
+		SaveClassName loaded = new Bitser(true).stupidDeepCopy(original);
 		assertSame(String.class, loaded.wrapped);
 		assertEquals(1234, loaded.x);
 	}
@@ -250,17 +259,23 @@ public class TestBitPostInit {
 			} else {
 				Object[] values = context.legacyFunctionValues.get(MultipleClassNames.class);
 				Object[] currentValues = context.functionValues.get(MultipleClassNames.class);
-				assertEquals(-12L, context.legacyFieldValues.get(MultipleClassNames.class)[1]);
+				assertEquals(-12L, ((LegacyIntValue) context.legacyFieldValues.get(MultipleClassNames.class)[1]).value);
 				if (values[1] != null) {
 					names = new ArrayList<>(1);
-					names.add((String) values[1]);
-					assertArrayEquals(new Object[3], currentValues);
+					names.add(((LegacyStringValue) values[1]).value);
+					assertArrayEquals(new Object[] {
+							null, new LegacyStringValue("java.io.IOException"), null
+					}, currentValues);
 				} else {
-					LegacyCollectionInstance legacyNames = (LegacyCollectionInstance) values[2];
-					Object[] rawNames = (Object[]) legacyNames.legacyArray;
+					LegacyArrayValue legacyNames = (LegacyArrayValue) values[2];
+					Object[] rawNames = (Object[]) legacyNames.array;
 					names = new ArrayList<>(rawNames.length);
-					for (Object rawName : rawNames) names.add((String) rawName);
-					assertArrayEquals(new Object[] { null, null, legacyNames.newCollection}, currentValues);
+					for (Object rawName : rawNames) names.add(((LegacyStringValue) rawName).value);
+
+					List<String> expectedListAtIndex2 = new ArrayList<>(2);
+					expectedListAtIndex2.add("java.io.File");
+					expectedListAtIndex2.add("java.nio.file.Path");
+					assertArrayEquals(new Object[] { null, null, expectedListAtIndex2}, currentValues);
 				}
 			}
 
@@ -282,9 +297,11 @@ public class TestBitPostInit {
 		original.wrapped = IOException.class;
 		original.x = -12;
 
-		MultipleClassNames multiple = bitser.deserializeFromBytes(MultipleClassNames.class, bitser.serializeToBytes(
-				original, Bitser.BACKWARD_COMPATIBLE
-		), Bitser.BACKWARD_COMPATIBLE);
+		MultipleClassNames multiple = bitser.deserializeFromBytesSimple(
+				MultipleClassNames.class,
+				bitser.serializeToBytesSimple(original, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(-12, multiple.x);
 		assertEquals(1, multiple.classes.size());
 		assertSame(IOException.class, multiple.classes.get(0));
@@ -298,7 +315,7 @@ public class TestBitPostInit {
 		original.classes.add(Integer.class);
 		original.classes.add(Class.class);
 
-		MultipleClassNames loaded = bitser.deepCopy(original);
+		MultipleClassNames loaded = bitser.stupidDeepCopy(original);
 		assertEquals(-12, loaded.x);
 		assertEquals(original.classes, loaded.classes);
 	}
@@ -311,9 +328,10 @@ public class TestBitPostInit {
 		original.classes.add(File.class);
 		original.classes.add(Path.class);
 
-		MultipleClassNames loaded = bitser.deserializeFromBytes(MultipleClassNames.class, bitser.serializeToBytes(
-				original, Bitser.BACKWARD_COMPATIBLE
-		), Bitser.BACKWARD_COMPATIBLE);
+		MultipleClassNames loaded = bitser.deserializeFromBytesSimple(
+				MultipleClassNames.class, bitser.serializeToBytesSimple(original, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(-12, loaded.x);
 		assertEquals(original.classes, loaded.classes);
 	}
@@ -340,7 +358,7 @@ public class TestBitPostInit {
 			Set<String> names = (Set<String>) currentValues[2];
 			assertArrayEquals(new Object[] { null, null, names }, currentValues);
 
-			LegacyCollectionInstance legacyNamesInstance = (LegacyCollectionInstance) legacyValues[2];
+			LegacyArrayValue legacyNamesInstance = (LegacyArrayValue) legacyValues[2];
 			assertArrayEquals(new Object[] { null, null, legacyNamesInstance }, legacyValues);
 			for (String name : names) {
 				try {
@@ -359,9 +377,11 @@ public class TestBitPostInit {
 		original.classes.add(File.class);
 		original.classes.add(Path.class);
 
-		ClassSet loaded = bitser.deserializeFromBytes(ClassSet.class, bitser.serializeToBytes(
-				original, Bitser.BACKWARD_COMPATIBLE
-		), Bitser.BACKWARD_COMPATIBLE);
+		ClassSet loaded = bitser.deserializeFromBytesSimple(
+				ClassSet.class,
+				bitser.serializeToBytesSimple(original, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(2, loaded.classes.size());
 		assertTrue(loaded.classes.contains(File.class));
 		assertTrue(loaded.classes.contains(Path.class));
@@ -385,11 +405,25 @@ public class TestBitPostInit {
 	}
 
 	@Test
+	public void testFunctionContext() {
+		Bitser bitser = new Bitser(false);
+		UsesFunctionContext loaded = bitser.deserializeFromBytesSimple(
+				UsesFunctionContext.class,
+				bitser.serializeToBytesSimple(new UsesFunctionContext(), new WithParameter("b", 7))
+		);
+		assertEquals(12, loaded.c);
+	}
+
+	@Test
 	public void testBackwardCompatibleFunctionContext() {
 		Bitser bitser = new Bitser(false);
-		UsesFunctionContext loaded = bitser.deserializeFromBytes(UsesFunctionContext.class, bitser.serializeToBytes(
-				new UsesFunctionContext(), Bitser.BACKWARD_COMPATIBLE, new WithParameter("b", 7)
-		), Bitser.BACKWARD_COMPATIBLE);
+		UsesFunctionContext loaded = bitser.deserializeFromBytesSimple(
+				UsesFunctionContext.class,
+				bitser.serializeToBytesSimple(
+						new UsesFunctionContext(), Bitser.BACKWARD_COMPATIBLE, new WithParameter("b", 7)
+				),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(12, loaded.c);
 	}
 }

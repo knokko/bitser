@@ -70,21 +70,43 @@ public class FloatBitser {
 	public static double decodeFloat(
 			boolean doublePrecision, FloatField.Properties field, BitInputStream input
 	) throws IOException {
-		if (field.commonValues.length > 0 && input.read()) {
-			int commonIndex = (int) decodeUniformInteger(0, field.commonValues.length - 1, input);
-			return field.commonValues[commonIndex];
-		}
-		if (field.expectMultipleOf != 0.0 && input.read()) {
-			long count = IntegerBitser.decodeInteger(field.expectedIntegerMultiple, input);
-			double result = count * field.expectMultipleOf;
-			if (doublePrecision) return result;
-			else return (float) result;
+		if (field.commonValues.length > 0) {
+			input.prepareProperty("float-common", -1);
+			boolean isCommon = input.read();
+			input.finishProperty();
+
+			if (isCommon) {
+				input.prepareProperty("float-common-index", -1);
+				int commonIndex = (int) decodeUniformInteger(0, field.commonValues.length - 1, input);
+				input.finishProperty();
+				return field.commonValues[commonIndex];
+			}
 		}
 
+		if (field.expectMultipleOf != 0.0) {
+			input.prepareProperty("float-simplified", -1);
+			boolean isMultipleOf = input.read();
+			input.finishProperty();
+
+			if (isMultipleOf) {
+				input.prepareProperty("float-integer-value", -1);
+				long count = IntegerBitser.decodeInteger(field.expectedIntegerMultiple, input);
+				input.finishProperty();
+				double result = count * field.expectMultipleOf;
+				if (doublePrecision) return result;
+				else return (float) result;
+			}
+		}
+
+		input.prepareProperty("float-value", -1);
 		if (doublePrecision) {
-			return Double.longBitsToDouble(decodeFullLong(input));
+			long doubleBits = decodeFullLong(input);
+			input.finishProperty();
+			return Double.longBitsToDouble(doubleBits);
 		} else {
-			return Float.intBitsToFloat(decodeFullInt(input));
+			int floatBits = decodeFullInt(input);
+			input.finishProperty();
+			return Float.intBitsToFloat(floatBits);
 		}
 	}
 }

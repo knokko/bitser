@@ -29,10 +29,10 @@ public class TestStringField {
 	@Test
 	public void testOptionalStrings() {
 		Bitser bitser = new Bitser(false);
-		assertThrows(InvalidBitValueException.class, () -> bitser.serializeToBytes(this));
+		assertThrows(InvalidBitValueException.class, () -> bitser.serializeToBytesSimple(this));
 		this.b = "abcde";
 
-		TestStringField loaded = bitser.deepCopy(this);
+		TestStringField loaded = bitser.stupidDeepCopy(this);
 		assertNull(loaded.a);
 		assertEquals("abcde", loaded.b);
 	}
@@ -42,7 +42,7 @@ public class TestStringField {
 		this.a = "Ώ ΐ Α Β Γ Δ Ε Ζ Η Θ Ι ";
 		this.b = " ນ ບ ";
 
-		TestStringField loaded = new Bitser(false).deepCopy(this);
+		TestStringField loaded = new Bitser(false).stupidDeepCopy(this);
 		assertEquals(this.a, loaded.a);
 		assertEquals(this.b, loaded.b);
 	}
@@ -57,13 +57,12 @@ public class TestStringField {
 		IntegerBitser.encodeUnknownLength(Integer.MAX_VALUE, bitOutput);
 		bitOutput.finish();
 
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytesSimple(
 				TestStringField.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
 		)).getMessage();
 		assertContains(errorMessage, "2147483647");
 		assertContains(errorMessage, "exceeds the size limit of");
 		assertContains(errorMessage, "1234");
-		assertContains(errorMessage, "-> string-value");
-		assertContains(errorMessage, "-> a ->");
+		assertContains(errorMessage, "TestStringField -> a");
 	}
 }

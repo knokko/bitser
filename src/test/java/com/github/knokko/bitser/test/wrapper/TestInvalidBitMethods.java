@@ -5,7 +5,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.Bitser;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -28,7 +28,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidStaticBitMethods() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(new StaticBitMethod())
+				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new StaticBitMethod())
 		).getMessage();
 		assertContains(errorMessage, "must not be static");
 		assertContains(errorMessage, "StaticBitMethod.test");
@@ -47,7 +47,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidMultipleParameters() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(new MultipleParameters())
+				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new MultipleParameters())
 		).getMessage();
 		assertContains(errorMessage, "at most 1 parameter");
 		assertContains(errorMessage, "MultipleParameters.test");
@@ -66,7 +66,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidWrongParameterType() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(new WrongParameter())
+				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new WrongParameter())
 		).getMessage();
 		assertContains(errorMessage, "parameter type must be FunctionContext");
 		assertContains(errorMessage, "WrongParameter.wrong");
@@ -85,7 +85,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testIDsAreRequired() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(new WithoutID())
+				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new WithoutID())
 		).getMessage();
 		assertContains(errorMessage, "method IDs must be non-negative");
 		assertContains(errorMessage, "WithoutID.missing");
@@ -110,7 +110,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidDuplicateIDs() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(new DuplicateID())
+				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new DuplicateID())
 		).getMessage();
 		assertContains(errorMessage, "multiple @BitField methods with id 1");
 		assertContains(errorMessage, "DuplicateID");
@@ -128,8 +128,8 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateErrors() {
-		RecursorException exception = assertThrows(
-				RecursorException.class, () -> new Bitser(false).serializeToBytes(new ThrowsError())
+		RecursionException exception = assertThrows(
+				RecursionException.class, () -> new Bitser(false).serializeToBytesSimple(new ThrowsError())
 		);
 		assertEquals("nothing personal", exception.getCause().getMessage());
 		assertContains(exception.debugInfoStack, "-> throwsError");
@@ -147,9 +147,9 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateUncheckedExceptions() {
-		RecursorException exception = assertThrows(
-				RecursorException.class,
-				() -> new Bitser(false).serializeToBytes(new ThrowsUncheckedException())
+		RecursionException exception = assertThrows(
+				RecursionException.class,
+				() -> new Bitser(false).serializeToBytesSimple(new ThrowsUncheckedException())
 		);
 		assertInstanceOf(UnsupportedOperationException.class, exception.getCause());
 		assertContains(exception.debugInfoStack, "-> throwsError");
@@ -167,9 +167,9 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateCheckedExceptions() {
-		RecursorException exception = assertThrows(
-				RecursorException.class,
-				() -> new Bitser(true).serializeToBytes(new ThrowsCheckedException())
+		RecursionException exception = assertThrows(
+				RecursionException.class,
+				() -> new Bitser(true).serializeToBytesSimple(new ThrowsCheckedException())
 		);
 		Exception cause = (Exception) exception.getCause();
 		assertContains(cause.getMessage(), "nope: ");

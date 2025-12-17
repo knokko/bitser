@@ -1,16 +1,15 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.legacy.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import static java.lang.Byte.toUnsignedInt;
 import static java.lang.Double.doubleToRawLongBits;
@@ -41,23 +40,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (field.type == long[].class) return ArrayType.LONG;
 		if (field.type == double[].class) return ArrayType.DOUBLE;
 		throw new InvalidBitFieldException("Unexpected write-as-bytes field type " + field.type);
-	}
-
-	@Override
-	void writeElements(Object value, int size, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("byte-values", context -> {
-			context.output.prepareProperty("byte-values", -1);
-			if (value instanceof boolean[]) context.output.write(toByteArray((boolean[]) value));
-			else if (value instanceof byte[]) context.output.write((byte[]) value);
-			else if (value instanceof short[]) context.output.write(toByteArray((short[]) value));
-			else if (value instanceof char[]) context.output.write(toByteArray((char[]) value));
-			else if (value instanceof int[]) context.output.write(toByteArray((int[]) value));
-			else if (value instanceof float[]) context.output.write(toByteArray((float[]) value));
-			else if (value instanceof long[]) context.output.write(toByteArray((long[]) value));
-			else if (value instanceof double[]) context.output.write(toByteArray((double[]) value));
-			else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
-			context.output.finishProperty();
-		});
 	}
 
 	private byte[] toByteArray(boolean[] booleans) {
@@ -154,18 +136,88 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) {
-		recursor.runFlat("bytes", context -> {
-			if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, context.input);
-			else if (value instanceof byte[]) context.input.read((byte[]) value);
-			else if (value instanceof short[]) backToShortArray((short[]) value, context.input);
-			else if (value instanceof char[]) backToCharArray((char[]) value, context.input);
-			else if (value instanceof int[]) backToIntArray((int[]) value, context.input);
-			else if (value instanceof float[]) backToFloatArray((float[]) value, context.input);
-			else if (value instanceof long[]) backToLongArray((long[]) value, context.input);
-			else if (value instanceof double[]) backToDoubleArray((double[]) value, context.input);
-			else throw new InvalidBitFieldException("Can't decode " + value.getClass() + " from bytes");
-		});
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		int length = Array.getLength(value);
+		if (serializer.intDistribution != null) {
+			serializer.intDistribution.insert(field + " collection size", (long) length, sizeField);
+			serializer.intDistribution.insert("collection size", (long) length, sizeField);
+		}
+
+		serializer.output.prepareProperty("byte-collection-length", -1);
+		IntegerBitser.encodeInteger(length, sizeField, serializer.output);
+		serializer.output.finishProperty();
+
+		serializer.output.prepareProperty("byte-collection-bytes", -1);
+		if (value instanceof boolean[]) serializer.output.write(toByteArray((boolean[]) value));
+		else if (value instanceof byte[]) serializer.output.write((byte[]) value);
+		else if (value instanceof short[]) serializer.output.write(toByteArray((short[]) value));
+		else if (value instanceof char[]) serializer.output.write(toByteArray((char[]) value));
+		else if (value instanceof int[]) serializer.output.write(toByteArray((int[]) value));
+		else if (value instanceof float[]) serializer.output.write(toByteArray((float[]) value));
+		else if (value instanceof long[]) serializer.output.write(toByteArray((long[]) value));
+		else if (value instanceof double[]) serializer.output.write(toByteArray((double[]) value));
+		else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
+		serializer.output.finishProperty();
+	}
+
+	private void readData(BitInputStream input, Object array) throws IOException {
+		input.prepareProperty("byte-collection-bytes", -1);
+		if (array instanceof boolean[]) backToBooleanArray((boolean[]) array, input);
+		else if (array instanceof byte[]) input.read((byte[]) array);
+		else if (array instanceof short[]) backToShortArray((short[]) array, input);
+		else if (array instanceof char[]) backToCharArray((char[]) array, input);
+		else if (array instanceof int[]) backToIntArray((int[]) array, input);
+		else if (array instanceof float[]) backToFloatArray((float[]) array, input);
+		else if (array instanceof long[]) backToLongArray((long[]) array, input);
+		else if (array instanceof double[]) backToDoubleArray((double[]) array, input);
+		else throw new InvalidBitFieldException("Can't decode " + array.getClass() + " from bytes");
+		input.finishProperty();
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("byte-collection-length", -1);
+		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
+		deserializer.input.finishProperty();
+		Object value = Array.newInstance(field.type.getComponentType(), size);
+		readData(deserializer.input, value);
+		return value;
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("byte-collection-length", -1);
+		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
+		deserializer.input.finishProperty();
+		Object value = constructCollectionWithSize(size);
+		readData(deserializer.input, value);
+		return new LegacyArrayValue(value);
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object rawLegacyValue, RecursionNode parentNode, String fieldName) {
+		if (!(rawLegacyValue instanceof LegacyArrayValue)) {
+			throw new LegacyBitserException(
+					"Can't convert from legacy " + rawLegacyValue + " to " + field.type + " for field " + field
+			);
+		}
+
+		Object legacyArray = ((LegacyArrayValue) rawLegacyValue).array;
+		if (field.type == legacyArray.getClass()) {
+			return legacyArray;
+		}
+
+		int size = Array.getLength(legacyArray);
+		Object newArray = Array.newInstance(field.type.getComponentType(), size);
+		for (int index = 0; index < size; index++) {
+			Object legacyValue = Array.get(legacyArray, index);
+			setFromLegacyValue(newArray, index, legacyValue);
+		}
+
+		return newArray;
 	}
 
 	void backToBooleanArray(boolean[] booleans, BitInputStream input) throws IOException {
@@ -269,28 +321,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		}
 	}
 
-	@Override
-	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object rawLegacyInstance, Consumer<Object> setValue) {
-		if (rawLegacyInstance == null) {
-			super.setLegacyValue(recursor, null, setValue);
-			return;
-		}
-
-		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) rawLegacyInstance;
-		if (field.type == legacyInstance.legacyArray.getClass()) {
-			super.setLegacyValue(recursor, legacyInstance.legacyArray, setValue);
-			return;
-		}
-
-		int size = Array.getLength(legacyInstance.legacyArray);
-		for (int index = 0; index < size; index++) {
-			Object legacyValue = Array.get(legacyInstance.legacyArray, index);
-			setFromLegacyValue(legacyInstance.newCollection, index, legacyValue);
-		}
-
-		setValue.accept(legacyInstance.newCollection);
-	}
-
 	private void setFromLegacyValue(Object newArray, int index, Object legacyValue) {
 		if (legacyValue == null) {
 			Array.set(newArray, index, null);
@@ -302,7 +332,12 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	private Object convertLegacyNumber(Object legacyValue) {
 		if (legacyValue instanceof Boolean) return legacyValue;
-		Number legacyNumber = legacyValue instanceof Character ? ((int) ((char) legacyValue)) : (Number) legacyValue;
+		if (legacyValue instanceof LegacyBooleanValue) return ((LegacyBooleanValue) legacyValue).value;
+		Number legacyNumber;
+		if (legacyValue instanceof Character) legacyNumber = (int) ((char) legacyValue);
+		else if (legacyValue instanceof LegacyFloatValue) legacyNumber = ((LegacyFloatValue) legacyValue).value;
+		else if (legacyValue instanceof LegacyIntValue) legacyNumber = ((LegacyIntValue) legacyValue).value;
+		else legacyNumber = (Number) legacyValue;
 		if (field.type == byte[].class) return legacyNumber.byteValue();
 		if (field.type == short[].class) return legacyNumber.shortValue();
 		if (field.type == char[].class) return (char) legacyNumber.intValue();

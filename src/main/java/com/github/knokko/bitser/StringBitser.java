@@ -32,11 +32,15 @@ public class StringBitser {
 	public static String decode(
 			IntegerField.Properties lengthField, CollectionSizeLimit sizeLimit, BitInputStream input
 	) throws IOException {
+		input.prepareProperty("string-length", -1);
 		int length = decodeLength(lengthField, sizeLimit, "string length", input);
+		input.finishProperty();
 
 		byte[] bytes = new byte[length];
 		for (int index = 0; index < length; index++) {
+			input.prepareProperty("string-char", -1);
 			bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, input);
+			input.finishProperty();
 		}
 		return new String(bytes, StandardCharsets.UTF_8);
 	}

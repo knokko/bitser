@@ -1,14 +1,11 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.LegacyStructInstance;
+import com.github.knokko.bitser.io.*;
 import com.github.knokko.bitser.exceptions.*;
-import com.github.knokko.bitser.field.FunctionContext;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.io.LayeredBitOutputStream;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
+import com.github.knokko.bitser.options.DebugBits;
 import com.github.knokko.bitser.options.WithParameter;
-import com.github.knokko.bitser.util.*;
+import com.github.knokko.bitser.distributions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,7 +23,7 @@ public class Bitser {
 		this.cache = new BitserCache(threadSafe);
 	}
 
-	private void rethrowRecursorException(RecursorException failure) throws IOException {
+	private void rethrowRecursorException(RecursionException failure) throws IOException {
 		Throwable cause = failure.getCause();
 		if (cause instanceof InvalidBitValueException) {
 			throw new InvalidBitValueException(
@@ -55,21 +52,18 @@ public class Bitser {
 		}
 	}
 
-	public void serialize(
+	public void serializeSimple(
 			Object object, BitOutputStream output, Object... withAndOptions
-	) throws IOException, BitserException, RecursorException, IllegalArgumentException {
+	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
 		try {
-			rawSerialize(object, output, withAndOptions);
-		} catch (RecursorException failure) {
+			rawSerializeSimple(object, output, withAndOptions);
+		} catch (RecursionException failure) {
 			rethrowRecursorException(failure);
 			throw failure;
 		}
 	}
 
-	private void rawSerialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
-		output.pushContext("prepare", -1);
-		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
-
+	private void rawSerializeSimple(Object object, BitOutputStream output, Object... withAndOptions) {
 		boolean backwardCompatible = false;
 		boolean forbidLazySaving = false;
 		IntegerDistributionTracker integerDistribution = null;
@@ -94,89 +88,47 @@ public class Bitser {
 			}
 		}
 
-		LabelInfo labelInfo = new LabelInfo(cache, backwardCompatible, new FunctionContext(
-				this, backwardCompatible, withParameters
-		));
-		LabelContext labelContext = new LabelContext(new HashSet<>());
-
-		output.popContext("prepare", -1);
-		LegacyClasses legacy = null;
 		if (backwardCompatible) {
-			output.pushContext("register-legacy-classes", -1);
-			legacy = new LegacyClasses();
+			LegacyClasses legacy = new LegacyClasses();
+			new UsedStructCollector(cache, legacy, object.getClass()).collect();
 
-			final LegacyClasses rememberLegacy = legacy;
-			rememberLegacy.setRoot(Recursor.compute(
-					legacy, new LegacyInfo(cache, labelInfo.functionContext),
-					recursor -> wrapper.registerClasses(object, recursor)
-			).get());
-
-			output.popContext("register-legacy-classes", -1);
-			output.pushContext("legacy-classes", -1);
-			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
-			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
-			serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
-			legacyOutput.finish();
-			output.popContext("legacy-classes", -1);
-
-			output.pushContext("legacy-reference-labels", -1);
-			Recursor.run(labelContext, labelInfo, deserializeFromBytes(
-					LegacyClasses.class, legacyBytes.toByteArray()
-			)::collectReferenceLabels);
-			output.popContext("legacy-reference-labels", -1);
-		} else {
-			output.pushContext("collect-reference-labels", -1);
-			Recursor.run(labelContext, labelInfo, wrapper::collectReferenceLabels);
-			output.popContext("collect-reference-labels", -1);
+			try {
+				output.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+				serializeSimple(legacy, output, new WithParameter("legacy-classes", legacy));
+				output.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+			} catch (IOException io) {
+				throw new RuntimeException(io);
+			}
 		}
 
-		output.pushContext("with-reference-labels", -1);
-		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
-			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
-			Recursor.run(
-					new LabelContext(labelContext.declaredTargets),
-					new LabelInfo(cache, false, labelInfo.functionContext),
-					cache.getWrapper(withObject.getClass())::collectReferenceLabels
-			);
+		ArrayList<Object> withObjects = new ArrayList<>();
+		for (Object maybeWithObject : withAndOptions) {
+			if (maybeWithObject == BACKWARD_COMPATIBLE || maybeWithObject == FORBID_LAZY_SAVING) continue;
+			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof DistributionTracker) continue;
+			if (maybeWithObject instanceof DebugBits) continue;
+			withObjects.add(maybeWithObject);
 		}
-		output.popContext("with-reference-labels", -1);
 
-		output.pushContext("register-reference-targets", -1);
-		ReferenceIdMapper idMapper = new ReferenceIdMapper(labelContext);
-		Recursor.run(idMapper, cache, recursor ->
-				wrapper.registerReferenceTargets(object, recursor)
+		Serializer serializer = new Serializer(
+				this, withParameters, output, backwardCompatible, object,
+				forbidLazySaving, integerDistribution, floatDistribution
 		);
-		output.popContext("register-reference-targets", -1);
-
-		output.pushContext("with-reference-targets", -1);
-		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
-			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
-			Recursor.run(idMapper, cache, recursor ->
-					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
-			);
-		}
-		output.popContext("with-reference-targets", -1);
-
-		output.pushContext("id-mapper", -1);
-		idMapper.save(output);
-		output.popContext("id-mapper", -1);
-
-		output.pushContext("output", -1);
-		Recursor.run(
-				new WriteContext(output, idMapper, integerDistribution, floatDistribution),
-				new WriteInfo(this, withParameters, legacy, output.usesContextInfo(), forbidLazySaving),
-				recursor -> wrapper.write(object, recursor)
-		);
-		output.popContext("output", -1);
+		serializer.references.setWithObjects(withObjects);
+		serializer.run();
 	}
 
-	public byte[] serializeToBytes(Object object, Object... withAndOptions) {
+	public byte[] serializeToBytesSimple(Object object, Object... withAndOptions) {
+		DebugBits debug = null;
+		for (Object option : withAndOptions) {
+			if (option instanceof DebugBits) debug = (DebugBits) option;
+		}
+
 		try {
 			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
-			serialize(object, bitOutput, withAndOptions);
+			BitOutputStream bitOutput = debug != null ?
+					new DebugBitOutputStream(byteOutput, debug.writer, debug.flushAggressively) :
+					new BitOutputStream(byteOutput);
+			serializeSimple(object, bitOutput, withAndOptions);
 			bitOutput.finish();
 			return byteOutput.toByteArray();
 		} catch (IOException shouldNotHappen) {
@@ -184,121 +136,95 @@ public class Bitser {
 		}
 	}
 
-	public <T> T deserialize(
+	public <T> T deserializeSimple(
 			Class<T> objectClass, BitInputStream input, Object... withAndOptions
-	) throws IOException, BitserException, RecursorException, IllegalArgumentException {
+	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
 		try {
-			return rawDeserialize(objectClass, input, withAndOptions);
-		} catch (RecursorException failure) {
+			return rawDeserializeSimple(objectClass, input, withAndOptions);
+		} catch (RecursionException failure) {
 			rethrowRecursorException(failure);
 			throw failure;
 		}
 	}
 
-	private <T> T rawDeserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
+	private <T> T rawDeserializeSimple(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
 		CollectionSizeLimit sizeLimit = null;
 		boolean backwardCompatible = false;
-		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) {
-				backwardCompatible = true;
-				break;
-			}
-			if (withObject instanceof CollectionSizeLimit) {
-				if (sizeLimit != null) throw new IllegalArgumentException("Encountered multiple size limits");
-				sizeLimit = (CollectionSizeLimit) withObject;
-			}
-		}
-
-		LegacyClasses legacy = null;
-		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input, sizeLimit);
-
-		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
-
-		LabelContext labelContext = new LabelContext(new HashSet<>());
-		LabelInfo labelInfo = new LabelInfo(cache, backwardCompatible, null);
-		Recursor.run(labelContext, labelInfo, legacy == null ? wrapper::collectReferenceLabels :
-				legacy::collectReferenceLabels
-		);
-
 		Map<String, Object> withParameters = new HashMap<>();
-		for (Object withObject : withAndOptions) {
-			if (withObject == null || withObject == BACKWARD_COMPATIBLE || withObject  == FORBID_LAZY_SAVING) continue;
-			if (withObject instanceof CollectionSizeLimit || withObject instanceof DistributionTracker) continue;
-			if (withObject instanceof WithParameter) {
-				WithParameter parameter = (WithParameter) withObject;
+		ArrayList<Object> withObjects = new ArrayList<>();
+
+		for (Object maybeWithObject : withAndOptions) {
+			if (maybeWithObject == BACKWARD_COMPATIBLE) {
+				backwardCompatible = true;
+				continue;
+			}
+			if (maybeWithObject instanceof CollectionSizeLimit) {
+				if (sizeLimit != null) throw new IllegalArgumentException("Encountered multiple size limits");
+				sizeLimit = (CollectionSizeLimit) maybeWithObject;
+				continue;
+			}
+			if (maybeWithObject instanceof WithParameter) {
+				WithParameter parameter = (WithParameter) maybeWithObject;
 				if (withParameters.containsKey(parameter.key)) {
 					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
 				}
 				withParameters.put(parameter.key, parameter.value);
 				continue;
 			}
-			Recursor.run(
-					new LabelContext(labelContext.declaredTargets),
-					new LabelInfo(cache, false, new FunctionContext(
-							this, backwardCompatible, withParameters
-					)),
-					cache.getWrapper(withObject.getClass())::collectReferenceLabels
-			);
-		}
-
-		ReferenceIdMapper withMapper = new ReferenceIdMapper(labelContext);
-		for (Object withObject : withAndOptions) {
-			if (withObject == null || withObject == BACKWARD_COMPATIBLE) continue;
-			if (withObject == FORBID_LAZY_SAVING) {
+			if (maybeWithObject == null || maybeWithObject instanceof DebugBits) continue;
+			if (maybeWithObject == FORBID_LAZY_SAVING) {
 				System.out.println("Ignoring FORBID_LAZY_SAVING option in Bitser.deserialize");
 				continue;
 			}
-			if (withObject instanceof WithParameter || withObject instanceof CollectionSizeLimit) continue;
-			if (withObject instanceof DistributionTracker) {
+			if (maybeWithObject instanceof DistributionTracker) {
 				System.out.println("Ignoring DistributionTracker option in Bitser.deserialize");
 				continue;
 			}
 
-			Recursor.run(withMapper, cache, recursor ->
-					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
-			);
+			withObjects.add(maybeWithObject);
 		}
 
-		ReferenceIdLoader idLoader = ReferenceIdLoader.load(input, labelContext, sizeLimit);
+		LegacyClasses legacy = null;
+		if (backwardCompatible) {
+			input.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+			legacy = deserializeSimple(LegacyClasses.class, input, sizeLimit);
+			input.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+		}
 
-		List<T> result = new ArrayList<>(1);
-		ReadContext readContext = new ReadContext(input, idLoader);
-		ReadInfo readInfo = new ReadInfo(this, withParameters, backwardCompatible, sizeLimit);
+		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
+
 		if (legacy != null) {
-			LegacyStructInstance[] pLegacy = { null };
-			final LegacyClasses rememberLegacy = legacy;
-			Recursor.run(readContext, readInfo, recursor ->
-					rememberLegacy.getRoot().read(recursor, -1, element -> pLegacy[0] = element)
+			BackDeserializer deserializer = new BackDeserializer(
+					this, input, legacy, sizeLimit, withParameters, wrapper
 			);
-			Recursor.run(readContext, readInfo, recursor ->
-					wrapper.fixLegacyTypes(recursor, pLegacy[0])
-			);
+			deserializer.references.setWithObjects(withObjects);
+			deserializer.run();
 			//noinspection unchecked
-			result.add((T) pLegacy[0].newInstance);
-			withMapper.shareWith(idLoader);
-			idLoader.resolve();
-			Recursor.run(readContext, readInfo, recursor ->
-					wrapper.setLegacyValues(recursor, pLegacy[0])
-			);
-			idLoader.postResolve();
+			return (T) deserializer.rootStruct;
 		} else {
+			Deserializer deserializer = new Deserializer(this, input, sizeLimit, withParameters, wrapper);
+			deserializer.references.setWithObjects(withObjects);
+			deserializer.run();
 			//noinspection unchecked
-			Recursor.run(readContext, readInfo, recursor ->
-					wrapper.read(recursor, element -> result.add((T) element))
-			);
-			withMapper.shareWith(idLoader);
-			idLoader.resolve();
-			idLoader.postResolve();
+			return (T) deserializer.rootStruct;
 		}
-
-		return result.get(0);
 	}
 
-	public <T> T deserializeFromBytes(
+	public <T> T deserializeFromBytesSimple(
 			Class<T> objectClass, byte[] bytes, Object... withAndOptions
-	) throws BitserException, RecursorException, IllegalArgumentException {
+	) throws BitserException, RecursionException, IllegalArgumentException {
+		DebugBits debug = null;
+		for (Object option : withAndOptions) {
+			if (option instanceof DebugBits) debug = (DebugBits) option;
+		}
 		try {
-			return deserialize(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), withAndOptions);
+			ByteArrayInputStream byteInput = new ByteArrayInputStream(bytes);
+			BitInputStream bitInput = debug != null ?
+					new DebugBitInputStream(byteInput, debug.writer, debug.flushAggressively) :
+					new BitInputStream(byteInput);
+			T result = deserializeSimple(objectClass, bitInput, withAndOptions);
+			bitInput.close();
+			return result;
 		} catch (IOException shouldNotHappen) {
 			throw new IllegalArgumentException("bytes is too short or invalid/corrupted", shouldNotHappen);
 		}
@@ -309,46 +235,15 @@ public class Bitser {
 		return (T) cache.getWrapper(object.getClass()).shallowCopy(object);
 	}
 
-	public <T> T deepCopy(
+	public <T> T stupidDeepCopy(
 			T object, Object... with
-	) throws BitserException, RecursorException, IllegalArgumentException {
+	) throws BitserException, RecursionException, IllegalArgumentException {
 		//noinspection unchecked
-		return (T) deserializeFromBytes(object.getClass(), serializeToBytes(object, with), with);
+		return (T) deserializeFromBytesSimple(object.getClass(), serializeToBytesSimple(object, with), with);
 	}
 
-//	public <T> BitStructConnection<T> createStructConnection(
-//			T initialState, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		return createRawStructConnection(initialState, initialState.getClass(), reportChanges);
-//	}
-//
-//	private <T> BitStructConnection<T> createRawStructConnection(
-//			T initialState, Class<?> theClass, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		return cache.getWrapper(theClass).createConnection(this, initialState, reportChanges);
-//	}
-//
-//	public boolean needsChildConnection(BitFieldWrapper childWrapper) {
-//		if (childWrapper instanceof StructFieldWrapper) return true;
-//		assert childWrapper.field.type != null;
-//		return List.class.isAssignableFrom(childWrapper.field.type);
-//	}
-//
-//	public <T> BitConnection createChildConnection(
-//			T child, BitFieldWrapper childWrapper, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		if (childWrapper instanceof StructFieldWrapper) {
-//			return createRawStructConnection(child, childWrapper.field.type, reportChanges);
-//		}
-//		assert childWrapper.field.type != null;
-//		if (List.class.isAssignableFrom(childWrapper.field.type)) {
-//			//noinspection unchecked
-//			return new BitListConnection<>(this, (List<T>) child, childWrapper.getChildWrapper(), reportChanges);
-//		}
-//		return null;
-//	}
-
 	public boolean deepEquals(Object a, Object b) {
+		// TODO Recursive -> iterative
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
 		BitStructWrapper<?> wrapperA = cache.getWrapper(a.getClass());
@@ -357,6 +252,7 @@ public class Bitser {
 	}
 
 	public int hashCode(Object value) {
+		// TODO Recursive -> iterative
 		if (value == null) return 0;
 		return cache.getWrapper(value.getClass()).hashCode(value, cache);
 	}

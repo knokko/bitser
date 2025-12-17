@@ -1,12 +1,12 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
-import com.github.knokko.bitser.util.Recursor;
+import com.github.knokko.bitser.legacy.LegacyStringValue;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -41,21 +41,34 @@ class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("string", context -> {
-			if (context.integerDistribution != null) {
-				long length = ((String) value).getBytes(StandardCharsets.UTF_8).length;
-				context.integerDistribution.insert(field + " string length", length, lengthField);
-				context.integerDistribution.insert("string length", length, lengthField);
-			}
-			StringBitser.encode((String) value, lengthField, context.output);
-		});
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		if (serializer.intDistribution != null) {
+			long length = ((String) value).getBytes(StandardCharsets.UTF_8).length;
+			serializer.intDistribution.insert(field + " string length", length, lengthField);
+			serializer.intDistribution.insert("string length", length, lengthField);
+		}
+		StringBitser.encode((String) value, lengthField, serializer.output);
 	}
 
 	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("string-value", context ->
-				setValue.accept(StringBitser.decode(lengthField, recursor.info.sizeLimit, context.input))
-		);
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		return StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input);
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		return new LegacyStringValue(StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input));
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof LegacyStringValue) {
+			return ((LegacyStringValue) legacyValue).value;
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to String for field " + field);
+		}
 	}
 }

@@ -1,22 +1,21 @@
 package com.github.knokko.bitser.legacy;
 
-import com.github.knokko.bitser.util.JobOutput;
-
-import java.util.List;
 import java.util.UUID;
 
 public class LegacyStructInstance {
 
-	public final int inheritanceIndex;
-	public final List<LegacyValues> valuesHierarchy;
-	public final JobOutput<UUID> stableID;
-	public Object newInstance;
+	public final int allowedClassIndex;
+	public final LegacyClassValues[] hierarchy;
 
-	public LegacyStructInstance(
-			int inheritanceIndex, List<LegacyValues> valuesHierarchy, JobOutput<UUID> stableID
-	) {
-		this.inheritanceIndex = inheritanceIndex;
-		this.valuesHierarchy = valuesHierarchy;
-		this.stableID = stableID;
+	public UUID stableID;
+
+	public LegacyStructInstance(int allowedClassIndex, LegacyClassValues[] hierarchy) {
+		this.allowedClassIndex = allowedClassIndex;
+		this.hierarchy = hierarchy;
+	}
+
+	@Override
+	public String toString() {
+		return "BackStructInstance";
 	}
 }

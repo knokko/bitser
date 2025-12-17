@@ -72,7 +72,7 @@ public class TestBitStructCopy {
 		assertSame(root.target, copied.target);
 		assertSame(copied.reference, copied.target);
 
-		Root deepCopy = new Bitser(false).deepCopy(root);
+		Root deepCopy = new Bitser(false).stupidDeepCopy(root);
 		assertNotSame(root, deepCopy);
 		assertNotSame(root.c, deepCopy.c);
 		assertTrue(deepCopy.b);

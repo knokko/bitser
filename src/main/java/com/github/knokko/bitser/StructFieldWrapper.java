@@ -1,19 +1,16 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
-import com.github.knokko.bitser.legacy.LegacyLazyBytes;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
+import com.github.knokko.bitser.legacy.LegacyLazyBytes;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.util.JobOutput;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.IntegerBitser.decodeUniformInteger;
 import static com.github.knokko.bitser.IntegerBitser.encodeUniformInteger;
@@ -67,48 +64,36 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
-		super.collectReferenceLabels(recursor);
-		if (allowed.length == 0) {
-			for (LegacyStruct legacy : legacyStructs) {
-				if (legacy != null) legacy.collectReferenceLabels(recursor);
-			}
-		}
-		for (Class<?> structClass : allowed) {
-			recursor.info.cache.getWrapper(structClass).collectReferenceLabels(recursor);
-		}
+	void registerLegacyClasses(UsedStructCollector collector) {
+		for (Class<?> allowedStructClass : allowed) collector.maybeRegisterStruct(allowedStructClass);
 	}
 
 	@Override
-	void registerReferenceTargets(Object value, Recursor<ReferenceIdMapper, BitserCache> recursor) {
-		super.registerReferenceTargets(value, recursor);
-		if (value != null) {
-			// No need to call recursor.nested, since BitStructWrapper will do that anyway
-			recursor.info.getWrapper(value.getClass()).registerReferenceTargets(value, recursor);
-		}
+	void registerReferenceTargets(
+			AbstractReferenceTracker references, Object value,
+			RecursionNode parentNode, String fieldName
+	) {
+		BitStructWrapper<?> structInfo = references.cache.getWrapper(value.getClass());
+		references.structJobs.add(new WithStructJob(value, structInfo, new RecursionNode(parentNode, fieldName)));
 	}
 
 	@Override
-	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		super.registerLegacyClasses(value, recursor);
-		if (value == null) return;
-		recursor.info.cache.getWrapper(value.getClass()).registerClasses(value, recursor);
-	}
-
-	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
-				final int rememberIndex = index;
 				if (allowed.length > 1) {
-					recursor.runFlat("allowed-class-index", context -> {
-						context.output.prepareProperty("allowed-class-index", -1);
-						encodeUniformInteger(rememberIndex, 0, allowed.length - 1, context.output);
-						context.output.finishProperty();
-					});
+					serializer.output.prepareProperty("allowed-class-index", -1);
+					encodeUniformInteger(index, 0, allowed.length - 1, serializer.output);
+					serializer.output.finishProperty();
 				}
 
-				recursor.info.bitser.cache.getWrapper(value.getClass()).write(value, recursor);
+				serializer.structJobs.add(new WriteStructJob(
+						value, serializer.cache.getWrapper(value.getClass()),
+						new RecursionNode(parentNode, fieldName)
+				));
 				return;
 			}
 		}
@@ -119,63 +104,66 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
-		if (length > 1) {
-			JobOutput<Integer> inheritanceIndex = recursor.computeFlat("inheritance-index", context ->
-					(int) decodeUniformInteger(0, length - 1, context.input)
-			);
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		int allowedClassIndex;
+		if (allowed.length > 1) {
+			deserializer.input.prepareProperty("allowed-class-index", -1);
+			allowedClassIndex = (int) decodeUniformInteger(0, allowed.length - 1, deserializer.input);
+			deserializer.input.finishProperty();
+		} else allowedClassIndex = 0;
 
-			recursor.runNested("struct", nested -> {
-				if (allowed.length == 0) {
-					legacyStructs[inheritanceIndex.get()].read(nested, inheritanceIndex.get(), setValue::accept);
-				} else nested.info.bitser.cache.getWrapper(allowed[inheritanceIndex.get()]).read(nested, setValue);
-			});
-		} else {
-			if (allowed.length == 0) {
-				legacyStructs[0].read(recursor, 0, setValue::accept);
-			} else recursor.info.bitser.cache.getWrapper(allowed[0]).read(recursor, setValue);
-		}
+		BitStructWrapper<?> structInfo = deserializer.cache.getWrapper(allowed[allowedClassIndex]);
+		Object structObject = structInfo.createEmptyInstance();
+		deserializer.structJobs.add(
+				new ReadStructJob(structObject, structInfo, new RecursionNode(parentNode, fieldName))
+		);
+		return structObject;
 	}
 
 	@Override
-	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
-		if (value == null) {
-			super.setLegacyValue(recursor, null, setValue);
-			return;
-		}
-		if (value instanceof LegacyLazyBytes) {
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		int allowedClassIndex;
+		if (legacyStructs.length > 1) {
+			deserializer.input.prepareProperty("allowed-class-index", -1);
+			allowedClassIndex = (int) decodeUniformInteger(0, legacyStructs.length - 1, deserializer.input);
+			deserializer.input.finishProperty();
+		} else allowedClassIndex = 0;
+
+		LegacyStruct legacyInfo = legacyStructs[allowedClassIndex];
+		LegacyStructInstance legacyObject = legacyInfo.constructEmptyInstance(allowedClassIndex);
+		deserializer.structJobs.add(new BackReadStructJob(
+				legacyObject, legacyInfo,
+				new RecursionNode(parentNode, fieldName)
+		));
+		return legacyObject;
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof LegacyLazyBytes) {
 			if (allowed.length != 1) throw new UnexpectedBitserException(
 					"LegacyLazyBytes should have been denied at fixLegacyTypes"
 			);
-			setValue.accept(recursor.info.bitser.deserializeFromBytes(
-					allowed[0], ((LegacyLazyBytes) value).bytes, Bitser.BACKWARD_COMPATIBLE
-			));
-			return;
-		}
-		LegacyStructInstance legacy = (LegacyStructInstance) value;
-		BitStructWrapper<?> valueWrapper = recursor.info.bitser.cache.getWrapper(allowed[legacy.inheritanceIndex]);
-		setValue.accept(valueWrapper.setLegacyValues(recursor, legacy));
-	}
-
-	@Override
-	void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
-		if (value == null && field.optional) return;
-		if (value instanceof LegacyLazyBytes && allowed.length == 1) return;
-		if (!(value instanceof LegacyStructInstance)) {
-			throw new LegacyBitserException("Can't convert from legacy " + value + " to a BitStruct");
-		}
-
-		LegacyStructInstance instance = (LegacyStructInstance) value;
-		if (instance.inheritanceIndex >= allowed.length) throw new LegacyBitserException(
-				"Encountered unknown subclass while loading " + field
-		);
-		recursor.info.bitser.cache.getWrapper(allowed[instance.inheritanceIndex]).fixLegacyTypes(recursor, instance);
-		if (field.referenceTargetLabel != null) {
-			recursor.runFlat("referenceTargetLabel", context ->
-					context.idLoader.replace(field.referenceTargetLabel, instance, instance.newInstance)
+			return deserializer.bitser.deserializeFromBytesSimple(
+					allowed[0], ((LegacyLazyBytes) legacyValue).bytes, Bitser.BACKWARD_COMPATIBLE
 			);
 		}
+		if (legacyValue instanceof LegacyStructInstance) {
+			LegacyStructInstance legacyObject = (LegacyStructInstance) legacyValue;
+			if (legacyObject.allowedClassIndex >= allowed.length) throw new LegacyBitserException(
+					"Encountered unknown subclass while loading " + field
+			);
+			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(allowed[legacyObject.allowedClassIndex]);
+			Object modernObject = modernInfo.createEmptyInstance();
+			deserializer.convertStructJobs.add(new BackConvertStructJob(
+					modernObject, modernInfo, legacyObject,
+					new RecursionNode(parentNode, fieldName)
+			));
+			return modernObject;
+		}
+		throw new LegacyBitserException(
+				"Can't convert from legacy " + legacyValue + " to " + field.type + " for field " + field
+		);
 	}
 
 	@Override

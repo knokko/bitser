@@ -1,18 +1,12 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.util.JobOutput;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.function.Consumer;
 
-import static com.github.knokko.bitser.IntegerBitser.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -35,7 +29,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	}
 
 	@BitField
-	private final IntegerField.Properties sizeField;
+	final IntegerField.Properties sizeField;
 
 	@BitField(optional = true)
 	private final ArrayType arrayType;
@@ -63,63 +57,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
 	abstract ArrayType determineArrayType();
 
-	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		int size = getCollectionSize(value);
-		recursor.runFlat("size", context -> {
-			if (context.integerDistribution != null) {
-				context.integerDistribution.insert(field + " collection size", (long) size, sizeField);
-				context.integerDistribution.insert("collection size", (long) size, sizeField);
-			}
-			context.output.prepareProperty("size", -1);
-			encodeInteger(size, sizeField, context.output);
-			context.output.finishProperty();
-		});
-
-		if (size > 0) writeElements(value, size, recursor);
-	}
-
-	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		JobOutput<Integer> size = recursor.computeFlat("size", context ->
-				decodeLength(sizeField, recursor.info.sizeLimit, "collection size", context.input)
-		);
-
-		recursor.runNested("elements", nested -> {
-			Object value = constructCollectionWithSize(size.get());
-			if (size.get() > 0) readElements(value, size.get(), nested);
-
-			nested.runFlat("add-elements", context -> {
-				if (nested.info.backwardCompatible) setValue.accept(new LegacyCollectionInstance(value));
-				else setValue.accept(value);
-			});
-		});
-	}
-
-	@Override
-	void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
-		if (value == null) return;
-		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
-		legacyInstance.newCollection = constructCollectionWithSize(
-				Array.getLength(legacyInstance.legacyArray)
-		);
-		if (field.referenceTargetLabel != null) {
-			recursor.runFlat("referenceTargetLabel", context ->
-					context.idLoader.replace(field.referenceTargetLabel, legacyInstance, legacyInstance.newCollection)
-			);
-		}
-	}
-
-	abstract void writeElements(Object value, int size, Recursor<WriteContext, WriteInfo> recursor) ;
-
-	abstract void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) ;
-
-	private int getCollectionSize(Object object) {
-		if (object instanceof Collection<?>) return ((Collection<?>) object).size();
-		return Array.getLength(object);
-	}
-
-	private Object constructCollectionWithSize(int size) {
+	protected Object constructCollectionWithSize(int size) {
 		if (field.type == null) {
 			if (arrayType == null) return new Object[size];
 			switch (arrayType) {

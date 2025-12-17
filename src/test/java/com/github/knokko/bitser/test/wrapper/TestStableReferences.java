@@ -80,7 +80,7 @@ public class TestStableReferences {
 		root.items.add(new Item("cold shield", shield));
 		root.items.add(new Item("spiky shield", shield));
 
-		ItemRoot loaded = new Bitser(false).deepCopy(root);
+		ItemRoot loaded = new Bitser(false).stupidDeepCopy(root);
 
 		assertEquals(2, loaded.types.size());
 		assertEquals("sword", loaded.types.get(0).name);
@@ -190,7 +190,7 @@ public class TestStableReferences {
 		node3.bestFriend = new DeepNodeReference(node2);
 		node3.neighbours.add(node1);
 
-		Graph loaded = new Bitser(false).deepCopy(graph);
+		Graph loaded = new Bitser(false).stupidDeepCopy(graph);
 		assertEquals(4, loaded.mostNodes.size());
 
 		Node loaded1 = loaded.mostNodes.get(0);
@@ -250,7 +250,7 @@ public class TestStableReferences {
 	public void testFieldThatIsBothReferenceAndTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new BothReferenceAndTarget(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new BothReferenceAndTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is both a reference field and a reference target");
 	}
@@ -271,10 +271,10 @@ public class TestStableReferences {
 	public void testNonStructReferenceTarget() {
 		String errorMessage =  assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new NonStructTarget(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new NonStructTarget(), new BitCountStream())
 		).getMessage();
-		assertContains(errorMessage, "Can't extract stable id from");
-		assertContains(errorMessage, "-> NonStructTarget -> id");
+		assertContains(errorMessage, "Can't extract stable ID from");
+		assertContains(errorMessage, "NonStructTarget -> reference");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -303,18 +303,18 @@ public class TestStableReferences {
 		target.reference = target.target;
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(target, new BitCountStream())
+				() -> new Bitser(false).serializeSimple(target, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "doesn't have an @StableReferenceFieldId");
-		assertContains(errorMessage, "com.github.knokko.bitser.test.wrapper.TestStableReferences$WithoutStableId@");
-		assertContains(errorMessage, "-> StableReferenceTargetWithoutStableId -> target");
+		assertContains(errorMessage, "WithoutStableId");
+		assertContains(errorMessage, "StableReferenceTargetWithoutStableId -> reference");
 	}
 
 	@Test
 	public void testNullReferenceTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(false).serialize(new StableReferenceTargetWithoutStableId(), new BitCountStream())
+				() -> new Bitser(false).serializeSimple(new StableReferenceTargetWithoutStableId(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 	}
@@ -343,10 +343,10 @@ public class TestStableReferences {
 	public void testReferenceToStableNullId() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(new ReferencesNullId(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new ReferencesNullId(), new BitCountStream())
 		).getMessage();
-		assertContains(errorMessage, "Stable UUID");
-		assertContains(errorMessage, "is null");
+		assertContains(errorMessage, "ReferencesNullId -> actualId");
+		assertContains(errorMessage, "must not be null");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -362,7 +362,7 @@ public class TestStableReferences {
 	public void testOptionalStableReferenceId() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new OptionalStableId(), new BitCountStream())
+				() -> new Bitser(false).serializeSimple(new OptionalStableId(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "@StableReferenceFieldId's can't be optional");
 	}
@@ -379,7 +379,7 @@ public class TestStableReferences {
 	public void testStableReferenceNonUUID() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new StableNonUUID(), new BitCountStream())
+				() -> new Bitser(false).serializeSimple(new StableNonUUID(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Only UUID fields can have @StableReferenceFieldId");
 	}
@@ -392,8 +392,8 @@ public class TestStableReferences {
 		root.types.add(type);
 
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class,
-				() -> new Bitser(false).serialize(root, new BitCountStream())
+				ReferenceBitserException.class,
+				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple stable targets have identity");
 	}
@@ -407,16 +407,16 @@ public class TestStableReferences {
 		primaryRoot.items.add(new Item("it", itemType));
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(primaryRoot);
+		byte[] bytes = bitser.serializeToBytesSimple(primaryRoot);
 
 		ItemRoot withRoot = new ItemRoot();
 		withRoot.types.add(itemType);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytes(ItemRoot.class, bytes, withRoot)
+				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes, withRoot)
 		).getMessage();
-		assertContains(errorMessage, "objects have id " + itemType.id);
+		assertContains(errorMessage, "stable targets have ID " + itemType.id);
 		assertContains(errorMessage, "TestStableReferences$ItemType@");
 	}
 
@@ -431,8 +431,8 @@ public class TestStableReferences {
 	@Test
 	public void testMissingTargetLabel() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new MissingTargetLabel(), new BitCountStream())
+				ReferenceBitserException.class,
+				() -> new Bitser(false).serializeSimple(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
@@ -444,19 +444,20 @@ public class TestStableReferences {
 
 		ItemRoot primaryRoot = new ItemRoot();
 		primaryRoot.items.add(new Item("it", itemType));
+		primaryRoot.types.add(new ItemType("unrelated"));
 
 		ItemRoot withRoot = new ItemRoot();
 		withRoot.types.add(itemType);
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(primaryRoot, withRoot);
+		byte[] bytes = bitser.serializeToBytesSimple(primaryRoot, withRoot);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytes(ItemRoot.class, bytes)
+				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes)
 		).getMessage();
-		assertContains(errorMessage, "with label item types and id " + itemType.id);
-		assertContains(errorMessage, "was never saved");
+		assertContains(errorMessage, "with label item types and ID " + itemType.id);
+		assertContains(errorMessage, "ItemRoot -> items -> elements -> type");
 	}
 
 	@Test
@@ -469,13 +470,13 @@ public class TestStableReferences {
 		with.types.add(itemType);
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(item, with);
+		byte[] bytes = bitser.serializeToBytesSimple(item, with);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytes(Item.class, bytes)
+				() -> bitser.deserializeFromBytesSimple(Item.class, bytes)
 		).getMessage();
-		assertContains(errorMessage, "label item types was never saved");
-		assertContains(errorMessage, "-> type");
+		assertContains(errorMessage, "find @ReferenceFieldTarget with label item types");
+		assertContains(errorMessage, "Item -> type");
 	}
 }

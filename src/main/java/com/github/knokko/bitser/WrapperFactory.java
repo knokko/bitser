@@ -209,8 +209,7 @@ class WrapperFactory {
 				if (parentAnnotations.has(ReferenceFieldTarget.class)) throw new InvalidBitFieldException(
 						field + " is both a reference field and a reference target, which is forbidden"
 				);
-				if (referenceField.stable()) return new StableReferenceFieldWrapper(field, referenceField.label());
-				return new UnstableReferenceFieldWrapper(field, referenceField.label());
+				return new ReferenceFieldWrapper(field, referenceField.label(), referenceField.stable());
 			}
 
 			BitFieldWrapper[] childWrappers = createChildWrappers(
@@ -316,8 +315,7 @@ class WrapperFactory {
 			if (field.annotations.has(ReferenceFieldTarget.class)) throw new InvalidBitFieldException(
 					field + " is both a reference field and a reference target, which is forbidden"
 			);
-			if (referenceField.stable()) return new StableReferenceFieldWrapper(field, referenceField.label());
-			return new UnstableReferenceFieldWrapper(field, referenceField.label());
+			return new ReferenceFieldWrapper(field, referenceField.label(), referenceField.stable());
 		}
 
 		List<BitFieldWrapper> result = new ArrayList<>(1);

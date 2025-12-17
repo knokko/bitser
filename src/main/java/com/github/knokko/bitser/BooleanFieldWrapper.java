@@ -1,8 +1,7 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.util.Recursor;
-
-import java.util.function.Consumer;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.legacy.LegacyBooleanValue;
 
 @BitStruct(backwardCompatible = false)
 class BooleanFieldWrapper extends BitFieldWrapper {
@@ -17,16 +16,37 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("boolean-value", context -> {
-			context.output.prepareProperty("boolean-value", -1);
-			context.output.write((Boolean) value);
-			context.output.finishProperty();
-		});
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		serializer.output.prepareProperty("boolean-value", -1);
+		serializer.output.write((Boolean) value);
+		serializer.output.finishProperty();
 	}
 
 	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("boolean-value", context -> setValue.accept(context.input.read()));
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("boolean-value", -1);
+		boolean result = deserializer.input.read();
+		deserializer.input.finishProperty();
+		return result;
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("boolean-value", -1);
+		boolean result = deserializer.input.read();
+		deserializer.input.finishProperty();
+		return result ? LegacyBooleanValue.TRUE : LegacyBooleanValue.FALSE;
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof LegacyBooleanValue) {
+			return ((LegacyBooleanValue) legacyValue).value;
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to boolean for field " + field);
+		}
 	}
 }

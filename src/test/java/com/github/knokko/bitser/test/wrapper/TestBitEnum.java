@@ -64,13 +64,13 @@ public class TestBitEnum {
 		this.seasons = Season.WINTER;
 		this.direction = Direction.UP;
 
-		TestBitEnum loaded = new Bitser(true).deepCopy(this);
+		TestBitEnum loaded = new Bitser(true).stupidDeepCopy(this);
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertNull(loaded.element);
 
 		this.element = Element.WATER;
-		loaded = new Bitser(false).deepCopy(this);
+		loaded = new Bitser(false).stupidDeepCopy(this);
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertEquals(Element.WATER, loaded.element);
@@ -90,7 +90,7 @@ public class TestBitEnum {
 	@Test
 	public void testNonEnumClass() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new NonEnumStruct(), new BitCountStream())
+				() -> new Bitser(false).serializeSimple(new NonEnumStruct(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "BitEnum can only be used on enums");
 	}
@@ -121,13 +121,13 @@ public class TestBitEnum {
 	@Test
 	public void testDeletedEnumConstantName() {
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(new SeasonStruct());
+		byte[] bytes = bitser.serializeToBytesSimple(new SeasonStruct());
 
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytesSimple(
 				MissingSeasonStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum constant AUTUMN");
-		assertContains(errorMessage, "-> season -> value");
+		assertContains(errorMessage, "-> season");
 	}
 
 	@SuppressWarnings("unused")
@@ -157,13 +157,13 @@ public class TestBitEnum {
 	@Test
 	public void testDeletedEnumConstantOrdinal() {
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(new DirectionStruct());
+		byte[] bytes = bitser.serializeToBytesSimple(new DirectionStruct());
 
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytesSimple(
 				MissingDirectionStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum ordinal 3");
-		assertContains(errorMessage, "-> direction -> value");
+		assertContains(errorMessage, "-> direction");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -181,7 +181,9 @@ public class TestBitEnum {
 		OverruleSeason overrule = new OverruleSeason();
 		overrule.season = Season.SUMMER;
 
-		DirectionStruct direction = bitser.deserializeFromBytes(DirectionStruct.class, bitser.serializeToBytes(overrule));
+		DirectionStruct direction = bitser.deserializeFromBytesSimple(
+				DirectionStruct.class, bitser.serializeToBytesSimple(overrule)
+		);
 		assertEquals(Direction.LEFT, direction.direction);
 	}
 
@@ -213,7 +215,7 @@ public class TestBitEnum {
 		original.weakAgainst = Element.FIRE;
 		original.strongAgainst = Element.EARTH;
 
-		MixedBoss mixed = bitser.deserializeFromBytes(MixedBoss.class, bitser.serializeToBytes(original));
+		MixedBoss mixed = bitser.deserializeFromBytesSimple(MixedBoss.class, bitser.serializeToBytesSimple(original));
 		assertEquals(ReverseElement.AIR, mixed.weakAgainst);
 		assertEquals(ReverseElement.EARTH, mixed.strongAgainst);
 	}
