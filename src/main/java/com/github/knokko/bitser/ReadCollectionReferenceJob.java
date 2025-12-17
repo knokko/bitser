@@ -29,7 +29,7 @@ class ReadCollectionReferenceJob {
 		this.node = node;
 	}
 
-	void resolve(Deserializer deserializer) {
+	void resolve(Deserializer deserializer) throws Throwable {
 		HashMap<UUID, Object> stableMap = null;
 		ArrayList<Object> unstableList = null;
 		if (stable) {
@@ -69,6 +69,6 @@ class ReadCollectionReferenceJob {
 			elements[index] = value;
 		}
 
-		deserializer.populateCollectionJobs.add(new PopulateCollectionJob(collection, elements));
+		deserializer.populateCollectionJobs.add(new PopulateCollectionJob(collection, elements, node));
 	}
 }

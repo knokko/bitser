@@ -12,7 +12,7 @@ class ReadStructJob {
 		this.node = node;
 	}
 
-	void read(Deserializer deserializer) {
+	void read(Deserializer deserializer) throws Throwable {
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
 			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
 				if (field.bitField.field.optional && !deserializer.input.read()) continue;

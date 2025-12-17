@@ -2,8 +2,10 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -25,32 +27,58 @@ class Deserializer {
 		this.cache = cache;
 		this.input = input;
 		this.rootStruct = rootStructInfo.createEmptyInstance();
-		this.structJobs.add(new ReadStructJob(rootStruct, rootStructInfo));
+		this.structJobs.add(new ReadStructJob(
+				rootStruct, rootStructInfo,
+				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
+		));
 	}
 
 	void run() {
 		while (!structJobs.isEmpty() || !collectionJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
-				structJobs.remove(structJobs.size() - 1).read(this);
+				ReadStructJob job = structJobs.remove(structJobs.size() - 1);
+				try {
+					job.read(this);
+				} catch (Throwable failed) {
+					throw new RecursorException(job.node.generateTrace("read"), failed);
+				}
 			}
 			if (!collectionJobs.isEmpty()) {
-				collectionJobs.remove(collectionJobs.size() - 1).read(this);
+				ReadCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
+				try {
+					job.read(this);
+				} catch (Throwable failed) {
+					throw new RecursorException(job.node.generateTrace("read"), failed);
+				}
 			}
 		}
 
 		for (ReadStructReferenceJob referenceJob : structReferenceJobs) {
-			referenceJob.resolve(this);
+			try {
+				referenceJob.resolve(this);
+			} catch (Throwable failed) {
+				throw new RecursorException(referenceJob.node.generateTrace("resolve"), failed);
+			}
 		}
 		structReferenceJobs.clear();
 
 		for (ReadCollectionReferenceJob referenceJob : collectionReferenceJobs) {
-			referenceJob.resolve(this);
+			try {
+				referenceJob.resolve(this);
+			} catch (Throwable failed) {
+				throw new RecursorException(referenceJob.node.generateTrace("resolve"), failed);
+			}
 		}
 		collectionReferenceJobs.clear();
 
 		// TODO Sort them by -depth
+		populateCollectionJobs.sort(Comparator.comparingInt(a -> a.node.depth));
 		for (PopulateCollectionJob populateJob : populateCollectionJobs) {
-			populateJob.populate();
+			try {
+				populateJob.populate();
+			} catch (Throwable failed) {
+				throw new RecursorException(populateJob.node.generateTrace("populate"), failed);
+			}
 		}
 		populateCollectionJobs.clear();
 	}

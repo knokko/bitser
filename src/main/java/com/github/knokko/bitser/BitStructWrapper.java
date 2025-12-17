@@ -23,7 +23,7 @@ class BitStructWrapper<T> {
 
 	private final BitStruct bitStruct;
 	final List<SingleClassWrapper> classHierarchy;
-	private final Constructor<T> constructor;
+	final Constructor<T> constructor;
 	private final VirtualField stableIdField;
 
 	private Set<String> stableReferenceLabels, unstableReferenceLabels, referenceTargetLabels;

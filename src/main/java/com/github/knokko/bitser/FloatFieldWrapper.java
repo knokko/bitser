@@ -49,6 +49,11 @@ class FloatFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	public Object read(Deserializer deserializer) throws Throwable {
+		return decodeFloat(!isFloat, floatField, deserializer.input);
+	}
+
+	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("float-value", context -> {
 			double value = decodeFloat(!isFloat, floatField, context.input);

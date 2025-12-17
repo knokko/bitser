@@ -23,7 +23,7 @@ class ReadStructReferenceJob {
 		this.node = node;
 	}
 
-	void resolve(Deserializer deserializer) {
+	void resolve(Deserializer deserializer) throws Throwable {
 		if (stable) {
 			UUID id = new UUID(
 					IntegerBitser.decodeFullLong(deserializer.input),

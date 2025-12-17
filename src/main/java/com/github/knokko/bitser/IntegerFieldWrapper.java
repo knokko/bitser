@@ -69,6 +69,11 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	public Object read(Deserializer deserializer) throws Throwable {
+		return decodeInteger(intField, deserializer.input);
+	}
+
+	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("int-value", context -> {
 			long longValue = decodeInteger(intField, context.input);

@@ -115,6 +115,10 @@ abstract class BitFieldWrapper {
 
 	abstract void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue);
 
+	Object read(Deserializer deserializer) throws Throwable {
+		throw new UnsupportedOperationException("TODO");
+	}
+
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {
 			throw new LegacyBitserException("Legacy value for field " + field + " is null, which is no longer allowed");

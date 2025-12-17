@@ -16,7 +16,7 @@ public class ReadCollectionJob {
 		this.node = node;
 	}
 
-	void read(Deserializer deserializer) {
+	void read(Deserializer deserializer) throws Throwable {
 		Object[] elements = new Object[size];
 		for (int index = 0; index < size; index++) {
 			if (elementsWrapper.field.optional && !deserializer.input.read()) continue;
@@ -26,6 +26,6 @@ public class ReadCollectionJob {
 				deserializer.registerReferenceTarget(elementsWrapper.field.referenceTargetLabel, elements[index]);
 			}
 		}
-		deserializer.populateCollectionJobs.add(new PopulateCollectionJob(collection, elements));
+		deserializer.populateCollectionJobs.add(new PopulateCollectionJob(collection, elements, node));
 	}
 }
