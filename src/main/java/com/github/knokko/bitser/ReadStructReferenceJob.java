@@ -29,7 +29,7 @@ class ReadStructReferenceJob {
 					IntegerBitser.decodeFullLong(deserializer.input),
 					IntegerBitser.decodeFullLong(deserializer.input)
 			);
-			HashMap<UUID, Object> stableMap = deserializer.stableReferenceTargets.get(label);
+			HashMap<UUID, Object> stableMap = deserializer.references.stableTargets.get(label);
 			if (stableMap == null) {
 				throw new ReferenceBitserException("ehm");
 			}
@@ -39,7 +39,7 @@ class ReadStructReferenceJob {
 			}
 			classField.set(structObject, value);
 		} else {
-			ArrayList<Object> references = deserializer.unstableReferenceTargets.get(label);
+			ArrayList<Object> references = deserializer.references.unstableTargets.get(label);
 			if (references == null) {
 				throw new ReferenceBitserException("ehm");
 			}

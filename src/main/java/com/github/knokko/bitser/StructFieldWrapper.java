@@ -139,6 +139,23 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
+		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, deserializer.input);
+		if (allowed.length == 0) {
+			// TODO Backward compatibility
+			throw new UnsupportedOperationException("TODO");
+		} else {
+			BitStructWrapper<?> structInfo = deserializer.cache.getWrapper(allowed[inheritanceIndex]);
+			Object structObject = structInfo.createEmptyInstance();
+			deserializer.structJobs.add(
+					new ReadStructJob(structObject, structInfo, new RecursionNode(parentNode, fieldName))
+			);
+			return structObject;
+		}
+	}
+
+	@Override
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (value == null) {
 			super.setLegacyValue(recursor, null, setValue);

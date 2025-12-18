@@ -180,15 +180,46 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
+	public void write(Serializer serializer, Object value, RecursionNode parentNode, String fieldName) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		if (field.type.isArray()) {
+			IntegerBitser.encodeInteger(Array.getLength(value), sizeField, serializer.output);
+			// TODO WriteArrayJob
+		} else {
+			Collection<?> collection = (Collection<?>) value;
+			IntegerBitser.encodeInteger(collection.size(), sizeField, serializer.output);
+
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				serializer.collectionReferenceJobs.add(new WriteCollectionReferenceJob(
+						collection, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				serializer.collectionJobs.add(new WriteCollectionJob(
+						collection, valuesWrapper, childNode
+				));
+			}
+		}
+	}
+
+	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
 		if (field.type.isArray()) {
 			// TODO ReadArrayJob
+			throw new UnsupportedOperationException("TODO");
 		} else {
 			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
-			deserializer.collectionJobs.add(new ReadCollectionJob(
-					collection, size, valuesWrapper, new RecursionNode(parentNode, fieldName)
-			));
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				deserializer.collectionReferenceJobs.add(new ReadCollectionReferenceJob(
+						collection, size, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				deserializer.collectionJobs.add(new ReadCollectionJob(
+						collection, size, valuesWrapper, childNode
+				));
+			}
+
 			return collection;
 		}
 	}

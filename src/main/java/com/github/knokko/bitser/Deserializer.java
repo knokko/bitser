@@ -1,14 +1,11 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.UUID;
 
 class Deserializer {
 
@@ -19,11 +16,11 @@ class Deserializer {
 
 	final ArrayList<ReadStructJob> structJobs = new ArrayList<>();
 	final ArrayList<ReadCollectionJob> collectionJobs = new ArrayList<>();
-	final HashMap<String, ArrayList<Object>> unstableReferenceTargets = new HashMap<>();
-	final HashMap<String, HashMap<UUID, Object>> stableReferenceTargets = new HashMap<>();
 	final ArrayList<ReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadCollectionReferenceJob> collectionReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateCollectionJob> populateCollectionJobs = new ArrayList<>();
+
+	final ReferenceTracker references;
 
 	Deserializer(
 			BitserCache cache, BitInputStream input,
@@ -38,6 +35,7 @@ class Deserializer {
 				rootStruct, rootStructInfo,
 				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
 		));
+		this.references = new ReferenceTracker(cache);
 	}
 
 	void run() {
@@ -83,15 +81,5 @@ class Deserializer {
 			}
 		}
 		populateCollectionJobs.clear();
-	}
-
-	void registerReferenceTarget(String label, Object target) {
-		unstableReferenceTargets.computeIfAbsent(label, key -> new ArrayList<>()).add(target);
-		BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
-		if (maybeWrapper != null && maybeWrapper.hasStableId()) {
-			UUID id = maybeWrapper.getStableId(target);
-			HashMap<UUID, Object> stableMap = stableReferenceTargets.computeIfAbsent(label, key -> new HashMap<>());
-			if (stableMap.put(id, target) != null) throw new ReferenceBitserException("Duplicate stable target");
-		}
 	}
 }

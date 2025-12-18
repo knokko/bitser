@@ -69,7 +69,16 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	public Object read(Deserializer deserializer) throws Throwable {
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		long longValue = value instanceof Character ? (long) ((char) value) : ((Number) value).longValue();
+		encodeInteger(longValue, intField, serializer.output);
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		return decodeInteger(intField, deserializer.input);
 	}
 

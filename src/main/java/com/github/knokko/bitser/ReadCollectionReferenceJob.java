@@ -11,34 +11,30 @@ class ReadCollectionReferenceJob {
 
 	final Collection<?> collection;
 	final int size;
-	final String label;
-	final boolean stable;
-	final boolean optional;
+	final ReferenceFieldWrapper elementsWrapper;
 	final RecursionNode node;
 
 	ReadCollectionReferenceJob(
-			Collection<?> collection, int size, String label,
-			boolean stable, boolean optional,
+			Collection<?> collection, int size,
+			ReferenceFieldWrapper elementsWrapper,
 			RecursionNode node
 	) {
 		this.collection = collection;
 		this.size = size;
-		this.label = label;
-		this.stable = stable;
-		this.optional = optional;
+		this.elementsWrapper = elementsWrapper;
 		this.node = node;
 	}
 
 	void resolve(Deserializer deserializer) throws Throwable {
 		HashMap<UUID, Object> stableMap = null;
 		ArrayList<Object> unstableList = null;
-		if (stable) {
-			stableMap = deserializer.stableReferenceTargets.get(label);
+		if (elementsWrapper instanceof StableReferenceFieldWrapper) {
+			stableMap = deserializer.references.stableTargets.get(elementsWrapper.label);
 			if (stableMap == null) {
 				throw new ReferenceBitserException("ehm");
 			}
 		} else {
-			unstableList = deserializer.unstableReferenceTargets.get(label);
+			unstableList = deserializer.references.unstableTargets.get(elementsWrapper.label);
 			if (unstableList == null) {
 				throw new ReferenceBitserException("ehm");
 			}
@@ -46,10 +42,10 @@ class ReadCollectionReferenceJob {
 
 		Object[] elements = new Object[size];
 		for (int index = 0; index < size; index++) {
-			if (optional && !deserializer.input.read()) continue;
+			if (elementsWrapper.field.optional && !deserializer.input.read()) continue;
 
 			Object value;
-			if (stable) {
+			if (elementsWrapper instanceof StableReferenceFieldWrapper) {
 				UUID id = new UUID(
 						IntegerBitser.decodeFullLong(deserializer.input),
 						IntegerBitser.decodeFullLong(deserializer.input)

@@ -26,16 +26,18 @@ class ReadStructJob {
 								new RecursionNode(node, field.classField.getName()))
 						);
 					} else {
-						Object value = field.bitField.read(deserializer);
+						Object value = field.bitField.read(deserializer, node, field.classField.getName());
 						field.classField.set(structObject, value);
 						if (field.bitField.field.referenceTargetLabel != null) {
-							deserializer.registerReferenceTarget(field.bitField.field.referenceTargetLabel, value);
+							deserializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
 						}
 					}
 				} catch (Throwable failed) {
 					throw new RecursorException(node.generateTrace(field.classField.getName()), failed);
 				}
 			}
+
+			// TODO Do the same for functions, and check for BitPostInit
 		}
 	}
 }
