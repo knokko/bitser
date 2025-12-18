@@ -15,8 +15,10 @@ class Deserializer {
 	final Object rootStruct;
 
 	final ArrayList<ReadStructJob> structJobs = new ArrayList<>();
+	final ArrayList<ReadArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<ReadCollectionJob> collectionJobs = new ArrayList<>();
 	final ArrayList<ReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
+	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadCollectionReferenceJob> collectionReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateCollectionJob> populateCollectionJobs = new ArrayList<>();
 
@@ -39,9 +41,17 @@ class Deserializer {
 	}
 
 	void run() {
-		while (!structJobs.isEmpty() || !collectionJobs.isEmpty()) {
+		while (!structJobs.isEmpty() || !arrayJobs.isEmpty() || !collectionJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				structJobs.remove(structJobs.size() - 1).read(this);
+			}
+			if (!arrayJobs.isEmpty()) {
+				ReadArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
+				try {
+					job.read(this);
+				} catch (Throwable failed) {
+					throw new RecursorException(job.node.generateTrace(null), failed);
+				}
 			}
 			if (!collectionJobs.isEmpty()) {
 				ReadCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
@@ -61,6 +71,15 @@ class Deserializer {
 			}
 		}
 		structReferenceJobs.clear();
+
+		for (ReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
+			try {
+				referenceJob.resolve(this);
+			} catch (Throwable failed) {
+				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
+			}
+		}
+		arrayReferenceJobs.clear();
 
 		for (ReadCollectionReferenceJob referenceJob : collectionReferenceJobs) {
 			try {

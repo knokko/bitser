@@ -184,7 +184,16 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (field.type.isArray()) {
 			IntegerBitser.encodeInteger(Array.getLength(value), sizeField, serializer.output);
-			// TODO WriteArrayJob
+
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
+						value, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				serializer.arrayJobs.add(new WriteArrayJob(
+						value, valuesWrapper, childNode
+				));
+			}
 		} else {
 			Collection<?> collection = (Collection<?>) value;
 			IntegerBitser.encodeInteger(collection.size(), sizeField, serializer.output);
@@ -206,8 +215,19 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
 		if (field.type.isArray()) {
-			// TODO ReadArrayJob
-			throw new UnsupportedOperationException("TODO");
+
+			Object array = Array.newInstance(field.type.getComponentType(), size);
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+						array, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				deserializer.arrayJobs.add(new ReadArrayJob(
+						array, valuesWrapper, childNode
+				));
+			}
+
+			return array;
 		} else {
 			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {

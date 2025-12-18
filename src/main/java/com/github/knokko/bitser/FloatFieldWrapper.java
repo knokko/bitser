@@ -58,7 +58,9 @@ class FloatFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		return decodeFloat(!isFloat, floatField, deserializer.input);
+		double value = decodeFloat(!isFloat, floatField, deserializer.input);
+		if (isFloat) return (float) value;
+		else return value;
 	}
 
 	@Override

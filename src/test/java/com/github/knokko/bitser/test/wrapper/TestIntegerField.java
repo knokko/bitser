@@ -27,7 +27,7 @@ public class TestIntegerField {
 	@Test
 	public void testZero() {
 		this.varInt = 10;
-		TestIntegerField loaded = new Bitser(false).deepCopy(this);
+		TestIntegerField loaded = new Bitser(false).stupidDeepCopy(this);
 		assertEquals(10, loaded.varInt);
 		assertEquals(0, loaded.uniformInt);
 	}
@@ -36,7 +36,7 @@ public class TestIntegerField {
 	public void testNonZero() {
 		this.varInt = 12345;
 		this.uniformInt = -123456;
-		TestIntegerField loaded = new Bitser(true).deepCopy(this);
+		TestIntegerField loaded = new Bitser(true).stupidDeepCopy(this);
 		assertEquals(12345, loaded.varInt);
 		assertEquals(-123456, loaded.uniformInt);
 	}
@@ -45,7 +45,7 @@ public class TestIntegerField {
 	public void testOutOfRange() {
 		this.varInt = 9;
 		String errorMessage = assertThrows(InvalidBitValueException.class,
-				() -> new Bitser(true).deepCopy(this)
+				() -> new Bitser(true).stupidDeepCopy(this)
 		).getMessage();
 		assertContains(errorMessage, "9 is out of range [10, 100000]");
 		assertContains(errorMessage, " -> varInt");
@@ -65,7 +65,7 @@ public class TestIntegerField {
 
 		Bitser bitser = new Bitser(true);
 		BitCountStream counter = new BitCountStream();
-		bitser.serialize(instance, counter);
+		bitser.serializeSimple(instance, counter);
 
 		assertEquals(16, counter.getCounter());
 	}
@@ -101,7 +101,8 @@ public class TestIntegerField {
 		}
 
 		Bitser bitser = new Bitser(false);
-		DigitSizes incompatible = bitser.deepCopy(sizes);
+		DigitSizes incompatible = bitser.stupidDeepCopy(sizes);
+		// TODO Stupid backward compatible
 		DigitSizes compatible = bitser.deepCopy(sizes, Bitser.BACKWARD_COMPATIBLE);
 
 		for (int number = -500; number < 500; number++) {
@@ -133,7 +134,8 @@ public class TestIntegerField {
 		common.scores.add(-2000);
 		common.scores.add(3000);
 
-		CommonValues[] loadedValues = { bitser.deepCopy(common), bitser.deepCopy(common, Bitser.BACKWARD_COMPATIBLE) };
+		// TODO Stupid backward compatible
+		CommonValues[] loadedValues = { bitser.stupidDeepCopy(common), bitser.deepCopy(common, Bitser.BACKWARD_COMPATIBLE) };
 		for (CommonValues loaded : loadedValues) {
 			assertEquals(0, loaded.scores.get(0));
 			assertEquals(50, loaded.scores.get(1));

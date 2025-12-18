@@ -79,7 +79,14 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		return decodeInteger(intField, deserializer.input);
+		long longValue = decodeInteger(intField, deserializer.input);
+
+		Class<?> type = field.type;
+		if (type == byte.class || type == Byte.class) return (byte) longValue;
+		else if (type == short.class || type == Short.class) return (short) longValue;
+		else if (type == int.class || type == Integer.class) return (int) longValue;
+		else if (type == long.class || type == Long.class || type == null) return longValue;
+		else throw new InvalidBitFieldException("Unexpected integer type " + type);
 	}
 
 	@Override

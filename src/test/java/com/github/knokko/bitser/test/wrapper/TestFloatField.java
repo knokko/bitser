@@ -23,8 +23,8 @@ public class TestFloatField {
 
 	@Test
 	public void testInvalidConfigurations() {
-		assertThrows(InvalidBitFieldException.class, () -> new Bitser(true).deepCopy(new Invalid1()));
-		assertThrows(InvalidBitFieldException.class, () -> new Bitser(true).deepCopy(new Invalid2()));
+		assertThrows(InvalidBitFieldException.class, () -> new Bitser(true).stupidDeepCopy(new Invalid1()));
+		assertThrows(InvalidBitFieldException.class, () -> new Bitser(true).stupidDeepCopy(new Invalid2()));
 	}
 
 	@Test
@@ -33,13 +33,13 @@ public class TestFloatField {
 		this.optional = null;
 		this.required = 1.8;
 
-		TestFloatField loaded = bitser.deepCopy(this);
+		TestFloatField loaded = bitser.stupidDeepCopy(this);
 		assertNull(loaded.optional);
 		assertEquals(1.8, loaded.required);
 
 		this.optional = Float.NaN;
 		this.required = -123.456;
-		loaded = bitser.deepCopy(this);
+		loaded = bitser.stupidDeepCopy(this);
 		assertTrue(Float.isNaN(loaded.optional));
 		assertEquals(this.required, loaded.required);
 	}
@@ -51,12 +51,12 @@ public class TestFloatField {
 		this.optional = null;
 		this.required = 1.4;
 
-		byte[] bytes = bitser.serializeToBytes(this);
+		byte[] bytes = bitser.serializeToBytesSimple(this);
 
 		// This should fit in 2 bytes
 		assertEquals(2, bytes.length);
 
-		TestFloatField loaded = bitser.deserializeFromBytes(TestFloatField.class, bytes);
+		TestFloatField loaded = bitser.deserializeFromBytesSimple(TestFloatField.class, bytes);
 		assertNull(loaded.optional);
 		assertEquals(1.4, loaded.required, 0.001);
 	}
@@ -91,7 +91,7 @@ public class TestFloatField {
 		CommonValues original = new CommonValues();
 		original.values = new float[] { -5f, -1f, 0.0001f, 2.1f, 3f, 5.0001f };
 
-		CommonValues loaded = bitser.deepCopy(original);
+		CommonValues loaded = bitser.stupidDeepCopy(original);
 		assertEquals(-5f, loaded.values[0]);
 		assertEquals(-1f, loaded.values[1]);
 		assertEquals(0f, loaded.values[2]); // Should be rounded to exactly 0
@@ -111,6 +111,7 @@ public class TestFloatField {
 	@Test
 	public void particleSizeRegressionTest() {
 		ParticleSize original = new ParticleSize();
+		// TODO Stupid backward compatible
 		ParticleSize copied = new Bitser(false).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(0f, copied.growX);
 	}
@@ -129,6 +130,6 @@ public class TestFloatField {
 		OutOfRange original = new OutOfRange();
 		original.value = 15f;
 
-		assertEquals(15f, new Bitser(true).deepCopy(original).value);
+		assertEquals(15f, new Bitser(true).stupidDeepCopy(original).value);
 	}
 }
