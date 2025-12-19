@@ -165,7 +165,9 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
+		deserializer.input.prepareProperty("allowed-class-index", -1);
 		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, deserializer.input);
+		deserializer.input.finishProperty();
 		if (allowed.length == 0) {
 			// TODO Backward compatibility
 			throw new UnsupportedOperationException("TODO");

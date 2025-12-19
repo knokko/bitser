@@ -45,12 +45,17 @@ class Deserializer {
 	void run() {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty() || !collectionJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
-				structJobs.remove(structJobs.size() - 1).read(this);
+				ReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
+				input.pushContext(structJob.node, "(struct-job)");
+				structJob.read(this);
+				input.popContext(structJob.node, "(struct-job)");
 			}
 			if (!arrayJobs.isEmpty()) {
 				ReadArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
+					input.pushContext(job.node, "(array-job)");
 					job.read(this);
+					input.popContext(job.node, "(array-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
@@ -58,16 +63,22 @@ class Deserializer {
 			if (!collectionJobs.isEmpty()) {
 				ReadCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
 				try {
+					input.pushContext(job.node, "(collection-job)");
 					job.read(this);
+					input.popContext(job.node, "(collection-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
 			}
 		}
 
+		references.refreshStableIDs();
+
 		for (ReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
+				input.pushContext(referenceJob.node, "(struct-reference-job)");
 				referenceJob.resolve(this);
+				input.popContext(referenceJob.node, "(struct-reference-job)");
 			} catch (Throwable failed) {
 				throw new RecursorException(referenceJob.node.generateTrace(referenceJob.classField.getName()), failed);
 			}
@@ -76,7 +87,9 @@ class Deserializer {
 
 		for (ReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
 			try {
+				input.pushContext(referenceJob.node, "(array-reference-job)");
 				referenceJob.resolve(this);
+				input.popContext(referenceJob.node, "(array-reference-job)");
 			} catch (Throwable failed) {
 				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
 			}
@@ -85,7 +98,9 @@ class Deserializer {
 
 		for (ReadCollectionReferenceJob referenceJob : collectionReferenceJobs) {
 			try {
+				input.pushContext(referenceJob.node, "(collection-reference-job)");
 				referenceJob.resolve(this);
+				input.popContext(referenceJob.node, "(collection-reference-job)");
 			} catch (Throwable failed) {
 				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
 			}

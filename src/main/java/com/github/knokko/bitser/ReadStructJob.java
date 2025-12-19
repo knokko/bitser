@@ -22,14 +22,18 @@ class ReadStructJob {
 
 			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
 				try {
-					if (field.bitField.field.optional && !deserializer.input.read()) continue;
+					String fieldName = field.classField.getName();
+					if (ReadHelper.readOptional(deserializer.input, field.bitField.field.optional)) continue;
 					if (field.bitField instanceof ReferenceFieldWrapper) {
 						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
 								structObject, field.classField, (ReferenceFieldWrapper) field.bitField,
-								new RecursionNode(node, field.classField.getName()))
+								new RecursionNode(node, fieldName))
 						);
 					} else {
-						Object value = field.bitField.read(deserializer, node, field.classField.getName());
+						deserializer.input.pushContext(node, fieldName);
+						Object value = field.bitField.read(deserializer, node, fieldName);
+						deserializer.input.popContext(node, fieldName);
+
 						field.classField.set(structObject, value);
 						if (field.bitField.field.referenceTargetLabel != null) {
 							deserializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
@@ -42,7 +46,7 @@ class ReadStructJob {
 
 			for (SingleClassWrapper.FunctionWrapper function : structClass.functions) {
 				try {
-					if (function.bitField.field.optional && !deserializer.input.read()) continue;
+					if (ReadHelper.readOptional(deserializer.input, function.bitField.field.optional)) continue;
 					if (function.bitField instanceof ReferenceFieldWrapper) {
 						throw new UnsupportedOperationException("TODO");
 //						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
@@ -51,7 +55,10 @@ class ReadStructJob {
 //								new RecursionNode(node, field.classField.getName()))
 //						);
 					} else {
-						Object value = function.bitField.read(deserializer, node, function.classMethod.getName());
+						String methodName = function.classMethod.getName();
+						deserializer.input.pushContext(node, methodName);
+						Object value = function.bitField.read(deserializer, node, methodName);
+						deserializer.input.popContext(node, methodName);
 						// TODO Save somewhere
 //						field.classField.set(structObject, value);
 //						if (field.bitField.field.referenceTargetLabel != null) {

@@ -110,7 +110,9 @@ class EnumFieldWrapper extends BitFieldWrapper {
 
 		int ordinal;
 		if (mode == BitEnum.Mode.Ordinal) {
+			deserializer.input.prepareProperty("enum-ordinal", -1);
 			ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
+			deserializer.input.finishProperty();
 		} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
 
 		if (field.type == null) return ordinal;

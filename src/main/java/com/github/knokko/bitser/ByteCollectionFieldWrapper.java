@@ -158,7 +158,10 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
+		serializer.output.prepareProperty("byte-collection-length", -1);
 		IntegerBitser.encodeInteger(Array.getLength(value), sizeField, serializer.output);
+		serializer.output.finishProperty();
+		serializer.output.prepareProperty("byte-collection-bytes", -1);
 		if (value instanceof boolean[]) serializer.output.write(toByteArray((boolean[]) value));
 		else if (value instanceof byte[]) serializer.output.write((byte[]) value);
 		else if (value instanceof short[]) serializer.output.write(toByteArray((short[]) value));
@@ -168,11 +171,15 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		else if (value instanceof long[]) serializer.output.write(toByteArray((long[]) value));
 		else if (value instanceof double[]) serializer.output.write(toByteArray((double[]) value));
 		else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
+		serializer.output.finishProperty();
 	}
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("byte-collection-length", -1);
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
+		deserializer.input.finishProperty();
+		deserializer.input.prepareProperty("byte-collection-bytes", -1);
 		Object value = Array.newInstance(field.type.getComponentType(), size);
 		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, deserializer.input);
 		else if (value instanceof byte[]) deserializer.input.read((byte[]) value);
@@ -183,6 +190,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		else if (value instanceof long[]) backToLongArray((long[]) value, deserializer.input);
 		else if (value instanceof double[]) backToDoubleArray((double[]) value, deserializer.input);
 		else throw new InvalidBitFieldException("Can't decode " + value.getClass() + " from bytes");
+		deserializer.input.finishProperty();
 		return value;
 	}
 

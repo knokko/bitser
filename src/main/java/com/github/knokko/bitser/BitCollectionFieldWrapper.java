@@ -183,7 +183,9 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	public void write(Serializer serializer, Object value, RecursionNode parentNode, String fieldName) throws Throwable {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (field.type.isArray()) {
+			serializer.output.prepareProperty("array-length", -1);
 			IntegerBitser.encodeInteger(Array.getLength(value), sizeField, serializer.output);
+			serializer.output.finishProperty();
 
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
@@ -196,7 +198,9 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			}
 		} else {
 			Collection<?> collection = (Collection<?>) value;
+			serializer.output.prepareProperty("collection-size", -1);
 			IntegerBitser.encodeInteger(collection.size(), sizeField, serializer.output);
+			serializer.output.finishProperty();
 
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				serializer.collectionReferenceJobs.add(new WriteCollectionReferenceJob(
@@ -213,10 +217,12 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
 		if (field.type.isArray()) {
+			deserializer.input.prepareProperty("array-length", -1);
+			int length = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "array-length", deserializer.input);
+			deserializer.input.finishProperty();
 
-			Object array = Array.newInstance(field.type.getComponentType(), size);
+			Object array = Array.newInstance(field.type.getComponentType(), length);
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
 						array, (ReferenceFieldWrapper) valuesWrapper, childNode
@@ -229,6 +235,10 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 			return array;
 		} else {
+			deserializer.input.prepareProperty("collection-size", -1);
+			int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "collection-size", deserializer.input);
+			deserializer.input.finishProperty();
+
 			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				deserializer.collectionReferenceJobs.add(new ReadCollectionReferenceJob(

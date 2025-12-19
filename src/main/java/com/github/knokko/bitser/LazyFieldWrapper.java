@@ -68,8 +68,12 @@ class LazyFieldWrapper extends BitFieldWrapper {
 			if (bytes == null/* || recursor.info.forbidLazySaving*/) {
 				bytes = serializer.bitser.serializeToBytesSimple(lazy.get(), options.toArray());
 			}
+			serializer.output.prepareProperty("lazy-bytes-length", -1);
 			encodeUnknownLength(bytes.length, serializer.output);
+			serializer.output.finishProperty();
+			serializer.output.prepareProperty("lazy-bytes", -1);
 			serializer.output.write(bytes);
+			serializer.output.finishProperty();
 		} else {
 			throw new InvalidBitValueException("Expected instance of SimpleLazyBits, but got " + value);
 		}
@@ -77,9 +81,14 @@ class LazyFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("lazy-bytes-length", -1);
 		int size = decodeUnknownLength(deserializer.sizeLimit, "lazy byte[] size", deserializer.input);
+		deserializer.input.finishProperty();
+
 		byte[] bytes = new byte[size];
+		deserializer.input.prepareProperty("lazy-bytes", -1);
 		deserializer.input.read(bytes);
+		deserializer.input.finishProperty();
 
 		if (false/*recursor.info.backwardCompatible*/) {
 			return new LegacyLazyBytes(bytes);

@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.io;
 
+import com.github.knokko.bitser.RecursionNode;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 
 import java.io.IOException;
@@ -65,4 +66,12 @@ public class BitInputStream {
 	public void close() throws IOException {
 		byteStream.close();
 	}
+
+	public void pushContext(RecursionNode context, String fieldName) {}
+
+	public void popContext(RecursionNode context, String fieldName) {}
+
+	public void prepareProperty(String fieldName, int counter) {}
+
+	public void finishProperty() {}
 }

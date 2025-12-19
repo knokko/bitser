@@ -29,7 +29,9 @@ class WriteStructJob {
 					value, (ReferenceFieldWrapper) fieldWrapper, new RecursionNode(node, fieldName))
 			);
 		} else {
+			serializer.output.pushContext(node, fieldName);
 			fieldWrapper.write(serializer, value, node, fieldName);
+			serializer.output.popContext(node, fieldName);
 			if (fieldWrapper.field.referenceTargetLabel != null) {
 				serializer.references.registerTarget(fieldWrapper.field.referenceTargetLabel, value);
 			}
@@ -37,7 +39,6 @@ class WriteStructJob {
 	}
 
 	void write(Serializer serializer) {
-		// TODO Debug context
 		FunctionContext functionContext = new FunctionContext(
 				serializer.bitser, false, serializer.withParameters
 		);

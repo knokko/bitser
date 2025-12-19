@@ -23,7 +23,9 @@ class WriteArrayJob {
 					"array must not have null elements"
 			)) continue;
 
+			serializer.output.pushContext(node, "element");
 			elementsWrapper.write(serializer, element, node, "elements");
+			serializer.output.popContext(node, "element");
 			if (elementsWrapper.field.referenceTargetLabel != null) {
 				serializer.references.registerTarget(elementsWrapper.field.referenceTargetLabel, element);
 			}

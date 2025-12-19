@@ -21,12 +21,17 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
+		serializer.output.prepareProperty("boolean-value", -1);
 		serializer.output.write((Boolean) value);
+		serializer.output.finishProperty();
 	}
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		return deserializer.input.read();
+		deserializer.input.prepareProperty("boolean-value", -1);
+		boolean result = deserializer.input.read();
+		deserializer.input.finishProperty();
+		return result;
 	}
 
 	@Override

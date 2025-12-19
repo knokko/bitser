@@ -1,11 +1,9 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.io.*;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.*;
 import com.github.knokko.bitser.field.FunctionContext;
-import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.io.LayeredBitOutputStream;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.options.WithParameter;
 import com.github.knokko.bitser.util.*;

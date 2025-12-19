@@ -21,7 +21,9 @@ public class ReadCollectionJob {
 		for (int index = 0; index < size; index++) {
 			if (elementsWrapper.field.optional && !deserializer.input.read()) continue;
 
+			deserializer.input.pushContext(node, "element");
 			elements[index] = elementsWrapper.read(deserializer, node, "elements");
+			deserializer.input.popContext(node, "element");
 			if (elementsWrapper.field.referenceTargetLabel != null) {
 				deserializer.references.registerTarget(elementsWrapper.field.referenceTargetLabel, elements[index]);
 			}

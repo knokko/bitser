@@ -38,12 +38,17 @@ class Serializer {
 	void run() {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty() || !collectionJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
-				structJobs.remove(structJobs.size() - 1).write(this);
+				WriteStructJob job = structJobs.remove(structJobs.size() - 1);
+				output.pushContext(job.node, "(struct-job)");
+				job.write(this);
+				output.popContext(job.node, "(struct-job)");
 			}
 			if (!arrayJobs.isEmpty()) {
 				WriteArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
+					output.pushContext(job.node, "(array-job)");
 					job.write(this);
+					output.popContext(job.node, "(array-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
@@ -51,7 +56,9 @@ class Serializer {
 			if (!collectionJobs.isEmpty()) {
 				WriteCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
 				try {
+					output.pushContext(job.node, "(collection-job)");
 					job.write(this);
+					output.popContext(job.node, "(collection-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
@@ -60,7 +67,9 @@ class Serializer {
 
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
+				output.pushContext(referenceJob.node, "(struct-reference-job)");
 				referenceJob.save(this);
+				output.popContext(referenceJob.node, "(struct-reference-job)");
 			} catch (Throwable failed) {
 				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
 			}
@@ -69,7 +78,9 @@ class Serializer {
 
 		for (WriteArrayReferenceJob referenceJob : arrayReferenceJobs) {
 			try {
+				output.pushContext(referenceJob.node, "(array-reference-job)");
 				referenceJob.save(this);
+				output.popContext(referenceJob.node, "(array-reference-job)");
 			} catch (Throwable failed) {
 				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
 			}
@@ -78,7 +89,9 @@ class Serializer {
 
 		for (WriteCollectionReferenceJob referenceJob : collectionReferenceJobs) {
 			try {
+				output.pushContext(referenceJob.node, "(collection-reference-job)");
 				referenceJob.save(this);
+				output.popContext(referenceJob.node, "(collection-reference-job)");
 			} catch (Throwable failed) {
 				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
 			}

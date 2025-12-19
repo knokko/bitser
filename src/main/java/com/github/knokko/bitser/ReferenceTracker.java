@@ -12,8 +12,8 @@ import java.util.UUID;
 
 class ReferenceTracker {
 
-	final HashMap<String, LabelTargets> labels = new HashMap<>();
-	final BitserCache cache;
+	private final HashMap<String, LabelTargets> labels = new HashMap<>();
+	private final BitserCache cache;
 
 	ReferenceTracker(BitserCache cache) {
 		this.cache = cache;
@@ -22,6 +22,14 @@ class ReferenceTracker {
 	void registerTarget(String label, Object target) {
 		LabelTargets entries = labels.computeIfAbsent(label, key -> new LabelTargets(key, cache));
 		entries.register(target);
+	}
+
+	void refreshStableIDs() {
+		for (LabelTargets targets : labels.values()) {
+			ArrayList<Object> stableTargets = new ArrayList<>(targets.stable.values());
+			targets.stable.clear();
+			for (Object target : stableTargets) targets.registerStable(target);
+		}
 	}
 
 	LabelTargets get(ReferenceFieldWrapper referenceWrapper) {
@@ -55,17 +63,19 @@ class ReferenceTracker {
 		final String myLabel;
 		final BitserCache cache;
 
-		LabelTargets(String myLabel, BitserCache cache) {
+		private LabelTargets(String myLabel, BitserCache cache) {
 			this.myLabel = myLabel;
 			this.cache = cache;
 		}
 
-		void register(Object target) {
+		private void registerUnstable(Object target) {
 			if (unstableToIDs.put(new IdentityWrapper(target), unstableToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple unstable targets have identity " + target);
 			}
 			idsToUnstable.add(target);
+		}
 
+		private void registerStable(Object target) {
 			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
 			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
 				UUID id = maybeWrapper.getStableId(target);
@@ -73,17 +83,26 @@ class ReferenceTracker {
 			}
 		}
 
+		void register(Object target) {
+			registerUnstable(target);
+			registerStable(target);
+		}
+
 		void save(ReferenceFieldWrapper referenceWrapper, Object reference, BitOutputStream output) throws Throwable {
 			if (referenceWrapper.field.optional) {
+				output.prepareProperty("optional", -1);
 				output.write(reference != null);
+				output.finishProperty();
 				if (reference == null) return;
 			} else if (reference == null) throw new InvalidBitValueException("Reference must not be null");
 
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) {
 				BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
 				UUID id = valueInfo.getStableId(reference);
+				output.prepareProperty("stable-id", -1);
 				IntegerBitser.encodeFullLong(id.getMostSignificantBits(), output);
 				IntegerBitser.encodeFullLong(id.getLeastSignificantBits(), output);
+				output.finishProperty();
 
 				Object expectedTarget = stable.get(id);
 				if (expectedTarget == null) {
@@ -97,7 +116,9 @@ class ReferenceTracker {
 				if (index == null) {
 					throw new ReferenceBitserException("Can't find unstable reference target " + reference + " with label " + myLabel);
 				}
+				output.prepareProperty("unstable-id", -1);
 				IntegerBitser.encodeUniformInteger(index, 0, unstableToIDs.size() - 1, output);
+				output.finishProperty();
 			}
 		}
 
@@ -107,8 +128,10 @@ class ReferenceTracker {
 			else return getUnstable(input);
 		}
 
-		Object getStable(BitInputStream input) throws Throwable {
+		private Object getStable(BitInputStream input) throws Throwable {
+			input.prepareProperty("stable-id", -1);
 			UUID id = new UUID(IntegerBitser.decodeFullLong(input), IntegerBitser.decodeFullLong(input));
+			input.finishProperty();
 			Object value = stable.get(id);
 			if (value == null) {
 				throw new ReferenceBitserException("Can't find stable reference target with label " + myLabel + " and ID " + id);
@@ -116,8 +139,10 @@ class ReferenceTracker {
 			return value;
 		}
 
-		Object getUnstable(BitInputStream input) throws Throwable {
+		private Object getUnstable(BitInputStream input) throws Throwable {
+			input.prepareProperty("unstable-id", -1);
 			int index = (int) IntegerBitser.decodeUniformInteger(0, unstableToIDs.size() - 1, input);
+			input.finishProperty();
 			return idsToUnstable.get(index);
 		}
 	}

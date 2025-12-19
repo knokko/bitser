@@ -1,24 +1,24 @@
 package com.github.knokko.bitser;
 
-class RecursionNode {
+public class RecursionNode {
 
-	final RecursionNode parent;
-	final String label;
-	final int depth;
+	public final RecursionNode parent;
+	public final String label;
+	public final int depth;
 
-	RecursionNode(RecursionNode parent, String label) {
+	public RecursionNode(RecursionNode parent, String label) {
 		this.parent = parent;
 		this.label = label;
 		this.depth = 1 + parent.depth;
 	}
 
-	RecursionNode(String label) {
+	public RecursionNode(String label) {
 		this.parent = null;
 		this.label = label;
 		this.depth = 0;
 	}
 
-	String generateTrace(String top) {
+	public String generateTrace(String top) {
 		String[] labels = new String[depth + 1];
 
 		RecursionNode next = this;
