@@ -61,7 +61,7 @@ public final class SimpleLazyBits<T> {
 	public T get() {
 		if (value == null) {
 			Object[] options = backwardCompatible ? BACKWARD_COMPATIBLE : NOT_BACKWARD_COMPATIBLE;
-			value = bitser.deserializeFromBytes(valueClass, bytes, options);
+			value = bitser.deserializeFromBytesSimple(valueClass, bytes, options);
 		}
 		return value;
 	}

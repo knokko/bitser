@@ -22,7 +22,7 @@ public class TestUUIDField {
 	@Test
 	public void testNullAndZero() {
 		this.required = new UUID(0, 0);
-		TestUUIDField loaded = new Bitser(true).deepCopy(this);
+		TestUUIDField loaded = new Bitser(true).stupidDeepCopy(this);
 		assertNull(loaded.optional);
 		assertEquals(new UUID(0, 0), loaded.required);
 	}
@@ -31,7 +31,7 @@ public class TestUUIDField {
 	public void testGeneral() {
 		this.optional = UUID.randomUUID();
 		this.required = new UUID(12, 345);
-		TestUUIDField loaded = new Bitser(false).deepCopy(this);
+		TestUUIDField loaded = new Bitser(false).stupidDeepCopy(this);
 		assertEquals(this.optional, loaded.optional);
 		assertEquals(new UUID(12, 345), loaded.required);
 	}

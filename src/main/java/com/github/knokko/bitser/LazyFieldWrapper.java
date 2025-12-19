@@ -52,6 +52,43 @@ class LazyFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		if (value instanceof SimpleLazyBits) {
+			SimpleLazyBits<?> lazy = (SimpleLazyBits<?>) value;
+			List<Object> options = new ArrayList<>();
+			//if (recursor.info.legacy != null) options.add(Bitser.BACKWARD_COMPATIBLE);
+			//if (recursor.info.forbidLazySaving) options.add(Bitser.FORBID_LAZY_SAVING);
+//			if (context.floatDistribution != null) options.add(context.floatDistribution);
+//			if (context.integerDistribution != null) options.add(context.integerDistribution);
+
+			byte[] bytes = lazy.bytes;
+			if (bytes == null/* || recursor.info.forbidLazySaving*/) {
+				bytes = serializer.bitser.serializeToBytesSimple(lazy.get(), options.toArray());
+			}
+			encodeUnknownLength(bytes.length, serializer.output);
+			serializer.output.write(bytes);
+		} else {
+			throw new InvalidBitValueException("Expected instance of SimpleLazyBits, but got " + value);
+		}
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		int size = decodeUnknownLength(deserializer.sizeLimit, "lazy byte[] size", deserializer.input);
+		byte[] bytes = new byte[size];
+		deserializer.input.read(bytes);
+
+		if (false/*recursor.info.backwardCompatible*/) {
+			return new LegacyLazyBytes(bytes);
+		} else {
+			return new SimpleLazyBits<>(bytes, deserializer.bitser, false, valueClass);
+		}
+	}
+
+	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("lazy-bytes", context -> {
 			int size = decodeUnknownLength(recursor.info.sizeLimit, "lazy byte[] size", context.input);

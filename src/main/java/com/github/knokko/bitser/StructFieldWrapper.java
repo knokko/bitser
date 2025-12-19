@@ -139,6 +139,30 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		for (int index = 0; index < allowed.length; index++) {
+			if (allowed[index] == value.getClass())	{
+				serializer.output.prepareProperty("allowed-class-index", -1);
+				encodeUniformInteger(index, 0, allowed.length - 1, serializer.output);
+				serializer.output.finishProperty();
+
+				serializer.structJobs.add(new WriteStructJob(
+						value, serializer.cache.getWrapper(value.getClass()),
+						new RecursionNode(parentNode, fieldName)
+				));
+				return;
+			}
+		}
+
+		throw new InvalidBitValueException(
+				"Struct class " + value.getClass() + " is not in " + Arrays.toString(allowed)
+		);
+	}
+
+	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
 		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, deserializer.input);

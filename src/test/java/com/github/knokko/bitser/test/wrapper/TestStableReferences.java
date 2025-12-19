@@ -80,7 +80,7 @@ public class TestStableReferences {
 		root.items.add(new Item("cold shield", shield));
 		root.items.add(new Item("spiky shield", shield));
 
-		ItemRoot loaded = new Bitser(false).deepCopy(root);
+		ItemRoot loaded = new Bitser(false).stupidDeepCopy(root);
 
 		assertEquals(2, loaded.types.size());
 		assertEquals("sword", loaded.types.get(0).name);

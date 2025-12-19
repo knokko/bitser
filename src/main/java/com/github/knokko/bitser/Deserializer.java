@@ -9,6 +9,7 @@ import java.util.Comparator;
 
 class Deserializer {
 
+	final Bitser bitser;
 	final BitserCache cache;
 	final BitInputStream input;
 	final CollectionSizeLimit sizeLimit;
@@ -25,11 +26,12 @@ class Deserializer {
 	final ReferenceTracker references;
 
 	Deserializer(
-			BitserCache cache, BitInputStream input,
+			Bitser bitser, BitInputStream input,
 			CollectionSizeLimit sizeLimit,
 			BitStructWrapper<?> rootStructInfo
 	) {
-		this.cache = cache;
+		this.bitser = bitser;
+		this.cache = bitser.cache;
 		this.input = input;
 		this.sizeLimit = sizeLimit;
 		this.rootStruct = rootStructInfo.createEmptyInstance();

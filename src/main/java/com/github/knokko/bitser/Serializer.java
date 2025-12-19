@@ -4,10 +4,13 @@ import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 class Serializer {
 
+	final Bitser bitser;
 	final BitserCache cache;
+	final Map<String, Object> withParameters;
 	final BitOutputStream output;
 
 	final ArrayList<WriteStructJob> structJobs = new ArrayList<>();
@@ -19,8 +22,10 @@ class Serializer {
 
 	final ReferenceTracker references;
 
-	Serializer(BitserCache cache, BitOutputStream output, Object rootStruct) {
-		this.cache = cache;
+	Serializer(Bitser bitser, Map<String, Object> withParameters, BitOutputStream output, Object rootStruct) {
+		this.bitser = bitser;
+		this.cache = bitser.cache;
+		this.withParameters = withParameters;
 		this.output = output;
 		BitStructWrapper<?> rootStructInfo = cache.getWrapper(rootStruct.getClass());
 		this.structJobs.add(new WriteStructJob(

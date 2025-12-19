@@ -16,13 +16,16 @@ class ReadStructJob {
 
 	void read(Deserializer deserializer) {
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
+			Object[] functionValues;
+			if (structClass.functions.isEmpty()) functionValues = new Object[0];
+			else functionValues = new Object[structClass.functions.get(structClass.functions.size() - 1).id + 1];
+
 			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
 				try {
 					if (field.bitField.field.optional && !deserializer.input.read()) continue;
 					if (field.bitField instanceof ReferenceFieldWrapper) {
 						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
-								structObject, ((ReferenceFieldWrapper) field.bitField).label,
-								field.bitField instanceof StableReferenceFieldWrapper, field.classField,
+								structObject, field.classField, (ReferenceFieldWrapper) field.bitField,
 								new RecursionNode(node, field.classField.getName()))
 						);
 					} else {
@@ -37,7 +40,28 @@ class ReadStructJob {
 				}
 			}
 
-			// TODO Do the same for functions, and check for BitPostInit
+			for (SingleClassWrapper.FunctionWrapper function : structClass.functions) {
+				try {
+					if (function.bitField.field.optional && !deserializer.input.read()) continue;
+					if (function.bitField instanceof ReferenceFieldWrapper) {
+						throw new UnsupportedOperationException("TODO");
+//						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
+//								structObject, ((ReferenceFieldWrapper) field.bitField).label,
+//								field.bitField instanceof StableReferenceFieldWrapper, field.classField,
+//								new RecursionNode(node, field.classField.getName()))
+//						);
+					} else {
+						Object value = function.bitField.read(deserializer, node, function.classMethod.getName());
+						// TODO Save somewhere
+//						field.classField.set(structObject, value);
+//						if (field.bitField.field.referenceTargetLabel != null) {
+//							deserializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
+//						}
+					}
+				} catch (Throwable failed) {
+					throw new RecursorException(node.generateTrace(function.classMethod.getName()), failed);
+				}
+			}
 		}
 	}
 }

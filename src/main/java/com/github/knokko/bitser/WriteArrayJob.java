@@ -1,10 +1,6 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
-
 import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.Objects;
 
 class WriteArrayJob {
 
@@ -22,12 +18,10 @@ class WriteArrayJob {
 		int length = Array.getLength(array);
 		for (int index = 0; index < length; index++) {
 			Object element = Array.get(array, index);
-			if (elementsWrapper.field.optional) {
-				serializer.output.write(element != null);
-				if (element == null) continue;
-			} else if (element == null) {
-				throw new InvalidBitValueException("null");
-			}
+			if (WriteHelper.writeOptional(
+					serializer.output, element, elementsWrapper.field.optional,
+					"array must not have null elements"
+			)) continue;
 
 			elementsWrapper.write(serializer, element, node, "elements");
 			if (elementsWrapper.field.referenceTargetLabel != null) {

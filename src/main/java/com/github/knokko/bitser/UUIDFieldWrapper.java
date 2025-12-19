@@ -42,6 +42,25 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	public void write(
+			Serializer serializer, Object rawValue,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		UUID value = (UUID) rawValue;
+		serializer.output.prepareProperty("most-significant-bits", -1);
+		encodeFullLong(value.getMostSignificantBits(), serializer.output);
+		serializer.output.finishProperty();
+		serializer.output.prepareProperty("least-significant-bits", -1);
+		encodeFullLong(value.getLeastSignificantBits(), serializer.output);
+		serializer.output.finishProperty();
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		return new UUID(decodeFullLong(deserializer.input), decodeFullLong(deserializer.input));
+	}
+
+	@Override
 	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
 		recursor.runFlat("uuid-value", context ->
 			setValue.accept(new UUID(decodeFullLong(context.input), decodeFullLong(context.input)))

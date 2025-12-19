@@ -18,12 +18,10 @@ class WriteCollectionJob {
 
 	void write(Serializer serializer) throws Throwable {
 		for (Object element : collection) {
-			if (elementsWrapper.field.optional) {
-				serializer.output.write(element != null);
-				if (element == null) continue;
-			} else if (element == null) {
-				throw new InvalidBitValueException("null");
-			}
+			if (WriteHelper.writeOptional(
+					serializer.output, element, elementsWrapper.field.optional,
+					"collection must not have null elements"
+			)) continue;
 
 			elementsWrapper.write(serializer, element, node, "elements");
 			if (elementsWrapper.field.referenceTargetLabel != null) {

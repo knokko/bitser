@@ -154,6 +154,39 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		IntegerBitser.encodeInteger(Array.getLength(value), sizeField, serializer.output);
+		if (value instanceof boolean[]) serializer.output.write(toByteArray((boolean[]) value));
+		else if (value instanceof byte[]) serializer.output.write((byte[]) value);
+		else if (value instanceof short[]) serializer.output.write(toByteArray((short[]) value));
+		else if (value instanceof char[]) serializer.output.write(toByteArray((char[]) value));
+		else if (value instanceof int[]) serializer.output.write(toByteArray((int[]) value));
+		else if (value instanceof float[]) serializer.output.write(toByteArray((float[]) value));
+		else if (value instanceof long[]) serializer.output.write(toByteArray((long[]) value));
+		else if (value instanceof double[]) serializer.output.write(toByteArray((double[]) value));
+		else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
+		Object value = Array.newInstance(field.type.getComponentType(), size);
+		if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, deserializer.input);
+		else if (value instanceof byte[]) deserializer.input.read((byte[]) value);
+		else if (value instanceof short[]) backToShortArray((short[]) value, deserializer.input);
+		else if (value instanceof char[]) backToCharArray((char[]) value, deserializer.input);
+		else if (value instanceof int[]) backToIntArray((int[]) value, deserializer.input);
+		else if (value instanceof float[]) backToFloatArray((float[]) value, deserializer.input);
+		else if (value instanceof long[]) backToLongArray((long[]) value, deserializer.input);
+		else if (value instanceof double[]) backToDoubleArray((double[]) value, deserializer.input);
+		else throw new InvalidBitFieldException("Can't decode " + value.getClass() + " from bytes");
+		return value;
+	}
+
+	@Override
 	void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) {
 		recursor.runFlat("bytes", context -> {
 			if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, context.input);

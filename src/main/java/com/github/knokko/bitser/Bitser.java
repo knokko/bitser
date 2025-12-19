@@ -175,7 +175,7 @@ public class Bitser {
 //		output.popContext("id-mapper", -1);
 
 		output.pushContext("output", -1);
-		new Serializer(cache, output, object).run();
+		new Serializer(this, withParameters, output, object).run();
 //		Recursor.run(
 //				new WriteContext(output, idMapper, integerDistribution, floatDistribution),
 //				new WriteInfo(this, withParameters, legacy, output.usesContextInfo(), forbidLazySaving),
@@ -423,7 +423,7 @@ public class Bitser {
 //			);
 //			idLoader.postResolve();
 		} else {
-			Deserializer deserializer = new Deserializer(cache, input, sizeLimit, wrapper);
+			Deserializer deserializer = new Deserializer(this, input, sizeLimit, wrapper);
 			deserializer.run();
 			//noinspection unchecked
 			return (T) deserializer.rootStruct;

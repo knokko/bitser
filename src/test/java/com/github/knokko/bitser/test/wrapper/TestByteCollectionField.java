@@ -25,7 +25,7 @@ public class TestByteCollectionField {
 		BooleanArray array = new BooleanArray();
 		array.data = new boolean[] {true, false, true, true, true, false, true, false};
 
-		array = new Bitser(true).deepCopy(array);
+		array = new Bitser(true).stupidDeepCopy(array);
 		assertArrayEquals(new boolean[] {true, false, true, true, true, false, true, false}, array.data);
 	}
 
@@ -34,7 +34,7 @@ public class TestByteCollectionField {
 		BooleanArray array = new BooleanArray();
 		array.data = new boolean[] {true, false, true, true};
 
-		array = new Bitser(false).deepCopy(array);
+		array = new Bitser(false).stupidDeepCopy(array);
 		assertArrayEquals(new boolean[] {true, false, true, true}, array.data);
 	}
 
@@ -49,7 +49,7 @@ public class TestByteCollectionField {
 	public void testByteArray() {
 		ByteArray array = new ByteArray();
 		Bitser bitser = new Bitser(false);
-		ByteArray loaded = bitser.deepCopy(array);
+		ByteArray loaded = bitser.stupidDeepCopy(array);
 		assertNull(loaded.data);
 
 		array.data = new byte[0];
@@ -57,7 +57,7 @@ public class TestByteCollectionField {
 		assertEquals(0, loaded.data.length);
 
 		array.data = new byte[]{-128, -1, 0, 1, 127};
-		loaded = bitser.deepCopy(array);
+		loaded = bitser.stupidDeepCopy(array);
 		assertArrayEquals(new byte[]{-128, -1, 0, 1, 127}, loaded.data);
 	}
 
@@ -104,17 +104,17 @@ public class TestByteCollectionField {
 		Bitser bitser = new Bitser(true);
 		IntArray nullArray = new IntArray(null);
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class, () -> bitser.serializeToBytes(nullArray)
+				InvalidBitValueException.class, () -> bitser.serializeToBytesSimple(nullArray)
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 
 		IntArray empty = new IntArray(new int[0]);
-		IntArray loaded = bitser.deepCopy(empty);
+		IntArray loaded = bitser.stupidDeepCopy(empty);
 		assert loaded.data != null;
 		assertEquals(0, loaded.data.length);
 
 		IntArray filled = new IntArray(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE});
-		loaded = bitser.deepCopy(filled);
+		loaded = bitser.stupidDeepCopy(filled);
 		assert loaded.data != null;
 		assertArrayEquals(new int[]{Integer.MIN_VALUE, -1234, -1, 0, 10, 12345, Integer.MAX_VALUE}, loaded.data);
 	}
@@ -131,7 +131,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidOptional() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).deepCopy(new InvalidOptional())
+				() -> new Bitser(true).stupidDeepCopy(new InvalidOptional())
 		).getMessage();
 		assertContains(errorMessage, "NestedFieldSetting's on writeAsBytes targets is forbidden:");
 	}
@@ -148,7 +148,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidAnnotations() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).deepCopy(new InvalidAnnotations())
+				() -> new Bitser(true).stupidDeepCopy(new InvalidAnnotations())
 		).getMessage();
 		assertContains(errorMessage, "Value annotations are forbidden when writeAsBytes is true");
 	}
@@ -164,7 +164,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidType() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).deepCopy(new InvalidType())
+				() -> new Bitser(true).stupidDeepCopy(new InvalidType())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected write-as-bytes field type class");
 	}

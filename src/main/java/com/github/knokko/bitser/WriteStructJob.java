@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.util.RecursorException;
 
 class WriteStructJob {
@@ -14,37 +15,51 @@ class WriteStructJob {
 		this.node = node;
 	}
 
+	private void writeField(
+			Serializer serializer, BitFieldWrapper fieldWrapper,
+			Object value, String fieldName
+	) throws Throwable {
+		if (WriteHelper.writeOptional(
+				serializer.output, value, fieldWrapper.field.optional,
+				"value must not be null"
+		)) return;
+
+		if (fieldWrapper instanceof ReferenceFieldWrapper) {
+			serializer.structReferenceJobs.add(new WriteStructReferenceJob(
+					value, (ReferenceFieldWrapper) fieldWrapper, new RecursionNode(node, fieldName))
+			);
+		} else {
+			fieldWrapper.write(serializer, value, node, fieldName);
+			if (fieldWrapper.field.referenceTargetLabel != null) {
+				serializer.references.registerTarget(fieldWrapper.field.referenceTargetLabel, value);
+			}
+		}
+	}
+
 	void write(Serializer serializer) {
 		// TODO Debug context
+		FunctionContext functionContext = new FunctionContext(
+				serializer.bitser, false, serializer.withParameters
+		);
+
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
 			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
 				try {
 					Object value = field.classField.get(structObject);
-					if (field.bitField.field.optional) {
-						serializer.output.prepareProperty("optional", -1);
-						serializer.output.write(value != null);
-						serializer.output.finishProperty();
-						if (value == null) continue;
-					} else if (value == null) throw new UnsupportedOperationException("TODO");
-
-					if (field.bitField instanceof ReferenceFieldWrapper) {
-						serializer.structReferenceJobs.add(new WriteStructReferenceJob(
-								value, ((ReferenceFieldWrapper) field.bitField).label,
-								field.bitField instanceof StableReferenceFieldWrapper,
-								new RecursionNode(node, field.classField.getName()))
-						);
-					} else {
-						field.bitField.write(serializer, value, node, field.classField.getName());
-						if (field.bitField.field.referenceTargetLabel != null) {
-							serializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
-						}
-					}
+					writeField(serializer, field.bitField, value, field.classField.getName());
 				} catch (Throwable failed) {
 					throw new RecursorException(node.generateTrace(field.classField.getName()), failed);
 				}
 			}
 
-			// TODO Do the same for functions
+			for (SingleClassWrapper.FunctionWrapper function : structClass.functions) {
+				try {
+					Object value = function.computeValue(structObject, functionContext);
+					writeField(serializer, function.bitField, value, function.classMethod.getName());
+				} catch (Throwable failed) {
+					throw new RecursorException(node.generateTrace(function.classMethod.getName()), failed);
+				}
+			}
 		}
 	}
 }

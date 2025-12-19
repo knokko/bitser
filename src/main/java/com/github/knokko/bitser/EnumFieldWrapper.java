@@ -74,6 +74,54 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		});
 	}
 
+	@Override
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		Enum<?> enumValue = (Enum<?>) value;
+		if (mode == BitEnum.Mode.Name) {
+			IntegerField.Properties lengthField = new IntegerField.Properties(
+					minNameLength, maxNameLength, true, 0, new long[0]
+			);
+			StringBitser.encode(enumValue.name(), lengthField, serializer.output);
+		} else if (mode == BitEnum.Mode.Ordinal) {
+			int maxOrdinal = field.type.getEnumConstants().length - 1;
+			serializer.output.prepareProperty("enum-ordinal", -1);
+			encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, serializer.output);
+			serializer.output.finishProperty();
+		} else throw new UnexpectedBitserException("Unknown enum mode: " + mode);
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		if (mode == BitEnum.Mode.Name) {
+			IntegerField.Properties lengthField = new IntegerField.Properties(
+					minNameLength, maxNameLength, true, 0, new long[0]
+			);
+			String name = StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input);
+			if (field.type == null) return name;
+			try {
+				return getConstantByName(name);
+			} catch (NoSuchFieldException e) {
+				throw new InvalidBitFieldException("Missing enum constant " + name + " in " + field.type);
+			}
+		}
+
+		int ordinal;
+		if (mode == BitEnum.Mode.Ordinal) {
+			ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
+		} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
+
+		if (field.type == null) return ordinal;
+
+		Object[] constants = field.type.getEnumConstants();
+		if (ordinal >= constants.length) {
+			throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + field.type);
+		}
+		return constants[ordinal];
+	}
+
 	private Object getConstantByName(String name) throws NoSuchFieldException {
 		try {
 			Field constantField = field.type.getDeclaredField(name);

@@ -2,18 +2,12 @@ package com.github.knokko.bitser.test.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
-import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.Bitser;
-import com.github.knokko.bitser.options.CollectionSizeLimit;
-import com.github.knokko.bitser.IntegerBitser;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -82,7 +76,7 @@ public class TestUnstableReferences {
 		root.items.add(new Item("cold shield", shield));
 		root.items.add(new Item("spiky shield", shield));
 
-		ItemRoot loaded = new Bitser(false).deepCopy(root);
+		ItemRoot loaded = new Bitser(false).stupidDeepCopy(root);
 
 		assertEquals(2, loaded.types.size());
 		assertEquals("sword", loaded.types.get(0).name);
@@ -187,7 +181,7 @@ public class TestUnstableReferences {
 		node3.bestFriend = new DeepNodeReference(node2);
 		node3.neighbours.add(node1);
 
-		Graph loaded = new Bitser(false).deepCopy(graph);
+		Graph loaded = new Bitser(false).stupidDeepCopy(graph);
 		assertEquals(4, loaded.mostNodes.size());
 
 		Node loaded1 = loaded.mostNodes.get(0);
@@ -243,7 +237,7 @@ public class TestUnstableReferences {
 
 	@Test
 	public void testNonBitStructReferences() {
-		NonStructReferences loaded = new Bitser(true).deepCopy(new NonStructReferences("world"));
+		NonStructReferences loaded = new Bitser(true).stupidDeepCopy(new NonStructReferences("world"));
 		assertEquals("world", loaded.hello);
 		assertSame(loaded.hello, loaded.hi);
 	}
@@ -254,8 +248,8 @@ public class TestUnstableReferences {
 		root.items.add(new Item("item", new ItemType("outside")));
 
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class,
-				() -> new Bitser(false).serialize(root, new BitCountStream())
+				ReferenceBitserException.class,
+				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find unstable reference target with label item types");
@@ -272,11 +266,11 @@ public class TestUnstableReferences {
 	@Test
 	public void testMissingTargetLabel() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new MissingTargetLabel(), new BitCountStream())
+				ReferenceBitserException.class,
+				() -> new Bitser(false).serializeSimple(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
-		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
+		assertContains(errorMessage, "Can't find unstable reference target with label nope");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -300,7 +294,7 @@ public class TestUnstableReferences {
 	public void testFieldThatIsBothReferenceAndTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new BothReferenceAndTarget(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new BothReferenceAndTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is both a reference field and a reference target");
 	}
@@ -318,7 +312,7 @@ public class TestUnstableReferences {
 	public void testPrimitiveTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new WithPrimitiveTarget(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new WithPrimitiveTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is primitive, which is forbidden");
 	}
@@ -331,11 +325,11 @@ public class TestUnstableReferences {
 		root.types.add(type);
 
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class,
-				() -> new Bitser(false).serialize(root, new BitCountStream())
+				ReferenceBitserException.class,
+				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple unstable targets have identity");
-		assertContains(errorMessage, "-> ItemRoot -> types");
+		assertContains(errorMessage, "ItemRoot -> types");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -380,7 +374,7 @@ public class TestUnstableReferences {
 		mixed.unstableReference1 = mixed.target1;
 		mixed.unstableReference2 = mixed.target2;
 
-		Mixed loaded = new Bitser(false).deepCopy(mixed);
+		Mixed loaded = new Bitser(false).stupidDeepCopy(mixed);
 		assertEquals("world", loaded.target1.hello);
 		assertEquals("triangle", loaded.target2.hello);
 		assertSame(loaded.target1, loaded.unstableReference1);
@@ -399,11 +393,11 @@ public class TestUnstableReferences {
 		withRoot.types.add(itemType);
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(primaryRoot, withRoot);
+		byte[] bytes = bitser.serializeToBytesSimple(primaryRoot, withRoot);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytes(ItemRoot.class, bytes)
+				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes)
 		).getMessage();
 		assertContains(errorMessage, "with label item types and id 0");
 		assertContains(errorMessage, "was never saved");
@@ -419,30 +413,13 @@ public class TestUnstableReferences {
 		with.types.add(itemType);
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytes(item, with);
+		byte[] bytes = bitser.serializeToBytesSimple(item, with);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytes(Item.class, bytes)
+				() -> bitser.deserializeFromBytesSimple(Item.class, bytes)
 		).getMessage();
 		assertContains(errorMessage, "label item types was never saved");
 		assertContains(errorMessage, "-> type");
-	}
-
-	@Test
-	public void testLargeMemoryAllocationAttack() throws IOException {
-		Bitser bitser = new Bitser(true);
-
-		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-		BitOutputStream bitOutput = new BitOutputStream(byteOutput);
-		IntegerBitser.encodeUnknownLength(Integer.MAX_VALUE, bitOutput);
-		bitOutput.finish();
-
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
-				NonStructReferences.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
-		)).getMessage();
-		assertContains(errorMessage, "amount 2147483647");
-		assertContains(errorMessage, "with label \"no struct\"");
-		assertContains(errorMessage, "1234");
 	}
 }

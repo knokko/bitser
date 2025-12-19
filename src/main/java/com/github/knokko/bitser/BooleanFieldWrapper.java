@@ -17,6 +17,19 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		serializer.output.write((Boolean) value);
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		return deserializer.input.read();
+	}
+
+	@Override
 	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
 		recursor.runFlat("boolean-value", context -> {
 			context.output.prepareProperty("boolean-value", -1);
