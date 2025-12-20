@@ -1,6 +1,8 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.io.BitOutputStream;
+import com.github.knokko.bitser.util.FloatDistributionTracker;
+import com.github.knokko.bitser.util.IntegerDistributionTracker;
 import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
@@ -20,7 +22,14 @@ class Serializer {
 
 	final ReferenceTracker references;
 
-	Serializer(Bitser bitser, Map<String, Object> withParameters, BitOutputStream output, Object rootStruct) {
+	final boolean forbidLazySaving;
+	final IntegerDistributionTracker intDistribution;
+	final FloatDistributionTracker floatDistribution;
+
+	Serializer(
+			Bitser bitser, Map<String, Object> withParameters, BitOutputStream output, Object rootStruct,
+			boolean forbidLazySaving, IntegerDistributionTracker intDistribution, FloatDistributionTracker floatDistribution
+	) {
 		this.bitser = bitser;
 		this.cache = bitser.cache;
 		this.withParameters = withParameters;
@@ -31,6 +40,10 @@ class Serializer {
 				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
 		));
 		this.references = new ReferenceTracker(cache);
+
+		this.forbidLazySaving = forbidLazySaving;
+		this.intDistribution = intDistribution;
+		this.floatDistribution = floatDistribution;
 	}
 
 	void run() {

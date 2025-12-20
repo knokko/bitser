@@ -67,6 +67,7 @@ public class DebugBitInputStream extends BitInputStream {
 	@Override
 	public void close() throws IOException {
 		super.close();
+		writer.println("---------------------------------------------------------------------------------------------");
 		writer.flush();
 	}
 }

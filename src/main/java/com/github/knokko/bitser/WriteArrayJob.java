@@ -7,11 +7,13 @@ class WriteArrayJob {
 	final Object array;
 	final BitFieldWrapper elementsWrapper;
 	final RecursionNode node;
+	final String nullErrorMessage;
 
-	WriteArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNode node) {
+	WriteArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNode node, String nullErrorMessage) {
 		this.array = array;
 		this.elementsWrapper = elementsWrapper;
 		this.node = node;
+		this.nullErrorMessage = nullErrorMessage;
 	}
 
 	void write(Serializer serializer) throws Throwable {
@@ -19,8 +21,7 @@ class WriteArrayJob {
 		for (int index = 0; index < length; index++) {
 			Object element = Array.get(array, index);
 			if (WriteHelper.writeOptional(
-					serializer.output, element, elementsWrapper.field.optional,
-					"array must not have null elements"
+					serializer.output, element, elementsWrapper.field.optional, nullErrorMessage
 			)) continue;
 
 			serializer.output.pushContext(node, "element");

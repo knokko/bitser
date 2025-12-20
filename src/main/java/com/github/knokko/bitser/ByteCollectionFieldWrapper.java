@@ -158,9 +158,16 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
+		int length = Array.getLength(value);
+		if (serializer.intDistribution != null) {
+			serializer.intDistribution.insert(field + " collection size", (long) length, sizeField);
+			serializer.intDistribution.insert("collection size", (long) length, sizeField);
+		}
+
 		serializer.output.prepareProperty("byte-collection-length", -1);
-		IntegerBitser.encodeInteger(Array.getLength(value), sizeField, serializer.output);
+		IntegerBitser.encodeInteger(length, sizeField, serializer.output);
 		serializer.output.finishProperty();
+
 		serializer.output.prepareProperty("byte-collection-bytes", -1);
 		if (value instanceof boolean[]) serializer.output.write(toByteArray((boolean[]) value));
 		else if (value instanceof byte[]) serializer.output.write((byte[]) value);

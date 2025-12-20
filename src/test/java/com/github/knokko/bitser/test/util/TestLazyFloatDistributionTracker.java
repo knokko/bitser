@@ -35,7 +35,7 @@ public class TestLazyFloatDistributionTracker {
 
 		Bitser bitser = new Bitser(false);
 		FloatDistributionTracker tracker1 = new FloatDistributionTracker();
-		OuterStruct copied = bitser.deepCopy(outer, tracker1);
+		OuterStruct copied = bitser.stupidDeepCopy(outer, tracker1);
 
 		String field = tracker1.getSortedFields().get(0);
 		assertContains(field, "temperatures");
@@ -45,7 +45,7 @@ public class TestLazyFloatDistributionTracker {
 		assertEquals(3.0, entries.get(0).commonValues[0], 0.001);
 
 		FloatDistributionTracker tracker2 = new FloatDistributionTracker();
-		bitser.serializeToBytes(copied, Bitser.FORBID_LAZY_SAVING, tracker2);
+		bitser.serializeToBytesSimple(copied, Bitser.FORBID_LAZY_SAVING, tracker2);
 		entries = tracker2.optimize(field, 1, new double[] { 0.1 });
 		assertEquals(3.0, entries.get(0).commonValues[0], 0.001);
 	}

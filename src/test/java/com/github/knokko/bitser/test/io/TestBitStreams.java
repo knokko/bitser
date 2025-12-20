@@ -94,9 +94,9 @@ public class TestBitStreams {
 	@Test
 	public void testEndOfStream1() {
 		Bitser bitser = new Bitser(true);
-		byte[] bytes = bitser.serializeToBytes(new SmallStruct());
+		byte[] bytes = bitser.serializeToBytesSimple(new SmallStruct());
 		String errorMessage = assertThrows(
-				IllegalArgumentException.class, () -> bitser.deserializeFromBytes(LargerStruct.class, bytes)
+				IllegalArgumentException.class, () -> bitser.deserializeFromBytesSimple(LargerStruct.class, bytes)
 		).getMessage();
 		assertContains(errorMessage, "too short");
 	}
@@ -104,8 +104,8 @@ public class TestBitStreams {
 	@Test
 	public void testEndOfStream2() {
 		Bitser bitser = new Bitser(true);
-		byte[] bytes = bitser.serializeToBytes(new SmallStruct());
-		String errorMessage = assertThrows(IOException.class, () -> bitser.deserialize(
+		byte[] bytes = bitser.serializeToBytesSimple(new SmallStruct());
+		String errorMessage = assertThrows(IOException.class, () -> bitser.deserializeSimple(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(bytes))
 		)).getMessage();
 		assertContains(errorMessage, "IO exception");
@@ -114,7 +114,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream3() {
-		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserialize(
+		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserializeSimple(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(new byte[0]))
 		)).getMessage();
 		assertContains(errorMessage, "IO exception");
@@ -122,6 +122,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream4() {
+		// TODO Backward-compatible test
 		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserialize(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(new byte[0])), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();

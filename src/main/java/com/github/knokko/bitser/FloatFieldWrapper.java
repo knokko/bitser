@@ -53,16 +53,15 @@ class FloatFieldWrapper extends BitFieldWrapper {
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
-		serializer.output.prepareProperty("float-value", -1);
+		if (serializer.floatDistribution != null) {
+			serializer.floatDistribution.insert(field.toString(), ((Number) value).doubleValue(), floatField);
+		}
 		encodeFloat(((Number) value).doubleValue(), !isFloat, floatField, serializer.output);
-		serializer.output.finishProperty();
 	}
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("float-value", -1);
 		double value = decodeFloat(!isFloat, floatField, deserializer.input);
-		deserializer.input.finishProperty();
 		if (isFloat) return (float) value;
 		else return value;
 	}

@@ -74,6 +74,9 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
 		long longValue = value instanceof Character ? (long) ((char) value) : ((Number) value).longValue();
+		if (serializer.intDistribution != null) {
+			serializer.intDistribution.insert(field.toString(), longValue, intField);
+		}
 		serializer.output.prepareProperty("int-value", -1);
 		encodeInteger(longValue, intField, serializer.output);
 		serializer.output.finishProperty();

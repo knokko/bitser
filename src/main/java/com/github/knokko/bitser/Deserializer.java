@@ -21,7 +21,7 @@ class Deserializer {
 	final ArrayList<ReadArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<ReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
-	final ArrayList<PopulateCollectionJob> populateCollectionJobs = new ArrayList<>();
+	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 
 	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
 
@@ -92,15 +92,15 @@ class Deserializer {
 		arrayReferenceJobs.clear();
 
 		// TODO Sort them by -depth
-		populateCollectionJobs.sort(Comparator.comparingInt(a -> a.node.depth));
-		for (PopulateCollectionJob populateJob : populateCollectionJobs) {
+		populateJobs.sort(Comparator.comparingInt(a -> a.node.depth));
+		for (PopulateJob populateJob : populateJobs) {
 			try {
 				populateJob.populate();
 			} catch (Throwable failed) {
 				throw new RecursorException(populateJob.node.generateTrace(null), failed);
 			}
 		}
-		populateCollectionJobs.clear();
+		populateJobs.clear();
 
 		for (PostInitJob postInitJob : postInitJobs) {
 			postInitJob.structObject.postInit(postInitJob.context);

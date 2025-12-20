@@ -60,12 +60,12 @@ class LazyFieldWrapper extends BitFieldWrapper {
 			SimpleLazyBits<?> lazy = (SimpleLazyBits<?>) value;
 			List<Object> options = new ArrayList<>();
 			//if (recursor.info.legacy != null) options.add(Bitser.BACKWARD_COMPATIBLE);
-			//if (recursor.info.forbidLazySaving) options.add(Bitser.FORBID_LAZY_SAVING);
-//			if (context.floatDistribution != null) options.add(context.floatDistribution);
-//			if (context.integerDistribution != null) options.add(context.integerDistribution);
+			if (serializer.forbidLazySaving) options.add(Bitser.FORBID_LAZY_SAVING);
+			if (serializer.floatDistribution != null) options.add(serializer.floatDistribution);
+			if (serializer.intDistribution != null) options.add(serializer.intDistribution);
 
 			byte[] bytes = lazy.bytes;
-			if (bytes == null/* || recursor.info.forbidLazySaving*/) {
+			if (bytes == null || serializer.forbidLazySaving) {
 				bytes = serializer.bitser.serializeToBytesSimple(lazy.get(), options.toArray());
 			}
 			serializer.output.prepareProperty("lazy-bytes-length", -1);

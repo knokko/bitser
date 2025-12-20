@@ -154,9 +154,11 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	) throws Throwable {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
-				serializer.output.prepareProperty("allowed-class-index", -1);
-				encodeUniformInteger(index, 0, allowed.length - 1, serializer.output);
-				serializer.output.finishProperty();
+				if (allowed.length > 1) {
+					serializer.output.prepareProperty("allowed-class-index", -1);
+					encodeUniformInteger(index, 0, allowed.length - 1, serializer.output);
+					serializer.output.finishProperty();
+				}
 
 				serializer.structJobs.add(new WriteStructJob(
 						value, serializer.cache.getWrapper(value.getClass()),
@@ -174,9 +176,14 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		int length = allowed.length == 0 ? legacyStructs.length : allowed.length;
-		deserializer.input.prepareProperty("allowed-class-index", -1);
-		int inheritanceIndex = (int) decodeUniformInteger(0, length - 1, deserializer.input);
-		deserializer.input.finishProperty();
+
+		int inheritanceIndex;
+		if (length > 1) {
+			deserializer.input.prepareProperty("allowed-class-index", -1);
+			inheritanceIndex = (int) decodeUniformInteger(0, length - 1, deserializer.input);
+			deserializer.input.finishProperty();
+		} else inheritanceIndex = 0;
+
 		if (allowed.length == 0) {
 			// TODO Backward compatibility
 			throw new UnsupportedOperationException("TODO");

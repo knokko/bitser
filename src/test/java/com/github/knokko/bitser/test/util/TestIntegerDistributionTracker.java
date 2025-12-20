@@ -4,8 +4,13 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.util.IntegerDistributionTracker;
+import org.junit.jupiter.api.Test;
 
-import java.io.PrintWriter;
+import java.util.List;
+
+import static com.github.knokko.bitser.test.wrapper.TestHelper.assertContains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestIntegerDistributionTracker {
 
@@ -19,19 +24,24 @@ public class TestIntegerDistributionTracker {
 		long lonely;
 	}
 
-	public static void main(String[] args) {
+	@Test
+	public void testLotsOfFives() {
 		Bitser bitser = new Bitser(false);
 		ExampleStruct example = new ExampleStruct();
 		example.numbers = new int[] { 3, 5, 5, 5, 1, 2, 3, 2, 5 };
 		example.lonely = -12;
 
 		IntegerDistributionTracker distribution = new IntegerDistributionTracker();
-		bitser.serializeToBytes(example, distribution);
+		bitser.serializeToBytesSimple(example, distribution);
 
-		distribution.printFieldOccurrences(new PrintWriter(System.out));
-		System.out.println();
-		distribution.printFieldValueOccurrences(new PrintWriter(System.out), 100, 100);
-		System.out.println();
-		distribution.optimize(new PrintWriter(System.out), 3, 1, 2);
+		List<String> fields = distribution.getSortedFields();
+		assertEquals(4, fields.size());
+		assertContains(fields.get(0), "ExampleStruct.numbers");
+
+		List<IntegerDistributionTracker.Entry> recommendations = distribution.optimize(fields.get(0), 1);
+		assertEquals(38, recommendations.get(0).spentBits);
+		assertEquals(2, recommendations.get(0).digitSize);
+		assertArrayEquals(new long[] { 5 }, recommendations.get(0).commonValues);
+		assertEquals(0, recommendations.get(1).digitSize);
 	}
 }

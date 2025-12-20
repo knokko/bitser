@@ -29,13 +29,13 @@ public class TestMapField {
 	@Test
 	public void testStringMap() {
 		Bitser bitser = new Bitser(false);
-		assertEquals(0, bitser.deepCopy(new StringMap()).map.size());
+		assertEquals(0, bitser.stupidDeepCopy(new StringMap()).map.size());
 
 		StringMap stringMap = new StringMap();
 		stringMap.map.put("hello", "world");
 		stringMap.map.put("hi", "triangle");
 
-		StringMap loaded = bitser.deepCopy(stringMap);
+		StringMap loaded = bitser.stupidDeepCopy(stringMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals("world", loaded.map.get("hello"));
 		assertEquals("triangle", loaded.map.get("hi"));
@@ -61,7 +61,7 @@ public class TestMapField {
 		intMap.map = new TreeMap<>();
 		intMap.map.put(10, (byte) 50);
 
-		IntMap loaded = bitser.deepCopy(intMap);
+		IntMap loaded = bitser.stupidDeepCopy(intMap);
 		assertEquals(1, loaded.map.size());
 		assertEquals((byte) 50, loaded.map.get(10));
 
@@ -136,7 +136,7 @@ public class TestMapField {
 		keyMap.map.put(null, "hello");
 		keyMap.map.put(150, "world");
 
-		KeyFieldMap loaded = new Bitser(false).deepCopy(keyMap);
+		KeyFieldMap loaded = new Bitser(false).stupidDeepCopy(keyMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals("hello", loaded.map.get(null));
 		assertEquals("world", loaded.map.get(150));
@@ -178,7 +178,7 @@ public class TestMapField {
 		valueMap.map.put("knokko", 10);
 		valueMap.map.put("knok", null);
 
-		ExplicitValueFieldMap loaded = new Bitser(false).deepCopy(valueMap);
+		ExplicitValueFieldMap loaded = new Bitser(false).stupidDeepCopy(valueMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals(10, loaded.map.get("knokko"));
 		assertTrue(loaded.map.containsKey("knok"));
@@ -194,7 +194,7 @@ public class TestMapField {
 
 	@Test
 	public void testOptionalMap() {
-		assertNull(new Bitser(true).deepCopy(new OptionalMap()).map);
+		assertNull(new Bitser(true).stupidDeepCopy(new OptionalMap()).map);
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -235,7 +235,7 @@ public class TestMapField {
 		ReferenceMaps outer = new ReferenceMaps();
 		outer.map2.put(inner1, inner2);
 
-		ReferenceMaps loaded = new Bitser(false).deepCopy(outer);
+		ReferenceMaps loaded = new Bitser(false).stupidDeepCopy(outer);
 		assertEquals(0, loaded.map1.size());
 		assertEquals(1, loaded.map2.size());
 
@@ -268,7 +268,7 @@ public class TestMapField {
 	public void testWriteAsBytesMap() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new WriteAsBytesMap(), new BitCountStream())
+				() -> new Bitser(false).serializeSimple(new WriteAsBytesMap(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "writeAsBytes is not allowed on Maps");
 	}
@@ -276,11 +276,11 @@ public class TestMapField {
 	@Test
 	public void testNullKeysAreForbiddenByDefault() {
 		ImplicitValueFieldMap valueMap = new ImplicitValueFieldMap();
-		valueMap.map.put(null, 12);
+		valueMap.map.put(null, 11);
 
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(false).serialize(valueMap, new BitCountStream())
+				() -> new Bitser(false).serializeSimple(valueMap, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not have null keys");
 	}
@@ -292,7 +292,7 @@ public class TestMapField {
 
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(keyMap, new BitCountStream())
+				() -> new Bitser(true).serializeSimple(keyMap, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not have null values");
 	}
@@ -301,7 +301,7 @@ public class TestMapField {
 	public void testNullMapsAreForbiddenByDefault() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(new IntMap(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new IntMap(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 	}
@@ -318,7 +318,7 @@ public class TestMapField {
 	public void testBadOptionalMap() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new BadOptionalMap(), new BitCountStream())
+				() -> new Bitser(false).serializeSimple(new BadOptionalMap(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "optional BitField is not allowed");
 		assertContains(errorMessage, "use @NestedFieldSetting instead");
@@ -357,6 +357,7 @@ public class TestMapField {
 		original.name = "Tim";
 		original.map.put(original.name, mini);
 
+		// TODO Backward-compatible test
 		ReferenceToStructMap copy = new Bitser(true).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals("Tim", copy.name);
 		assertEquals(3, copy.map.get(copy.name).size);

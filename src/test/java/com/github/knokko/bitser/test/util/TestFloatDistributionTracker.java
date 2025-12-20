@@ -4,8 +4,13 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.util.FloatDistributionTracker;
+import org.junit.jupiter.api.Test;
 
-import java.io.PrintWriter;
+import java.util.List;
+
+import static com.github.knokko.bitser.test.wrapper.TestHelper.assertContains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestFloatDistributionTracker {
 
@@ -19,22 +24,29 @@ public class TestFloatDistributionTracker {
 		double lonely;
 	}
 
-	public static void main(String[] args) {
+	@Test
+	public void testLotsOfFivesAndHalves() {
 		Bitser bitser = new Bitser(false);
 		ExampleStruct example = new ExampleStruct();
 		example.numbers = new float[] { 3.1f, 5.5f, 5.5f, 5.5f, 1.2f, 2.8f, 3.1f, 2.7f, 5.5f };
 		example.lonely = -12.5;
 
 		FloatDistributionTracker distribution = new FloatDistributionTracker();
-		bitser.serializeToBytes(example, distribution);
+		bitser.serializeToBytesSimple(example, distribution);
 
-		distribution.printFieldOccurrences(new PrintWriter(System.out));
-		System.out.println();
-		distribution.printFieldValueOccurrences(new PrintWriter(System.out), 100, 100);
-		System.out.println();
-		distribution.optimize(
-				new PrintWriter(System.out), 3, 1,
-				2, new double[] { 0.0, 0.1, 0.5 }
+		List<String> sortedFields = distribution.getSortedFields();
+		assertEquals(2, sortedFields.size());
+		assertContains(sortedFields.get(0), "ExampleStruct.numbers");
+		assertContains(sortedFields.get(1), "ExampleStruct.lonely");
+
+		List<FloatDistributionTracker.Entry> recommendations = distribution.optimize(
+				sortedFields.get(0), 1, new double[] { 0.01, 0.1 }
 		);
+
+		assertEquals(64, recommendations.get(0).spentBits);
+		assertEquals(3, recommendations.get(0).digitSize);
+		assertArrayEquals(new double[] { 5.5 }, recommendations.get(0).commonValues);
+		assertEquals(0.1, recommendations.get(0).expectMultipleOf);
+		assertEquals(2, recommendations.get(1).digitSize);
 	}
 }

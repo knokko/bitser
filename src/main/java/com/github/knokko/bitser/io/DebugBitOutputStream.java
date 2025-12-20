@@ -70,6 +70,7 @@ public class DebugBitOutputStream extends BitOutputStream {
 	@Override
 	public void finish() throws IOException {
 		super.finish();
+		writer.println("---------------------------------------------------------------------------------------------");
 		writer.flush();
 	}
 }

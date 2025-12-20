@@ -5,6 +5,7 @@ import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.*;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
+import com.github.knokko.bitser.options.DebugBits;
 import com.github.knokko.bitser.options.WithParameter;
 import com.github.knokko.bitser.util.*;
 
@@ -75,7 +76,7 @@ public class Bitser {
 		}
 	}
 
-	private void rawSerializeSimple(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
+	private void rawSerializeSimple(Object object, BitOutputStream output, Object... withAndOptions) {
 		output.pushContext("prepare", -1);
 		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
@@ -163,6 +164,7 @@ public class Bitser {
 		for (Object maybeWithObject : withAndOptions) {
 			if (maybeWithObject == BACKWARD_COMPATIBLE || maybeWithObject == FORBID_LAZY_SAVING) continue;
 			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof DistributionTracker) continue;
+			if (maybeWithObject instanceof DebugBits) continue;
 			withObjects.add(maybeWithObject);
 //			Recursor.run(idMapper, cache, recursor ->
 //					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
@@ -175,7 +177,10 @@ public class Bitser {
 //		output.popContext("id-mapper", -1);
 
 		output.pushContext("output", -1);
-		Serializer serializer = new Serializer(this, withParameters, output, object);
+		Serializer serializer = new Serializer(
+				this, withParameters, output, object,
+				forbidLazySaving, integerDistribution, floatDistribution
+		);
 		serializer.references.setWithObjects(withObjects);
 		serializer.run();
 //		Recursor.run(
@@ -305,9 +310,16 @@ public class Bitser {
 	}
 
 	public byte[] serializeToBytesSimple(Object object, Object... withAndOptions) {
+		DebugBits debug = null;
+		for (Object option : withAndOptions) {
+			if (option instanceof DebugBits) debug = (DebugBits) option;
+		}
+
 		try {
 			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-			BitOutputStream bitOutput = new BitOutputStream(byteOutput);
+			BitOutputStream bitOutput = debug != null ?
+					new DebugBitOutputStream(byteOutput, debug.writer, debug.flushAggressively) :
+					new BitOutputStream(byteOutput);
 			serializeSimple(object, bitOutput, withAndOptions);
 			bitOutput.finish();
 			return byteOutput.toByteArray();
@@ -393,6 +405,7 @@ public class Bitser {
 				continue;
 			}
 			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof CollectionSizeLimit) continue;
+			if (maybeWithObject instanceof DebugBits) continue;
 			if (maybeWithObject instanceof DistributionTracker) {
 				System.out.println("Ignoring DistributionTracker option in Bitser.deserialize");
 				continue;
@@ -550,8 +563,18 @@ public class Bitser {
 	public <T> T deserializeFromBytesSimple(
 			Class<T> objectClass, byte[] bytes, Object... withAndOptions
 	) throws BitserException, RecursorException, IllegalArgumentException {
+		DebugBits debug = null;
+		for (Object option : withAndOptions) {
+			if (option instanceof DebugBits) debug = (DebugBits) option;
+		}
 		try {
-			return deserializeSimple(objectClass, new BitInputStream(new ByteArrayInputStream(bytes)), withAndOptions);
+			ByteArrayInputStream byteInput = new ByteArrayInputStream(bytes);
+			BitInputStream bitInput = debug != null ?
+					new DebugBitInputStream(byteInput, debug.writer, debug.flushAggressively) :
+					new BitInputStream(byteInput);
+			T result = deserializeSimple(objectClass, bitInput, withAndOptions);
+			bitInput.close();
+			return result;
 		} catch (IOException shouldNotHappen) {
 			throw new IllegalArgumentException("bytes is too short or invalid/corrupted", shouldNotHappen);
 		}

@@ -1,10 +1,11 @@
-package com.github.knokko.bitser.io;
+package com.github.knokko.bitser.test.io;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.NestedFieldSetting;
 import com.github.knokko.bitser.Bitser;
+import com.github.knokko.bitser.io.BitOutputStream;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -66,7 +67,7 @@ public class ArrayBenchmark {
 	private static class SlowBooleanArray {
 
 		@BitField
-		final boolean[] data = new boolean[80_000_000];
+		final boolean[] data = new boolean[8_000_000];
 
 		@SuppressWarnings("unused")
 		SlowBooleanArray() {}
@@ -81,7 +82,7 @@ public class ArrayBenchmark {
 	private static class FastBooleanArray {
 
 		@NestedFieldSetting(path = "", writeAsBytes = true)
-		final boolean[] data = new boolean[80_000_000];
+		final boolean[] data = new boolean[8_000_000];
 
 		@SuppressWarnings("unused")
 		FastBooleanArray() {}
@@ -96,8 +97,8 @@ public class ArrayBenchmark {
 	private static class SlowByteArray {
 
 		@IntegerField(expectUniform = true)
-		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 10_000_000, maxValue = 10_000_000, expectUniform = true))
-		final byte[] data = new byte[10_000_000];
+		@NestedFieldSetting(path = "", sizeField = @IntegerField(minValue = 1_000_000, maxValue = 1_000_000, expectUniform = true))
+		final byte[] data = new byte[1_000_000];
 
 		@SuppressWarnings("unused")
 		SlowByteArray() {}
@@ -111,7 +112,7 @@ public class ArrayBenchmark {
 	private static class FastByteArray {
 
 		@NestedFieldSetting(path = "", writeAsBytes = true)
-		final byte[] data = new byte[10_000_000];
+		final byte[] data = new byte[1_000_000];
 
 		@SuppressWarnings("unused")
 		FastByteArray() {}

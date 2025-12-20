@@ -187,6 +187,89 @@ class MapFieldWrapper extends BitFieldWrapper {
 		));
 	}
 
+	@Override
+	void registerReferenceTargets(
+			ReferenceTracker references, Object value,
+			RecursionNode parentNode, String fieldName
+	) {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		Map<?, ?> map = (Map<?, ?>) value;
+		references.arrayJobs.add(new WithArrayJob(map.keySet().toArray(), keysWrapper, childNode));
+		references.arrayJobs.add(new WithArrayJob(map.values().toArray(), valuesWrapper, childNode));
+	}
+
+	@Override
+	public void write(Serializer serializer, Object value, RecursionNode parentNode, String fieldName) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		Map<?, ?> map = (Map<?, ?>) value;
+
+		if (serializer.intDistribution != null) {
+			serializer.intDistribution.insert(field + " map size", (long) map.size(), sizeField);
+			serializer.intDistribution.insert("map size", (long) map.size(), sizeField);
+		}
+
+		serializer.output.prepareProperty("map-size", -1);
+		IntegerBitser.encodeInteger(map.size(), sizeField, serializer.output);
+		serializer.output.finishProperty();
+
+		if (map.isEmpty()) return;
+		if (keysWrapper instanceof ReferenceFieldWrapper) {
+			serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
+					map.keySet().toArray(), (ReferenceFieldWrapper) keysWrapper, childNode
+			));
+		} else {
+			serializer.arrayJobs.add(new WriteArrayJob(
+					map.keySet().toArray(), keysWrapper, childNode, "this map must not have null keys"
+			));
+		}
+
+		if (valuesWrapper instanceof ReferenceFieldWrapper) {
+			serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
+					map.values().toArray(), (ReferenceFieldWrapper) valuesWrapper, childNode
+			));
+		} else {
+			serializer.arrayJobs.add(new WriteArrayJob(
+					map.values().toArray(), valuesWrapper, childNode, "this map must not have null values"
+			));
+		}
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		deserializer.input.prepareProperty("map-size", -1);
+		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "map-size", deserializer.input);
+		deserializer.input.finishProperty();
+
+		Object[] keys = new Object[size];
+		Object[] values = new Object[size];
+		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type, size);
+		if (size == 0) return map;
+
+		if (keysWrapper instanceof ReferenceFieldWrapper) {
+			deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+					keys, (ReferenceFieldWrapper) keysWrapper, childNode
+			));
+		} else {
+			deserializer.arrayJobs.add(new ReadArrayJob(
+					keys, keysWrapper, childNode
+			));
+		}
+
+		if (valuesWrapper instanceof ReferenceFieldWrapper) {
+			deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+					values, (ReferenceFieldWrapper) valuesWrapper, childNode
+			));
+		} else {
+			deserializer.arrayJobs.add(new ReadArrayJob(
+					values, valuesWrapper, childNode
+			));
+		}
+		deserializer.populateJobs.add(new PopulateMapJob(map, keys, values, childNode));
+
+		return map;
+	}
+
 	private void readElementSet(
 			Recursor<ReadContext, ReadInfo> recursor,
 			RawMap raw, BitFieldWrapper elementWrapper

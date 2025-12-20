@@ -197,6 +197,11 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (field.type.isArray()) {
 			int length = Array.getLength(value);
+			if (serializer.intDistribution != null) {
+				serializer.intDistribution.insert(field + " collection size", (long) length, sizeField);
+				serializer.intDistribution.insert("collection size", (long) length, sizeField);
+			}
+
 			serializer.output.prepareProperty("array-length", -1);
 			IntegerBitser.encodeInteger(length, sizeField, serializer.output);
 			serializer.output.finishProperty();
@@ -208,11 +213,16 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				));
 			} else {
 				serializer.arrayJobs.add(new WriteArrayJob(
-						value, valuesWrapper, childNode
+						value, valuesWrapper, childNode, "this array must not have null elements"
 				));
 			}
 		} else {
 			Collection<?> collection = (Collection<?>) value;
+			if (serializer.intDistribution != null) {
+				serializer.intDistribution.insert(field + " collection size", (long) collection.size(), sizeField);
+				serializer.intDistribution.insert("collection size", (long) collection.size(), sizeField);
+			}
+
 			serializer.output.prepareProperty("collection-size", -1);
 			IntegerBitser.encodeInteger(collection.size(), sizeField, serializer.output);
 			serializer.output.finishProperty();
@@ -224,7 +234,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				));
 			} else {
 				serializer.arrayJobs.add(new WriteArrayJob(
-						collection.toArray(), valuesWrapper, childNode
+						collection.toArray(), valuesWrapper, childNode,
+						"this collection must not have null elements"
 				));
 			}
 		}
@@ -270,7 +281,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 						array, valuesWrapper, childNode
 				));
 			}
-			deserializer.populateCollectionJobs.add(new PopulateCollectionJob(collection, array, childNode));
+			deserializer.populateJobs.add(new PopulateCollectionJob(collection, array, childNode));
 
 			return collection;
 		}
