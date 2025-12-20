@@ -139,6 +139,15 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
+	void registerReferenceTargets(
+			ReferenceTracker references, Object value,
+			RecursionNode parentNode, String fieldName
+	) {
+		BitStructWrapper<?> structInfo = references.cache.getWrapper(value.getClass());
+		references.structJobs.add(new WithStructJob(value, structInfo, new RecursionNode(parentNode, fieldName)));
+	}
+
+	@Override
 	public void write(
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName

@@ -53,6 +53,8 @@ class Serializer {
 			}
 		}
 
+		references.handleWithJobs();
+
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
 				output.pushContext(referenceJob.node, "(struct-reference-job)");

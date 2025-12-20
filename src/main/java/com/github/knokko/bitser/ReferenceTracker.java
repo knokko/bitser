@@ -8,12 +8,16 @@ import com.github.knokko.bitser.io.BitOutputStream;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 class ReferenceTracker {
 
 	private final HashMap<String, LabelTargets> labels = new HashMap<>();
-	private final BitserCache cache;
+	final BitserCache cache;
+
+	final ArrayList<WithStructJob> structJobs = new ArrayList<>();
+	final ArrayList<WithArrayJob> arrayJobs = new ArrayList<>();
 
 	ReferenceTracker(BitserCache cache) {
 		this.cache = cache;
@@ -22,6 +26,21 @@ class ReferenceTracker {
 	void registerTarget(String label, Object target) {
 		LabelTargets entries = labels.computeIfAbsent(label, key -> new LabelTargets(key, cache));
 		entries.register(target);
+	}
+
+	void setWithObjects(List<Object> withObjects) {
+		for (Object withObject : withObjects) {
+			BitStructWrapper<?> structInfo = cache.getWrapper(withObject.getClass());
+			RecursionNode node = new RecursionNode("with " + withObject.getClass().getSimpleName());
+			structJobs.add(new WithStructJob(withObject, structInfo, node));
+		}
+	}
+
+	void handleWithJobs() {
+		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
+			if (!structJobs.isEmpty()) structJobs.remove(structJobs.size() - 1).register(this);
+			if (!arrayJobs.isEmpty()) arrayJobs.remove(arrayJobs.size() - 1).register(this);
+		}
 	}
 
 	void refreshStableIDs() {
@@ -83,7 +102,9 @@ class ReferenceTracker {
 					if (withSameID == target) {
 						throw new ReferenceBitserException("Multiple stable targets have identity " + target);
 					} else {
-						throw new ReferenceBitserException("Multiple stable targets have ID " + id);
+						throw new ReferenceBitserException(
+								"Multiple stable targets have ID " + id + ": " + target + " and " + withSameID
+						);
 					}
 				}
 			}

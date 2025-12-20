@@ -66,19 +66,18 @@ public class TestSerializeWith {
 		ReferenceStruct references = new ReferenceStruct();
 		references.stable.add(targets.stable.get(0));
 
-		ReferenceStruct loaded = bitser.deepCopy(references, targets);
+		ReferenceStruct loaded = bitser.stupidDeepCopy(references, targets);
 		assertEquals(1, loaded.stable.size());
 		assertEquals(0, loaded.unstable.size());
 		assertSame(targets.stable.get(0), loaded.stable.get(0));
 
 		BitCountStream counter = new BitCountStream();
-		bitser.serialize(references, counter, targets);
+		bitser.serializeSimple(references, counter, targets);
 
-		// 2 bits for unstable counts per label
 		// 2 bits for stable size
 		// 128 bits for stable id
 		// 2 bits for unstable size
-		assertEquals(134, counter.getCounter());
+		assertEquals(132, counter.getCounter());
 	}
 
 	@Test
@@ -90,19 +89,18 @@ public class TestSerializeWith {
 		ReferenceStruct references = new ReferenceStruct();
 		references.unstable.add(targets.unstable.get(0));
 
-		ReferenceStruct loaded = bitser.deepCopy(references, targets);
+		ReferenceStruct loaded = bitser.stupidDeepCopy(references, targets);
 		assertEquals(0, loaded.stable.size());
 		assertEquals(1, loaded.unstable.size());
 		assertSame(targets.unstable.get(0), loaded.unstable.get(0));
 
 		BitCountStream counter = new BitCountStream();
-		bitser.serialize(references, counter, targets);
+		bitser.serializeSimple(references, counter, targets);
 
-		// 2 bits for unstable counts per label
 		// 2 bits for stable size
 		// 2 bits for unstable size
 		// 0 bits for unstable id
-		assertEquals(6, counter.getCounter());
+		assertEquals(4, counter.getCounter());
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -137,7 +135,7 @@ public class TestSerializeWith {
 		web.references.stable.add(with2.stable.get(0));
 		web.references.unstable.add(with2.unstable.get(0));
 
-		Web loaded = new Bitser(true).deepCopy(web, with2, with1);
+		Web loaded = new Bitser(true).stupidDeepCopy(web, with2, with1);
 		assertEquals(1, loaded.ownTargets.stable.size());
 		assertEquals(1, loaded.ownTargets.unstable.size());
 		assertEquals(3, loaded.references.stable.size());

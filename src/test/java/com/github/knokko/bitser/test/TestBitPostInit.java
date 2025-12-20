@@ -61,7 +61,7 @@ public class TestBitPostInit {
 		assertEquals(3, original.a);
 		assertEquals(7, original.c);
 
-		DerivedSum loaded = bitser.deepCopy(original);
+		DerivedSum loaded = bitser.stupidDeepCopy(original);
 		assertEquals(3, loaded.a);
 		assertEquals(4, loaded.b);
 		assertEquals(7, loaded.c);
@@ -122,6 +122,7 @@ public class TestBitPostInit {
 	@Test
 	public void testLegacyConversion() {
 		Bitser bitser = new Bitser(false);
+		// TODO Backward-compatible test
 		assertEquals(0.75, bitser.deserializeFromBytes(LegacyConversionAfter.class, bitser.serializeToBytes(
 				new LegacyConversionBefore(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE).fraction);
@@ -130,6 +131,7 @@ public class TestBitPostInit {
 	@Test
 	public void testLegacyConversionWithInheritance() {
 		Bitser bitser = new Bitser(true);
+		// TODO Backward-compatible test
 		AfterParent parent = bitser.deserializeFromBytes(AfterParent.class, bitser.serializeToBytes(
 				new BeforeParent(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
@@ -155,13 +157,14 @@ public class TestBitPostInit {
 		DefaultValue customValue = new DefaultValue();
 		customValue.value = "hello";
 
-		DefaultValue defaultValue = bitser.deepCopy(
+		DefaultValue defaultValue = bitser.stupidDeepCopy(
 				new DefaultValue(), new WithParameter("default-value", "it worked"), new WithParameter("unused", 1234)
 		);
-		customValue = bitser.deepCopy(customValue);
+		customValue = bitser.stupidDeepCopy(customValue);
 		assertEquals("it worked", defaultValue.value);
 		assertEquals("hello", customValue.value);
 
+		// TODO Backward-compatible test
 		defaultValue = bitser.deserializeFromBytes(DefaultValue.class, bitser.serializeToBytes(
 				new DefaultValue(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE, new WithParameter("default-value", "also backward-compatible"));
@@ -170,18 +173,22 @@ public class TestBitPostInit {
 
 	@Test
 	public void testDuplicateDeserializeWithParameter() {
-		String errorMessage = assertThrows(IllegalArgumentException.class, () -> new Bitser(false).deserializeFromBytes(
-				AfterParent.class, new byte[0], new WithParameter("ok", 1), new WithParameter("ok", 2)
-		)).getMessage();
+		String errorMessage = assertThrows(
+				IllegalArgumentException.class,
+				() -> new Bitser(false).deserializeFromBytesSimple(
+					AfterParent.class, new byte[0], new WithParameter("ok", 1), new WithParameter("ok", 2))
+		).getMessage();
 		assertContains(errorMessage, "Duplicate with parameter");
 		assertContains(errorMessage, "ok");
 	}
 
 	@Test
 	public void testDuplicateSerializeWithParameter() {
-		String errorMessage = assertThrows(IllegalArgumentException.class, () -> new Bitser(false).serializeToBytes(
-				new AfterParent(), new WithParameter("ok", 1), new WithParameter("ok", 2)
-		)).getMessage();
+		String errorMessage = assertThrows(
+				IllegalArgumentException.class,
+				() -> new Bitser(false).serializeToBytesSimple(
+					new AfterParent(), new WithParameter("ok", 1), new WithParameter("ok", 2))
+		).getMessage();
 		assertContains(errorMessage, "Duplicate with parameter");
 		assertContains(errorMessage, "ok");
 	}
@@ -218,7 +225,7 @@ public class TestBitPostInit {
 		original.wrapped = String.class;
 		original.x = 1234;
 
-		SaveClassName loaded = new Bitser(true).deepCopy(original);
+		SaveClassName loaded = new Bitser(true).stupidDeepCopy(original);
 		assertSame(String.class, loaded.wrapped);
 		assertEquals(1234, loaded.x);
 	}
@@ -282,6 +289,7 @@ public class TestBitPostInit {
 		original.wrapped = IOException.class;
 		original.x = -12;
 
+		// TODO Backward-compatible test
 		MultipleClassNames multiple = bitser.deserializeFromBytes(MultipleClassNames.class, bitser.serializeToBytes(
 				original, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
@@ -298,7 +306,7 @@ public class TestBitPostInit {
 		original.classes.add(Integer.class);
 		original.classes.add(Class.class);
 
-		MultipleClassNames loaded = bitser.deepCopy(original);
+		MultipleClassNames loaded = bitser.stupidDeepCopy(original);
 		assertEquals(-12, loaded.x);
 		assertEquals(original.classes, loaded.classes);
 	}
@@ -311,6 +319,7 @@ public class TestBitPostInit {
 		original.classes.add(File.class);
 		original.classes.add(Path.class);
 
+		// TODO Backward-compatible test
 		MultipleClassNames loaded = bitser.deserializeFromBytes(MultipleClassNames.class, bitser.serializeToBytes(
 				original, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
@@ -359,6 +368,7 @@ public class TestBitPostInit {
 		original.classes.add(File.class);
 		original.classes.add(Path.class);
 
+		// TODO Backward-compatible test
 		ClassSet loaded = bitser.deserializeFromBytes(ClassSet.class, bitser.serializeToBytes(
 				original, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
@@ -387,6 +397,7 @@ public class TestBitPostInit {
 	@Test
 	public void testBackwardCompatibleFunctionContext() {
 		Bitser bitser = new Bitser(false);
+		// TODO Backward-compatible test
 		UsesFunctionContext loaded = bitser.deserializeFromBytes(UsesFunctionContext.class, bitser.serializeToBytes(
 				new UsesFunctionContext(), Bitser.BACKWARD_COMPATIBLE, new WithParameter("b", 7)
 		), Bitser.BACKWARD_COMPATIBLE);

@@ -158,10 +158,12 @@ public class Bitser {
 //		);
 //		output.popContext("register-reference-targets", -1);
 
+		ArrayList<Object> withObjects = new ArrayList<>();
 		output.pushContext("with-reference-targets", -1);
-		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
-			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
+		for (Object maybeWithObject : withAndOptions) {
+			if (maybeWithObject == BACKWARD_COMPATIBLE || maybeWithObject == FORBID_LAZY_SAVING) continue;
+			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof DistributionTracker) continue;
+			withObjects.add(maybeWithObject);
 //			Recursor.run(idMapper, cache, recursor ->
 //					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
 //			);
@@ -173,7 +175,9 @@ public class Bitser {
 //		output.popContext("id-mapper", -1);
 
 		output.pushContext("output", -1);
-		new Serializer(this, withParameters, output, object).run();
+		Serializer serializer = new Serializer(this, withParameters, output, object);
+		serializer.references.setWithObjects(withObjects);
+		serializer.run();
 //		Recursor.run(
 //				new WriteContext(output, idMapper, integerDistribution, floatDistribution),
 //				new WriteInfo(this, withParameters, legacy, output.usesContextInfo(), forbidLazySaving),
@@ -380,18 +384,21 @@ public class Bitser {
 //			);
 		}
 
+		ArrayList<Object> withObjects = new ArrayList<>();
 		//ReferenceIdMapper withMapper = new ReferenceIdMapper(labelContext);
-		for (Object withObject : withAndOptions) {
-			if (withObject == null || withObject == BACKWARD_COMPATIBLE) continue;
-			if (withObject == FORBID_LAZY_SAVING) {
+		for (Object maybeWithObject : withAndOptions) {
+			if (maybeWithObject == null || maybeWithObject == BACKWARD_COMPATIBLE) continue;
+			if (maybeWithObject == FORBID_LAZY_SAVING) {
 				System.out.println("Ignoring FORBID_LAZY_SAVING option in Bitser.deserialize");
 				continue;
 			}
-			if (withObject instanceof WithParameter || withObject instanceof CollectionSizeLimit) continue;
-			if (withObject instanceof DistributionTracker) {
+			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof CollectionSizeLimit) continue;
+			if (maybeWithObject instanceof DistributionTracker) {
 				System.out.println("Ignoring DistributionTracker option in Bitser.deserialize");
 				continue;
 			}
+
+			withObjects.add(maybeWithObject);
 
 //			Recursor.run(withMapper, cache, recursor ->
 //					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
@@ -421,7 +428,8 @@ public class Bitser {
 //			);
 //			idLoader.postResolve();
 		} else {
-			Deserializer deserializer = new Deserializer(this, input, sizeLimit, wrapper);
+			Deserializer deserializer = new Deserializer(this, input, sizeLimit, withParameters, wrapper);
+			deserializer.references.setWithObjects(withObjects);
 			deserializer.run();
 			//noinspection unchecked
 			return (T) deserializer.rootStruct;

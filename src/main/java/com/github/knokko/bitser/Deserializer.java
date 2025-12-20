@@ -6,6 +6,7 @@ import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Map;
 
 class Deserializer {
 
@@ -13,6 +14,7 @@ class Deserializer {
 	final BitserCache cache;
 	final BitInputStream input;
 	final CollectionSizeLimit sizeLimit;
+	final Map<String, Object> withParameters;
 	final Object rootStruct;
 
 	final ArrayList<ReadStructJob> structJobs = new ArrayList<>();
@@ -21,17 +23,21 @@ class Deserializer {
 	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateCollectionJob> populateCollectionJobs = new ArrayList<>();
 
+	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
+
 	final ReferenceTracker references;
 
 	Deserializer(
 			Bitser bitser, BitInputStream input,
 			CollectionSizeLimit sizeLimit,
+			Map<String, Object> withParameters,
 			BitStructWrapper<?> rootStructInfo
 	) {
 		this.bitser = bitser;
 		this.cache = bitser.cache;
 		this.input = input;
 		this.sizeLimit = sizeLimit;
+		this.withParameters = withParameters;
 		this.rootStruct = rootStructInfo.createEmptyInstance();
 		this.structJobs.add(new ReadStructJob(
 				rootStruct, rootStructInfo,
@@ -61,6 +67,7 @@ class Deserializer {
 		}
 
 		references.refreshStableIDs();
+		references.handleWithJobs();
 
 		for (ReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
@@ -94,5 +101,10 @@ class Deserializer {
 			}
 		}
 		populateCollectionJobs.clear();
+
+		for (PostInitJob postInitJob : postInitJobs) {
+			postInitJob.structObject.postInit(postInitJob.context);
+		}
+		postInitJobs.clear();
 	}
 }

@@ -1,6 +1,10 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.util.RecursorException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 class ReadStructJob {
 
@@ -15,6 +19,7 @@ class ReadStructJob {
 	}
 
 	void read(Deserializer deserializer) {
+		Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
 			Object[] functionValues;
 			if (structClass.functions.isEmpty()) functionValues = new Object[0];
@@ -48,27 +53,36 @@ class ReadStructJob {
 				try {
 					if (ReadHelper.readOptional(deserializer.input, function.bitField.field.optional)) continue;
 					if (function.bitField instanceof ReferenceFieldWrapper) {
-						throw new UnsupportedOperationException("TODO");
-//						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
-//								structObject, ((ReferenceFieldWrapper) field.bitField).label,
-//								field.bitField instanceof StableReferenceFieldWrapper, field.classField,
-//								new RecursionNode(node, field.classField.getName()))
-//						);
+						throw new InvalidBitFieldException("Bit functions returning references are not supported");
 					} else {
 						String methodName = function.classMethod.getName();
 						deserializer.input.pushContext(node, methodName);
-						Object value = function.bitField.read(deserializer, node, methodName);
+						functionValues[function.id] = function.bitField.read(deserializer, node, methodName);
 						deserializer.input.popContext(node, methodName);
-						// TODO Save somewhere
-//						field.classField.set(structObject, value);
-//						if (field.bitField.field.referenceTargetLabel != null) {
-//							deserializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
-//						}
+
+
+						if (function.bitField.field.referenceTargetLabel != null) {
+							throw new InvalidBitFieldException(
+									"Bit functions returning reference targets are not supported"
+							);
+						}
 					}
 				} catch (Throwable failed) {
 					throw new RecursorException(node.generateTrace(function.classMethod.getName()), failed);
 				}
 			}
+
+			if (structObject instanceof BitPostInit) {
+				serializedFunctionValues.put(structClass.myClass, functionValues);
+			}
+		}
+
+		if (structObject instanceof BitPostInit) {
+			BitPostInit.Context context = new BitPostInit.Context(
+					deserializer.bitser, false, serializedFunctionValues,
+					null, null, deserializer.withParameters
+			);
+			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) structObject, context));
 		}
 	}
 }

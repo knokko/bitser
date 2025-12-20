@@ -399,8 +399,8 @@ public class TestUnstableReferences {
 				ReferenceBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes)
 		).getMessage();
-		assertContains(errorMessage, "with label item types and id 0");
-		assertContains(errorMessage, "was never saved");
+		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
+		assertContains(errorMessage, "-> type");
 	}
 
 	@Test
@@ -419,7 +419,7 @@ public class TestUnstableReferences {
 				ReferenceBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(Item.class, bytes)
 		).getMessage();
-		assertContains(errorMessage, "label item types was never saved");
+		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
 		assertContains(errorMessage, "-> type");
 	}
 }

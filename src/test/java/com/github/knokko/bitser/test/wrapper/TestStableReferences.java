@@ -416,7 +416,7 @@ public class TestStableReferences {
 				ReferenceBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes, withRoot)
 		).getMessage();
-		assertContains(errorMessage, "objects have id " + itemType.id);
+		assertContains(errorMessage, "stable targets have ID " + itemType.id);
 		assertContains(errorMessage, "TestStableReferences$ItemType@");
 	}
 
@@ -444,6 +444,7 @@ public class TestStableReferences {
 
 		ItemRoot primaryRoot = new ItemRoot();
 		primaryRoot.items.add(new Item("it", itemType));
+		primaryRoot.types.add(new ItemType("unrelated"));
 
 		ItemRoot withRoot = new ItemRoot();
 		withRoot.types.add(itemType);
@@ -455,8 +456,8 @@ public class TestStableReferences {
 				ReferenceBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes)
 		).getMessage();
-		assertContains(errorMessage, "with label item types and id " + itemType.id);
-		assertContains(errorMessage, "was never saved");
+		assertContains(errorMessage, "with label item types and ID " + itemType.id);
+		assertContains(errorMessage, "ItemRoot -> items -> elements -> type");
 	}
 
 	@Test
@@ -475,7 +476,7 @@ public class TestStableReferences {
 				ReferenceBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(Item.class, bytes)
 		).getMessage();
-		assertContains(errorMessage, "label item types was never saved");
-		assertContains(errorMessage, "-> type");
+		assertContains(errorMessage, "find @ReferenceFieldTarget with label item types");
+		assertContains(errorMessage, "Item -> type");
 	}
 }
