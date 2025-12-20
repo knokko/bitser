@@ -29,10 +29,23 @@
     </dependencies>
   </dependencyManagement>
 
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.knokko</groupId>
+      <artifactId>sample-profiler</artifactId>
+      <version>v1.0.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
