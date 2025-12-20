@@ -252,7 +252,7 @@ public class TestUnstableReferences {
 				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
 		).getMessage();
 
-		assertContains(errorMessage, "Can't find unstable reference target with label item types");
+		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -270,7 +270,7 @@ public class TestUnstableReferences {
 				() -> new Bitser(false).serializeSimple(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
-		assertContains(errorMessage, "Can't find unstable reference target with label nope");
+		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
 	}
 
 	@BitStruct(backwardCompatible = false)

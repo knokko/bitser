@@ -36,20 +36,19 @@ class ReferenceTracker {
 		if (referenceWrapper instanceof StableReferenceFieldWrapper) {
 			BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
 			if (valueInfo == null) {
-				throw new InvalidBitFieldException("Can't find stable ID of " + referenceWrapper.field.type + " because it's not a BitStruct");
+				assert referenceWrapper.field.type != null;
+				String className = referenceWrapper.field.type.getSimpleName();
+				throw new InvalidBitFieldException("Can't extract stable ID from " + className + " because it's not a BitStruct");
 			}
 			if (!valueInfo.hasStableId()) {
-				throw new InvalidBitFieldException("Can't find StableReferenceFieldId of " + valueInfo);
+				String className = valueInfo.constructor.getDeclaringClass().getSimpleName();
+				throw new InvalidBitFieldException(className + " doesn't have an @StableReferenceFieldId");
 			}
 		}
 
 		LabelTargets targets = labels.get(referenceWrapper.label);
 		if (targets == null) {
-			if (referenceWrapper instanceof StableReferenceFieldWrapper) {
-				throw new ReferenceBitserException("Can't find stable reference target with label " + referenceWrapper.label);
-			} else {
-				throw new ReferenceBitserException("Can't find unstable reference target with label " + referenceWrapper.label);
-			}
+			throw new ReferenceBitserException("Can't find @ReferenceFieldTarget with label " + referenceWrapper.label);
 		}
 		return targets;
 	}
@@ -79,13 +78,20 @@ class ReferenceTracker {
 			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
 			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
 				UUID id = maybeWrapper.getStableId(target);
-				if (stable.put(id, target) != null) throw new ReferenceBitserException("Duplicate stable target " + target);
+				Object withSameID = stable.put(id, target);
+				if (withSameID != null) {
+					if (withSameID == target) {
+						throw new ReferenceBitserException("Multiple stable targets have identity " + target);
+					} else {
+						throw new ReferenceBitserException("Multiple stable targets have ID " + id);
+					}
+				}
 			}
 		}
 
 		void register(Object target) {
-			registerUnstable(target);
 			registerStable(target);
+			registerUnstable(target);
 		}
 
 		void save(ReferenceFieldWrapper referenceWrapper, Object reference, BitOutputStream output) throws Throwable {

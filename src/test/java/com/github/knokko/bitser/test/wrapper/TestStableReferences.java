@@ -273,8 +273,8 @@ public class TestStableReferences {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serializeSimple(new NonStructTarget(), new BitCountStream())
 		).getMessage();
-		assertContains(errorMessage, "Can't extract stable id from");
-		assertContains(errorMessage, "-> NonStructTarget -> id");
+		assertContains(errorMessage, "Can't extract stable ID from");
+		assertContains(errorMessage, "NonStructTarget -> reference");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -306,8 +306,8 @@ public class TestStableReferences {
 				() -> new Bitser(false).serializeSimple(target, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "doesn't have an @StableReferenceFieldId");
-		assertContains(errorMessage, "com.github.knokko.bitser.test.wrapper.TestStableReferences$WithoutStableId@");
-		assertContains(errorMessage, "-> StableReferenceTargetWithoutStableId -> target");
+		assertContains(errorMessage, "WithoutStableId");
+		assertContains(errorMessage, "StableReferenceTargetWithoutStableId -> reference");
 	}
 
 	@Test
@@ -345,8 +345,8 @@ public class TestStableReferences {
 				InvalidBitValueException.class,
 				() -> new Bitser(true).serializeSimple(new ReferencesNullId(), new BitCountStream())
 		).getMessage();
-		assertContains(errorMessage, "Stable UUID");
-		assertContains(errorMessage, "is null");
+		assertContains(errorMessage, "ReferencesNullId -> actualId");
+		assertContains(errorMessage, "must not be null");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -392,7 +392,7 @@ public class TestStableReferences {
 		root.types.add(type);
 
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class,
+				ReferenceBitserException.class,
 				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple stable targets have identity");
@@ -431,7 +431,7 @@ public class TestStableReferences {
 	@Test
 	public void testMissingTargetLabel() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class,
+				ReferenceBitserException.class,
 				() -> new Bitser(false).serializeSimple(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
