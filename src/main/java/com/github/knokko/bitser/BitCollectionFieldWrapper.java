@@ -203,12 +203,12 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			serializer.output.finishProperty();
 
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
-				serializer.collectionReferenceJobs.add(new WriteCollectionReferenceJob(
-						collection, (ReferenceFieldWrapper) valuesWrapper, childNode
+				serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
+						collection.toArray(), (ReferenceFieldWrapper) valuesWrapper, childNode
 				));
 			} else {
-				serializer.collectionJobs.add(new WriteCollectionJob(
-						collection, valuesWrapper, childNode
+				serializer.arrayJobs.add(new WriteArrayJob(
+						collection.toArray(), valuesWrapper, childNode
 				));
 			}
 		}
@@ -239,16 +239,18 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "collection-size", deserializer.input);
 			deserializer.input.finishProperty();
 
+			Object[] array = new Object[size];
 			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
-				deserializer.collectionReferenceJobs.add(new ReadCollectionReferenceJob(
-						collection, size, (ReferenceFieldWrapper) valuesWrapper, childNode
+				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+						array, (ReferenceFieldWrapper) valuesWrapper, childNode
 				));
 			} else {
-				deserializer.collectionJobs.add(new ReadCollectionJob(
-						collection, size, valuesWrapper, childNode
+				deserializer.arrayJobs.add(new ReadArrayJob(
+						array, valuesWrapper, childNode
 				));
 			}
+			deserializer.populateCollectionJobs.add(new PopulateCollectionJob(collection, array, childNode));
 
 			return collection;
 		}

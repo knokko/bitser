@@ -17,10 +17,8 @@ class Deserializer {
 
 	final ArrayList<ReadStructJob> structJobs = new ArrayList<>();
 	final ArrayList<ReadArrayJob> arrayJobs = new ArrayList<>();
-	final ArrayList<ReadCollectionJob> collectionJobs = new ArrayList<>();
 	final ArrayList<ReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
-	final ArrayList<ReadCollectionReferenceJob> collectionReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateCollectionJob> populateCollectionJobs = new ArrayList<>();
 
 	final ReferenceTracker references;
@@ -43,7 +41,7 @@ class Deserializer {
 	}
 
 	void run() {
-		while (!structJobs.isEmpty() || !arrayJobs.isEmpty() || !collectionJobs.isEmpty()) {
+		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				ReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
 				input.pushContext(structJob.node, "(struct-job)");
@@ -56,16 +54,6 @@ class Deserializer {
 					input.pushContext(job.node, "(array-job)");
 					job.read(this);
 					input.popContext(job.node, "(array-job)");
-				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace(null), failed);
-				}
-			}
-			if (!collectionJobs.isEmpty()) {
-				ReadCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
-				try {
-					input.pushContext(job.node, "(collection-job)");
-					job.read(this);
-					input.popContext(job.node, "(collection-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
@@ -95,17 +83,6 @@ class Deserializer {
 			}
 		}
 		arrayReferenceJobs.clear();
-
-		for (ReadCollectionReferenceJob referenceJob : collectionReferenceJobs) {
-			try {
-				input.pushContext(referenceJob.node, "(collection-reference-job)");
-				referenceJob.resolve(this);
-				input.popContext(referenceJob.node, "(collection-reference-job)");
-			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
-			}
-		}
-		collectionReferenceJobs.clear();
 
 		// TODO Sort them by -depth
 		populateCollectionJobs.sort(Comparator.comparingInt(a -> a.node.depth));

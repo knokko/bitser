@@ -15,10 +15,8 @@ class Serializer {
 
 	final ArrayList<WriteStructJob> structJobs = new ArrayList<>();
 	final ArrayList<WriteArrayJob> arrayJobs = new ArrayList<>();
-	final ArrayList<WriteCollectionJob> collectionJobs = new ArrayList<>();
 	final ArrayList<WriteStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<WriteArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
-	final ArrayList<WriteCollectionReferenceJob> collectionReferenceJobs = new ArrayList<>();
 
 	final ReferenceTracker references;
 
@@ -36,7 +34,7 @@ class Serializer {
 	}
 
 	void run() {
-		while (!structJobs.isEmpty() || !arrayJobs.isEmpty() || !collectionJobs.isEmpty()) {
+		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				WriteStructJob job = structJobs.remove(structJobs.size() - 1);
 				output.pushContext(job.node, "(struct-job)");
@@ -49,16 +47,6 @@ class Serializer {
 					output.pushContext(job.node, "(array-job)");
 					job.write(this);
 					output.popContext(job.node, "(array-job)");
-				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace(null), failed);
-				}
-			}
-			if (!collectionJobs.isEmpty()) {
-				WriteCollectionJob job = collectionJobs.remove(collectionJobs.size() - 1);
-				try {
-					output.pushContext(job.node, "(collection-job)");
-					job.write(this);
-					output.popContext(job.node, "(collection-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace(null), failed);
 				}
@@ -86,16 +74,5 @@ class Serializer {
 			}
 		}
 		arrayReferenceJobs.clear();
-
-		for (WriteCollectionReferenceJob referenceJob : collectionReferenceJobs) {
-			try {
-				output.pushContext(referenceJob.node, "(collection-reference-job)");
-				referenceJob.save(this);
-				output.popContext(referenceJob.node, "(collection-reference-job)");
-			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
-			}
-		}
-		collectionReferenceJobs.clear();
 	}
 }
