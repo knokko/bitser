@@ -112,22 +112,28 @@ public class Bitser {
 		output.popContext("prepare", -1);
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
-//			output.pushContext("register-legacy-classes", -1);
-//			legacy = new LegacyClasses();
-//
-//			final LegacyClasses rememberLegacy = legacy;
-//			rememberLegacy.setRoot(Recursor.compute(
-//					legacy, new LegacyInfo(cache, labelInfo.functionContext),
-//					recursor -> wrapper.registerClasses(object, recursor)
-//			).get());
-//
-//			output.popContext("register-legacy-classes", -1);
-//			output.pushContext("legacy-classes", -1);
-//			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
-//			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
-//			serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
-//			legacyOutput.finish();
-//			output.popContext("legacy-classes", -1);
+			output.pushContext("register-legacy-classes", -1);
+			legacy = new LegacyClasses();
+
+			final LegacyClasses rememberLegacy = legacy;
+			rememberLegacy.setRoot(Recursor.compute(
+					legacy, new LegacyInfo(cache, new FunctionContext(this, true, withParameters)),
+					recursor -> wrapper.registerClasses(object, recursor)
+			).get());
+
+			output.popContext("register-legacy-classes", -1);
+			output.pushContext("legacy-classes", -1);
+			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
+			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
+			try {
+				// TODO Switch to serializeSimple
+				serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
+				legacyOutput.finish();
+			} catch (IOException io) {
+				throw new RuntimeException(io);
+			}
+
+			output.popContext("legacy-classes", -1);
 //
 //			output.pushContext("legacy-reference-labels", -1);
 //			Recursor.run(labelContext, labelInfo, deserializeFromBytes(
@@ -365,6 +371,7 @@ public class Bitser {
 		}
 
 		LegacyClasses legacy = null;
+		// TODO Replace with deserializeSimple
 		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input, sizeLimit);
 
 		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
@@ -440,6 +447,12 @@ public class Bitser {
 //					wrapper.setLegacyValues(recursor, pLegacy[0])
 //			);
 //			idLoader.postResolve();
+			BackDeserializer deserializer = new BackDeserializer(
+					this, input, legacy, sizeLimit, withParameters, wrapper
+			);
+			deserializer.run();
+			//noinspection unchecked
+			return (T) deserializer.rootStruct;
 		} else {
 			Deserializer deserializer = new Deserializer(this, input, sizeLimit, withParameters, wrapper);
 			deserializer.references.setWithObjects(withObjects);
@@ -447,8 +460,6 @@ public class Bitser {
 			//noinspection unchecked
 			return (T) deserializer.rootStruct;
 		}
-
-		return result.get(0);
 	}
 
 	private <T> T rawDeserialize(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {

@@ -23,7 +23,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testMinimal() {
-		new Bitser(true).deepCopy(new Empty(), Bitser.BACKWARD_COMPATIBLE);
+		new Bitser(true).stupidDeepCopy(new Empty(), Bitser.BACKWARD_COMPATIBLE);
 	}
 
 	private enum OldPet {
@@ -236,8 +236,8 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testInvalidFullIntToPartialInt() {
 		Bitser bitser = new Bitser(false);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				PartialInt.class, bitser.serializeToBytes(new FullInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+				PartialInt.class, bitser.serializeToBytesSimple(new FullInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "value 1000000 is out of range");
 		assertContains(errorMessage, "PartialInt.x");
@@ -246,8 +246,8 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testInvalidPartialIntToFullByte() {
 		Bitser bitser = new Bitser(false);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				FullByte.class, bitser.serializeToBytes(new PartialInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+				FullByte.class, bitser.serializeToBytesSimple(new PartialInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "value 150 is out of range");
 		assertContains(errorMessage, "FullByte.x");
@@ -275,11 +275,11 @@ public class TestSimpleBackwardCompatibility {
 		OptionalInt none = new OptionalInt();
 		none.x = null;
 
-		assertNull(bitser.deserializeFromBytes(
-				OptionalLong.class, bitser.serializeToBytes(none, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		assertNull(bitser.deserializeFromBytesSimple(
+				OptionalLong.class, bitser.serializeToBytesSimple(none, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		).x);
-		assertEquals(10L, bitser.deserializeFromBytes(
-				OptionalLong.class, bitser.serializeToBytes(new OptionalInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		assertEquals(10L, bitser.deserializeFromBytesSimple(
+				OptionalLong.class, bitser.serializeToBytesSimple(new OptionalInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		).x);
 	}
 

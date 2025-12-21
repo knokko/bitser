@@ -127,6 +127,14 @@ abstract class BitFieldWrapper {
 
 	abstract Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable;
 
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		throw new UnsupportedOperationException("TODO");
+	}
+
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		throw new UnsupportedOperationException("TODO");
+	}
+
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {
 			throw new LegacyBitserException("Legacy value for field " + field + " is null, which is no longer allowed");

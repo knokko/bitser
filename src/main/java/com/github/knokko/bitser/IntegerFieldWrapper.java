@@ -4,6 +4,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.legacy.BackIntValue;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.util.function.Consumer;
@@ -82,18 +83,42 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 		serializer.output.finishProperty();
 	}
 
-	@Override
-	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("int-value", -1);
-		long longValue = decodeInteger(intField, deserializer.input);
-		deserializer.input.finishProperty();
-
+	private Object toRightType(long longValue) {
 		Class<?> type = field.type;
 		if (type == byte.class || type == Byte.class) return (byte) longValue;
 		else if (type == short.class || type == Short.class) return (short) longValue;
 		else if (type == int.class || type == Integer.class) return (int) longValue;
 		else if (type == long.class || type == Long.class || type == null) return longValue;
 		else throw new InvalidBitFieldException("Unexpected integer type " + type);
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("int-value", -1);
+		long longValue = decodeInteger(intField, deserializer.input);
+		deserializer.input.finishProperty();
+		return toRightType(longValue);
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("int-value", -1);
+		long longValue = decodeInteger(intField, deserializer.input);
+		deserializer.input.finishProperty();
+		return new BackIntValue(longValue);
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof BackIntValue) {
+			long longValue = ((BackIntValue) legacyValue).value;
+			if (longValue < intField.minValue || longValue > intField.maxValue) {
+				throw new LegacyBitserException("Legacy value " + longValue + " is out of range for field " + field);
+			}
+			return toRightType(longValue);
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + field.type + " for field " + field);
+		}
 	}
 
 	@Override
