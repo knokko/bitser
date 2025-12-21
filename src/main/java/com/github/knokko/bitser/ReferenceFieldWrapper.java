@@ -1,8 +1,7 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.BitserCache;
-import com.github.knokko.bitser.VirtualField;
 
 abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 
@@ -33,5 +32,18 @@ abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 	int hashCode(Object value, BitserCache cache) {
 		// I don't want the hash code to change when the referenced value changes
 		return 12345;
+	}
+
+	@Override
+	void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
+	}
+
+	@Override
+	Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
 	}
 }

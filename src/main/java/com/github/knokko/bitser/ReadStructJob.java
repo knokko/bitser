@@ -8,7 +8,7 @@ import java.util.Map;
 
 class ReadStructJob {
 
-	final Object structObject; // TODO Turn into array, to make it bulk read
+	final Object structObject;
 	final BitStructWrapper<?> structInfo;
 	final RecursionNode node;
 

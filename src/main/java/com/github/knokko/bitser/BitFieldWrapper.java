@@ -120,13 +120,12 @@ abstract class BitFieldWrapper {
 			RecursionNode parentNode, String fieldName
 	) {}
 
-	void write(Serializer serializer, Object value, RecursionNode parentNode, String fieldName) throws Throwable {
-		throw new UnsupportedOperationException("TODO");
-	}
+	abstract void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable;
 
-	Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		throw new UnsupportedOperationException("TODO");
-	}
+	abstract Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable;
 
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {

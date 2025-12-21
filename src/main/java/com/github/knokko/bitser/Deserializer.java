@@ -91,7 +91,7 @@ class Deserializer {
 		}
 		arrayReferenceJobs.clear();
 
-		// TODO Sort them by -depth
+		// TODO Sort them by -depth, and create nasty unit test with reference (target) keys
 		populateJobs.sort(Comparator.comparingInt(a -> a.node.depth));
 		for (PopulateJob populateJob : populateJobs) {
 			try {
