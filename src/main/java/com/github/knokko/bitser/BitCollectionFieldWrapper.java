@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.legacy.BackArrayValue;
 import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
@@ -263,6 +264,56 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			}
 
 			return array;
+		} else {
+			deserializer.input.prepareProperty("collection-size", -1);
+			int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "collection-size", deserializer.input);
+			deserializer.input.finishProperty();
+
+			Object[] array = new Object[size];
+			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
+			if (size == 0) return collection;
+
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+						array, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				deserializer.arrayJobs.add(new ReadArrayJob(
+						array, valuesWrapper, childNode
+				));
+			}
+			deserializer.populateJobs.add(new PopulateCollectionJob(collection, array, childNode));
+
+			return collection;
+		}
+	}
+
+	@Override
+	public Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		deserializer.input.prepareProperty("legacy-array-length", -1);
+		int length = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "legacy-array-length", deserializer.input);
+		deserializer.input.finishProperty();
+
+		Object array = constructCollectionWithSize(length);
+		if (field.type.isArray()) {
+
+
+			Object array = Array.newInstance(field.type.getComponentType(), length);
+			if (length == 0) return array;
+
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+//				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+//						array, (ReferenceFieldWrapper) valuesWrapper, childNode
+//				));
+				throw new UnsupportedOperationException("TODO");
+			} else {
+				deserializer.arrayJobs.add(new BackReadArrayJob(
+						array, valuesWrapper, childNode
+				));
+			}
+
+			return new BackArrayValue(array);
 		} else {
 			deserializer.input.prepareProperty("collection-size", -1);
 			int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "collection-size", deserializer.input);

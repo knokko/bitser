@@ -2,7 +2,6 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.legacy.BackStructInstance;
-import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.util.RecursorException;
 
@@ -20,6 +19,7 @@ class BackDeserializer {
 	final Object rootStruct;
 
 	final ArrayList<BackReadStructJob> structJobs = new ArrayList<>();
+	final ArrayList<BackReadArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructJob> convertStructJobs = new ArrayList<>();
 
 	BackDeserializer(
@@ -49,23 +49,23 @@ class BackDeserializer {
 	}
 
 	void run() {
-		while (!structJobs.isEmpty()/* || !arrayJobs.isEmpty()*/) {
+		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				BackReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
 				input.pushContext(structJob.node, "(back-struct-job)");
 				structJob.read(this);
 				input.popContext(structJob.node, "(back-struct-job)");
 			}
-//			if (!arrayJobs.isEmpty()) {
-//				ReadArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
-//				try {
-//					input.pushContext(job.node, "(array-job)");
-//					job.read(this);
-//					input.popContext(job.node, "(array-job)");
-//				} catch (Throwable failed) {
-//					throw new RecursorException(job.node.generateTrace(null), failed);
-//				}
-//			}
+			if (!arrayJobs.isEmpty()) {
+				BackReadArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
+				try {
+					input.pushContext(job.node, "(array-job)");
+					job.read(this);
+					input.popContext(job.node, "(array-job)");
+				} catch (Throwable failed) {
+					throw new RecursorException(job.node.generateTrace(null), failed);
+				}
+			}
 		}
 
 		while (!convertStructJobs.isEmpty()) {

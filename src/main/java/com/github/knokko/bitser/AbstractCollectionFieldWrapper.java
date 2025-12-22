@@ -119,7 +119,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		return Array.getLength(object);
 	}
 
-	private Object constructCollectionWithSize(int size) {
+	protected Object constructCollectionWithSize(int size) {
 		if (field.type == null) {
 			if (arrayType == null) return new Object[size];
 			switch (arrayType) {
