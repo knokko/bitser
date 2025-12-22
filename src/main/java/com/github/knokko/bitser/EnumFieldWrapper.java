@@ -2,9 +2,12 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
+import com.github.knokko.bitser.legacy.BackEnumName;
+import com.github.knokko.bitser.legacy.BackEnumOrdinal;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Field;
@@ -122,6 +125,44 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			throw new InvalidBitFieldException("Missing enum ordinal " + ordinal + " in " + field.type);
 		}
 		return constants[ordinal];
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		if (mode == BitEnum.Mode.Name) {
+			IntegerField.Properties lengthField = new IntegerField.Properties(
+					minNameLength, maxNameLength, true, 0, new long[0]
+			);
+			String name = StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input);
+			return new BackEnumName(name);
+		}
+
+		if (mode == BitEnum.Mode.Ordinal) {
+			deserializer.input.prepareProperty("enum-ordinal", -1);
+			int ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
+			deserializer.input.finishProperty();
+			return new BackEnumOrdinal(ordinal);
+		} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof BackEnumName) {
+			try {
+				return getConstantByName(((BackEnumName) legacyValue).name);
+			} catch (NoSuchFieldException fieldNoLongerExists) {
+				throw new LegacyBitserException("Missing legacy " + legacyValue + " in " + field);
+			}
+		} else if (legacyValue instanceof BackEnumOrdinal) {
+			int ordinal = ((BackEnumOrdinal) legacyValue).ordinal;
+			Object[] constants = field.type.getEnumConstants();
+			if (ordinal >= constants.length) {
+				throw new LegacyBitserException("Missing legacy ordinal " + ordinal + " in " + field);
+			}
+			return constants[ordinal];
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + field.type + " for field " + field);
+		}
 	}
 
 	private Object getConstantByName(String name) throws NoSuchFieldException {

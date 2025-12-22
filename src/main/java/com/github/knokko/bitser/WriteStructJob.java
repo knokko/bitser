@@ -44,7 +44,7 @@ class WriteStructJob {
 		);
 
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
-			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
+			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(serializer.backwardCompatible)) {
 				try {
 					Object value = field.classField.get(structObject);
 					writeField(serializer, field.bitField, value, field.classField.getName());

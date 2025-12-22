@@ -3,7 +3,6 @@ package com.github.knokko.bitser.test.backward;
 import com.github.knokko.bitser.BitEnum;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.Bitser;
@@ -97,16 +96,16 @@ public class TestSimpleBackwardCompatibility {
 		before.namedPet = OldPet.CAT;
 		before.ordinalPet = OldPet.DOG;
 
-		byte[] bytes1 = bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE);
-		SimpleAfter after = bitser.deserializeFromBytes(SimpleAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes1 = bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE);
+		SimpleAfter after = bitser.deserializeFromBytesSimple(SimpleAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(12, after.weirdChance);
 		assertEquals(2.5f, after.dummyFraction);
 		assertEquals(NewPet.CAT, after.namedPet);
 		assertEquals(NewPet.OLD_DOG, after.ordinalPet);
 		assertNotNull(after.newID);
 
-		byte[] bytes2 = bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE);
-		SimpleBefore back = bitser.deserializeFromBytes(SimpleBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes2 = bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE);
+		SimpleBefore back = bitser.deserializeFromBytesSimple(SimpleBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(12, back.dummyChance);
 		assertEquals(2.5f, back.dummyFraction);
 		assertEquals(OldPet.CAT, back.namedPet);
@@ -172,15 +171,15 @@ public class TestSimpleBackwardCompatibility {
 		before.hello = "world";
 		before.ignored = -123;
 
-		byte[] bytes1 = bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE);
-		NestedAfter after = bitser.deserializeFromBytes(NestedAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes1 = bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE);
+		NestedAfter after = bitser.deserializeFromBytesSimple(NestedAfter.class, bytes1, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(99, after.nested.weirdChance);
 		assertEquals(0.025f, after.nested.dummyFraction);
 		assertEquals(46, after.test);
 		assertEquals("world", after.hello);
 
-		byte[] bytes2 = bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE);
-		NestedBefore back = bitser.deserializeFromBytes(NestedBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes2 = bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE);
+		NestedBefore back = bitser.deserializeFromBytesSimple(NestedBefore.class, bytes2, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(99, back.nested.dummyChance);
 		assertEquals(0.025f, back.nested.dummyFraction);
 		assertEquals(46, back.test);
@@ -196,12 +195,16 @@ public class TestSimpleBackwardCompatibility {
 		compatible.hello = "me!";
 		compatible.nested.dummyFraction = 0.75f;
 
-		NonBackwardNestedAfter nope = bitser.deserializeFromBytes(NonBackwardNestedAfter.class, bitser.serializeToBytes(compatible));
+		NonBackwardNestedAfter nope = bitser.deserializeFromBytesSimple(
+				NonBackwardNestedAfter.class, bitser.serializeToBytesSimple(compatible)
+		);
 		assertEquals(90, nope.test);
 		assertEquals("me!", nope.hello);
 		assertEquals(0.75f, nope.nested.dummyFraction);
 
-		NestedAfter back = bitser.deserializeFromBytes(NestedAfter.class, bitser.serializeToBytes(nope));
+		NestedAfter back = bitser.deserializeFromBytesSimple(
+				NestedAfter.class, bitser.serializeToBytesSimple(nope)
+		);
 		assertEquals(90, back.test);
 		assertEquals("me!", back.hello);
 		assertEquals(0.75f, back.nested.dummyFraction);
@@ -305,8 +308,8 @@ public class TestSimpleBackwardCompatibility {
 		OptionalFloat none = new OptionalFloat();
 		none.x = null;
 
-		assertNull(bitser.deserializeFromBytes(
-				OptionalDouble.class, bitser.serializeToBytes(none, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		assertNull(bitser.deserializeFromBytesSimple(
+				OptionalDouble.class, bitser.serializeToBytesSimple(none, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		).x);
 	}
 
@@ -314,7 +317,7 @@ public class TestSimpleBackwardCompatibility {
 	public void testDeserializeEmpty() {
 		// Since OptionalFloat.x has id 2 and FullInt.x has id 0, the value of FullInt.x should be its default value
 		Bitser bitser = new Bitser(true);
-		assertEquals(1_000_000, bitser.deserializeFromBytes(FullInt.class, bitser.serializeToBytes(
+		assertEquals(1_000_000, bitser.deserializeFromBytesSimple(FullInt.class, bitser.serializeToBytesSimple(
 				new OptionalFloat(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE).x);
 	}
@@ -325,8 +328,8 @@ public class TestSimpleBackwardCompatibility {
 		SimpleAfter after = new SimpleAfter();
 		after.namedPet = NewPet.PIG;
 
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
-				SimpleBefore.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+				SimpleBefore.class, bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "legacy enum constant PIG");
 		assertContains(errorMessage, "SimpleBefore.namedPet");
@@ -338,8 +341,8 @@ public class TestSimpleBackwardCompatibility {
 		SimpleAfter after = new SimpleAfter();
 		after.ordinalPet = NewPet.PIG;
 
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytes(
-				SimpleBefore.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+				SimpleBefore.class, bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "legacy ordinal 4");
 		assertContains(errorMessage, "SimpleBefore.ordinalPet");
@@ -364,10 +367,10 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testInvalidConversionFromStringToUUID() {
 		Bitser bitser = new Bitser(false);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				IdWrapper.class, bitser.serializeToBytes(new StringWrapper(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+				IdWrapper.class, bitser.serializeToBytesSimple(new StringWrapper(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
-		assertContains(errorMessage, "from legacy world");
+		assertContains(errorMessage, "from legacy string world");
 		assertContains(errorMessage, "IdWrapper.id");
 	}
 
@@ -381,9 +384,12 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testBackwardCompatibleParentWithNonCompatibleChild() {
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(
-				new ParentWithIncompatibleChild(), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
+		String errorMessage = assertThrows(
+				InvalidBitFieldException.class,
+				() -> new Bitser(false).serializeToBytesSimple(
+						new ParentWithIncompatibleChild(), Bitser.BACKWARD_COMPATIBLE
+				)
+		).getMessage();
 		assertContains(errorMessage, "is not backward compatible");
 		assertContains(errorMessage, "NonBackwardNestedAfter");
 	}
@@ -400,9 +406,12 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testBackwardCompatibleParentWithNonCompatibleFunction() {
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(
-				new ParentWithIncompatibleFunction(), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
+		String errorMessage = assertThrows(
+				InvalidBitFieldException.class,
+				() -> new Bitser(false).serializeToBytesSimple(
+					new ParentWithIncompatibleFunction(), Bitser.BACKWARD_COMPATIBLE
+				)
+		).getMessage();
 		assertContains(errorMessage, "is not backward compatible");
 		assertContains(errorMessage, "NonBackwardNestedAfter");
 	}
@@ -425,9 +434,12 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testBackwardCompatibleParentWithChildThatMissesID() {
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytes(
-				new ParentWithMissingIdChild(), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
+		String errorMessage = assertThrows(
+				InvalidBitFieldException.class,
+				() -> new Bitser(false).serializeToBytesSimple(
+					new ParentWithMissingIdChild(), Bitser.BACKWARD_COMPATIBLE
+				)
+		).getMessage();
 		assertContains(errorMessage, "is not backward compatible");
 		assertContains(errorMessage, "MissesID");
 	}
@@ -436,12 +448,13 @@ public class TestSimpleBackwardCompatibility {
 	public void testInvalidConversionFromStringToStruct() {
 		Bitser bitser = new Bitser(true);
 		StringWrapper old = new StringWrapper();
-		byte[] bytes = bitser.serializeToBytes(old, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.serializeToBytesSimple(old, Bitser.BACKWARD_COMPATIBLE);
 
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
 				ParentWithMissingIdChild.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "-> child");
-		assertContains(errorMessage, "Can't convert from legacy world to a BitStruct");
+		assertContains(errorMessage, "Can't convert from legacy string world to");
+		assertContains(errorMessage, "TestSimpleBackwardCompatibility$MissesID");
 	}
 }

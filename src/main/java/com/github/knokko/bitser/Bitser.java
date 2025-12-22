@@ -123,12 +123,14 @@ public class Bitser {
 
 			output.popContext("register-legacy-classes", -1);
 			output.pushContext("legacy-classes", -1);
-			ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
-			BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
+			//ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
+			//BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
 			try {
 				// TODO Switch to serializeSimple
-				serialize(legacy, legacyOutput, new WithParameter("legacy-classes", legacy));
-				legacyOutput.finish();
+				output.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+				serialize(legacy, output, new WithParameter("legacy-classes", legacy));
+				output.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+				//legacyOutput.finish();
 			} catch (IOException io) {
 				throw new RuntimeException(io);
 			}
@@ -184,7 +186,7 @@ public class Bitser {
 
 		output.pushContext("output", -1);
 		Serializer serializer = new Serializer(
-				this, withParameters, output, object,
+				this, withParameters, output, backwardCompatible, object,
 				forbidLazySaving, integerDistribution, floatDistribution
 		);
 		serializer.references.setWithObjects(withObjects);
@@ -372,7 +374,11 @@ public class Bitser {
 
 		LegacyClasses legacy = null;
 		// TODO Replace with deserializeSimple
-		if (backwardCompatible) legacy = deserialize(LegacyClasses.class, input, sizeLimit);
+		if (backwardCompatible) {
+			input.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+			legacy = deserialize(LegacyClasses.class, input, sizeLimit);
+			input.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+		}
 
 		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
 

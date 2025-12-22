@@ -4,6 +4,8 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
+import com.github.knokko.bitser.legacy.BackFloatValue;
+import com.github.knokko.bitser.legacy.BackIntValue;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.util.function.Consumer;
@@ -64,6 +66,27 @@ class FloatFieldWrapper extends BitFieldWrapper {
 		double value = decodeFloat(!isFloat, floatField, deserializer.input);
 		if (isFloat) return (float) value;
 		else return value;
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		double value = decodeFloat(!isFloat, floatField, deserializer.input);
+		return new BackFloatValue(value);
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof BackIntValue) {
+			long longValue = ((BackIntValue) legacyValue).value;
+			if (isFloat) return (float) longValue;
+			return (double) longValue;
+		} else if (legacyValue instanceof BackFloatValue) {
+			double doubleValue = ((BackFloatValue) legacyValue).value;
+			if (isFloat) return (float) doubleValue;
+			return doubleValue;
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + field.type + " for field " + field);
+		}
 	}
 
 	@Override

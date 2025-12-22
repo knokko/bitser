@@ -1,5 +1,7 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.legacy.BackBooleanValue;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.util.function.Consumer;
@@ -32,6 +34,23 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 		boolean result = deserializer.input.read();
 		deserializer.input.finishProperty();
 		return result;
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		deserializer.input.prepareProperty("boolean-value", -1);
+		boolean result = deserializer.input.read();
+		deserializer.input.finishProperty();
+		return result ? BackBooleanValue.TRUE : BackBooleanValue.FALSE;
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof BackBooleanValue) {
+			return ((BackBooleanValue) legacyValue).value;
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to boolean for field " + field);
+		}
 	}
 
 	@Override

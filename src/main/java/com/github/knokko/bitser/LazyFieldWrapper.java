@@ -1,10 +1,15 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.legacy.BackStructInstance;
 import com.github.knokko.bitser.legacy.LegacyLazyBytes;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
+import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.util.Recursor;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -79,21 +84,51 @@ class LazyFieldWrapper extends BitFieldWrapper {
 		}
 	}
 
-	@Override
-	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("lazy-bytes-length", -1);
-		int size = decodeUnknownLength(deserializer.sizeLimit, "lazy byte[] size", deserializer.input);
-		deserializer.input.finishProperty();
+	private byte[] readLazyBytes(BitInputStream input, CollectionSizeLimit sizeLimit) throws IOException {
+		input.prepareProperty("lazy-bytes-length", -1);
+		int size = decodeUnknownLength(sizeLimit, "lazy byte[] size", input);
+		input.finishProperty();
 
 		byte[] bytes = new byte[size];
-		deserializer.input.prepareProperty("lazy-bytes", -1);
-		deserializer.input.read(bytes);
-		deserializer.input.finishProperty();
+		input.prepareProperty("lazy-bytes", -1);
+		input.read(bytes);
+		input.finishProperty();
 
-		if (false/*recursor.info.backwardCompatible*/) {
-			return new LegacyLazyBytes(bytes);
+		return bytes;
+	}
+
+	@Override
+	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		byte[] bytes = readLazyBytes(deserializer.input, deserializer.sizeLimit);
+		return new SimpleLazyBits<>(bytes, deserializer.bitser, false, valueClass);
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		byte[] bytes = readLazyBytes(deserializer.input, deserializer.sizeLimit);
+		return new LegacyLazyBytes(bytes);
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object rawLegacyInstance, RecursionNode parentNode, String fieldName) {
+		if (rawLegacyInstance instanceof LegacyLazyBytes) {
+			return new SimpleLazyBits<>(
+					((LegacyLazyBytes) rawLegacyInstance).bytes,
+					deserializer.bitser,
+					true,
+					valueClass
+			);
+		} else if (rawLegacyInstance instanceof BackStructInstance) {
+			BackStructInstance legacyObject = (BackStructInstance) rawLegacyInstance;
+			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(valueClass);
+			Object modernObject = modernInfo.createEmptyInstance();
+			deserializer.convertStructJobs.add(new BackConvertStructJob(
+					modernObject, modernInfo, legacyObject,
+					new RecursionNode(parentNode, fieldName)
+			));
+			return modernObject;
 		} else {
-			return new SimpleLazyBits<>(bytes, deserializer.bitser, false, valueClass);
+			throw new LegacyBitserException("Can't convert from legacy " + rawLegacyInstance + " to lazy for field " + field);
 		}
 	}
 

@@ -103,7 +103,7 @@ public class TestIntegerField {
 		Bitser bitser = new Bitser(false);
 		DigitSizes incompatible = bitser.stupidDeepCopy(sizes);
 		// TODO Stupid backward compatible
-		DigitSizes compatible = bitser.deepCopy(sizes, Bitser.BACKWARD_COMPATIBLE);
+		DigitSizes compatible = bitser.stupidDeepCopy(sizes, Bitser.BACKWARD_COMPATIBLE);
 
 		for (int number = -500; number < 500; number++) {
 			for (DigitSizes loaded : new DigitSizes[] { incompatible, compatible }) {

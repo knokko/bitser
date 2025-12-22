@@ -111,8 +111,7 @@ public class TestFloatField {
 	@Test
 	public void particleSizeRegressionTest() {
 		ParticleSize original = new ParticleSize();
-		// TODO Stupid backward compatible
-		ParticleSize copied = new Bitser(false).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		ParticleSize copied = new Bitser(false).stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(0f, copied.growX);
 	}
 

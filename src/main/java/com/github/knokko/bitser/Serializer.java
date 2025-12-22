@@ -14,6 +14,7 @@ class Serializer {
 	final BitserCache cache;
 	final Map<String, Object> withParameters;
 	final BitOutputStream output;
+	final boolean backwardCompatible;
 
 	final ArrayList<WriteStructJob> structJobs = new ArrayList<>();
 	final ArrayList<WriteArrayJob> arrayJobs = new ArrayList<>();
@@ -27,13 +28,15 @@ class Serializer {
 	final FloatDistributionTracker floatDistribution;
 
 	Serializer(
-			Bitser bitser, Map<String, Object> withParameters, BitOutputStream output, Object rootStruct,
-			boolean forbidLazySaving, IntegerDistributionTracker intDistribution, FloatDistributionTracker floatDistribution
+			Bitser bitser, Map<String, Object> withParameters, BitOutputStream output, boolean backwardCompatible,
+			Object rootStruct, boolean forbidLazySaving,
+			IntegerDistributionTracker intDistribution, FloatDistributionTracker floatDistribution
 	) {
 		this.bitser = bitser;
 		this.cache = bitser.cache;
 		this.withParameters = withParameters;
 		this.output = output;
+		this.backwardCompatible = backwardCompatible;
 		BitStructWrapper<?> rootStructInfo = cache.getWrapper(rootStruct.getClass());
 		this.structJobs.add(new WriteStructJob(
 				rootStruct, rootStructInfo,

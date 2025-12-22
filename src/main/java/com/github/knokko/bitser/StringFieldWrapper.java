@@ -1,8 +1,10 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
+import com.github.knokko.bitser.legacy.BackStringValue;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.nio.charset.StandardCharsets;
@@ -56,6 +58,20 @@ class StringFieldWrapper extends BitFieldWrapper {
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		return StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input);
+	}
+
+	@Override
+	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		return new BackStringValue(StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input));
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (legacyValue instanceof BackStringValue) {
+			return ((BackStringValue) legacyValue).value;
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to String for field " + field);
+		}
 	}
 
 	@Override

@@ -4,6 +4,8 @@ import java.io.PrintWriter;
 
 public class DebugBits {
 
+	public static final DebugBits HARD = new DebugBits(new PrintWriter(System.out), true);
+
 	public final PrintWriter writer;
 	public final boolean flushAggressively;
 
