@@ -7,4 +7,9 @@ public class BackFloatValue {
 	public BackFloatValue(double value) {
 		this.value = value;
 	}
+
+	@Override
+	public String toString() {
+		return "floating " + value;
+	}
 }

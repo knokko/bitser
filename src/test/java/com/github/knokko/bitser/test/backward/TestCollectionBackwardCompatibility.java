@@ -83,12 +83,20 @@ public class TestCollectionBackwardCompatibility {
 		before.lines.add(null);
 		before.lines.add("compatibility");
 
-		ShallowAfter after = bitser.deserializeFromBytes(ShallowAfter.class, bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE);
+		ShallowAfter after = bitser.deserializeFromBytesSimple(
+				ShallowAfter.class,
+				bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(before.sinTable, after.sinTable);
 		assertArrayEquals(new int[] {123, -76, 43, 12345}, after.heights);
 		assertEquals(before.lines, after.lines);
 
-		ShallowBefore back = bitser.deserializeFromBytes(ShallowBefore.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE);
+		ShallowBefore back = bitser.deserializeFromBytesSimple(
+				ShallowBefore.class,
+				bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(before.sinTable, back.sinTable);
 		assertArrayEquals(before.heights, back.heights);
 		assertEquals(before.lines, back.lines);
@@ -259,8 +267,10 @@ public class TestCollectionBackwardCompatibility {
 		before.doubles1[3] = Double.MIN_VALUE;
 		before.doubles2[1] = -Double.MAX_VALUE;
 
-		WriteBytesAfter after = bitser.deserializeFromBytes(
-				WriteBytesAfter.class, bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
+		WriteBytesAfter after = bitser.deserializeFromBytesSimple(
+				WriteBytesAfter.class,
+				bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertArrayEquals(before.bools1, after.bools1);
 		assertEquals(2, after.bools2.size());
@@ -285,9 +295,11 @@ public class TestCollectionBackwardCompatibility {
 		assertArrayEquals(before.doubles1, after.doubles1);
 		assertArrayEquals(new float[] { 0f, Float.NEGATIVE_INFINITY }, after.doubles2);
 
-		WriteBytesBefore back = bitser.deserializeFromBytes(WriteBytesBefore.class, bitser.serializeToBytes(
-				after, Bitser.BACKWARD_COMPATIBLE
-		), Bitser.BACKWARD_COMPATIBLE);
+		WriteBytesBefore back = bitser.deserializeFromBytesSimple(
+				WriteBytesBefore.class,
+				bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertArrayEquals(before.bools1, back.bools1);
 		assertArrayEquals(before.bools2, back.bools2);
 		assertArrayEquals(before.bytes1, back.bytes1);
@@ -354,39 +366,57 @@ public class TestCollectionBackwardCompatibility {
 	@Test
 	public void testForbidBooleanArrayToIntArray() {
 		Bitser bitser = new Bitser(true);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				IntArray.class, bitser.serializeToBytes(new BooleanArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						IntArray.class,
+						bitser.serializeToBytesSimple(new BooleanArray(), Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
-		assertContains(errorMessage, "from legacy true to int");
+		assertContains(errorMessage, "from legacy boolean true to int");
 	}
 
 	@Test
 	public void testForbidBooleanArrayToIntSet() {
 		Bitser bitser = new Bitser(true);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				IntSet.class, bitser.serializeToBytes(new BooleanArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						IntSet.class,
+						bitser.serializeToBytesSimple(new BooleanArray(), Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
-		assertContains(errorMessage, "from legacy true to ");
-		assertContains(errorMessage, "java.lang.Integer");
+		assertContains(errorMessage, "from legacy boolean true to integer");
 	}
 
 	@Test
 	public void testForbidIntArrayToBooleanArray() {
 		Bitser bitser = new Bitser(true);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				BooleanArray.class, bitser.serializeToBytes(new IntArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						BooleanArray.class,
+						bitser.serializeToBytesSimple(new IntArray(), Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
-		assertContains(errorMessage, "from legacy 1 to boolean");
+		assertContains(errorMessage, "from legacy integer 1 to boolean");
 	}
 
 	@Test
 	public void testForbidIntArrayToBooleanList() {
 		Bitser bitser = new Bitser(true);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				BooleanList.class, bitser.serializeToBytes(new IntArray(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						BooleanList.class,
+						bitser.serializeToBytesSimple(new IntArray(), Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
-		assertContains(errorMessage, "from legacy 1 to");
-		assertContains(errorMessage, "java.lang.Boolean");
+		assertContains(errorMessage, "from legacy integer 1 to boolean");
 	}
 
 	@Test
@@ -394,11 +424,15 @@ public class TestCollectionBackwardCompatibility {
 		Bitser bitser = new Bitser(true);
 		IntSet intSet = new IntSet();
 		intSet.integers.add(1234);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				BooleanList.class, bitser.serializeToBytes(intSet, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						BooleanList.class,
+						bitser.serializeToBytesSimple(intSet, Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
-		assertContains(errorMessage, "from legacy 1234 to");
-		assertContains(errorMessage, "java.lang.Boolean");
+		assertContains(errorMessage, "from legacy integer 1234 to boolean");
 	}
 
 	@Test
@@ -406,8 +440,13 @@ public class TestCollectionBackwardCompatibility {
 		Bitser bitser = new Bitser(false);
 		IntSet intSet = new IntSet();
 		intSet.integers.add(null);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				IntArray.class, bitser.serializeToBytes(intSet, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						IntArray.class,
+						bitser.serializeToBytesSimple(intSet, Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
 		assertContains(errorMessage, "IntArray.integers");
 		assertContains(errorMessage, "is null");
@@ -419,8 +458,13 @@ public class TestCollectionBackwardCompatibility {
 		Bitser bitser = new Bitser(false);
 		IntSet intSet = new IntSet();
 		intSet.integers.add(null);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				IntList.class, bitser.serializeToBytes(intSet, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE)
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						IntList.class,
+						bitser.serializeToBytesSimple(intSet, Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
 		).getMessage();
 		assertContains(errorMessage, "IntList.integers");
 		assertContains(errorMessage, "is null");
@@ -461,12 +505,20 @@ public class TestCollectionBackwardCompatibility {
 		before.map.put('I', 10f);
 		before.map.put(Character.MAX_VALUE, 100f);
 
-		NewMap after = bitser.deserializeFromBytes(NewMap.class, bitser.serializeToBytes(before, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE);
+		NewMap after = bitser.deserializeFromBytesSimple(
+				NewMap.class,
+				bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(2, after.map.size());
 		assertEquals(10.0, after.map.get((int) 'I'));
 		assertEquals(100.0, after.map.get((int) Character.MAX_VALUE));
 
-		OldMap back = bitser.deserializeFromBytes(OldMap.class, bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE);
+		OldMap back = bitser.deserializeFromBytesSimple(
+				OldMap.class,
+				bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
 		assertEquals(before.map, back.map);
 	}
 
@@ -484,11 +536,15 @@ public class TestCollectionBackwardCompatibility {
 		IntList intList = new IntList();
 		intList.integers.add(1234);
 
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				StringList.class, bitser.serializeToBytes(intList, Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
-		assertContains(errorMessage, "convert from legacy 1234");
-		assertContains(errorMessage, "java.lang.String");
+		String errorMessage = assertThrows(
+				LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+						StringList.class,
+						bitser.serializeToBytesSimple(intList, Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
+		).getMessage();
+		assertContains(errorMessage, "convert from legacy integer 1234");
+		assertContains(errorMessage, "String");
 		assertContains(errorMessage, "StringList.strings");
 	}
 
@@ -503,9 +559,13 @@ public class TestCollectionBackwardCompatibility {
 	@Test
 	public void testForbidUuidToIntArray() {
 		Bitser bitser = new Bitser(true);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytes(
-				IntArray.class, bitser.serializeToBytes(new JustID(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
-		)).getMessage();
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.deserializeFromBytesSimple(
+						IntArray.class, bitser.serializeToBytesSimple(new JustID(), Bitser.BACKWARD_COMPATIBLE),
+						Bitser.BACKWARD_COMPATIBLE
+				)
+		).getMessage();
 		assertContains(errorMessage, "convert from legacy ");
 		assertContains(errorMessage, "int[]");
 		assertContains(errorMessage, "IntArray.integers");

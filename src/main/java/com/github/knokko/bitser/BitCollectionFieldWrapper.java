@@ -296,45 +296,48 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		deserializer.input.finishProperty();
 
 		Object array = constructCollectionWithSize(length);
-		if (field.type.isArray()) {
+		if (length == 0) return new BackArrayValue(array);
 
-
-			Object array = Array.newInstance(field.type.getComponentType(), length);
-			if (length == 0) return array;
-
-			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+		if (valuesWrapper instanceof ReferenceFieldWrapper) {
 //				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
 //						array, (ReferenceFieldWrapper) valuesWrapper, childNode
 //				));
-				throw new UnsupportedOperationException("TODO");
-			} else {
-				deserializer.arrayJobs.add(new BackReadArrayJob(
-						array, valuesWrapper, childNode
-				));
-			}
-
-			return new BackArrayValue(array);
+			throw new UnsupportedOperationException("TODO");
 		} else {
-			deserializer.input.prepareProperty("collection-size", -1);
-			int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "collection-size", deserializer.input);
-			deserializer.input.finishProperty();
+			deserializer.arrayJobs.add(new BackReadArrayJob(
+					array, valuesWrapper, childNode
+			));
+		}
 
-			Object[] array = new Object[size];
-			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
-			if (size == 0) return collection;
+		return new BackArrayValue(array);
+	}
 
-			if (valuesWrapper instanceof ReferenceFieldWrapper) {
-				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
-						array, (ReferenceFieldWrapper) valuesWrapper, childNode
-				));
-			} else {
-				deserializer.arrayJobs.add(new ReadArrayJob(
-						array, valuesWrapper, childNode
-				));
-			}
-			deserializer.populateJobs.add(new PopulateCollectionJob(collection, array, childNode));
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (!(legacyValue instanceof BackArrayValue)) {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
+					" to " + field.type.getSimpleName() + " for field " + field);
+		}
+		Object legacyArray = ((BackArrayValue) legacyValue).array;
+		int length = Array.getLength(legacyArray);
 
-			return collection;
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		if (field.type.isArray()) {
+			Object modernArray = Array.newInstance(field.type.getComponentType(), length);
+			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+					legacyArray, modernArray, valuesWrapper, childNode
+			));
+			return modernArray;
+		} else {
+			Object modernArray = Array.newInstance(valuesWrapper.field.type, length);
+			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+					legacyArray, modernArray, valuesWrapper, childNode
+			));
+			Object modernCollection = constructCollectionWithSize(length);
+			deserializer.populateJobs.add(new PopulateCollectionJob(
+					(Collection<?>) modernCollection, (Object[]) modernArray, childNode)
+			);
+			return modernCollection;
 		}
 	}
 

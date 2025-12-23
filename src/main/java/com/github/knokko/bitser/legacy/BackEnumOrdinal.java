@@ -7,4 +7,9 @@ public class BackEnumOrdinal {
 	public BackEnumOrdinal(int ordinal) {
 		this.ordinal = ordinal;
 	}
+
+	@Override
+	public String toString() {
+		return "enum ordinal " + ordinal;
+	}
 }

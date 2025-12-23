@@ -7,4 +7,9 @@ public class BackIntValue {
 	public BackIntValue(long value) {
 		this.value = value;
 	}
+
+	@Override
+	public String toString() {
+		return "integer " + value;
+	}
 }

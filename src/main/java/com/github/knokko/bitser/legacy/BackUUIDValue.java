@@ -9,4 +9,9 @@ public class BackUUIDValue {
 	public BackUUIDValue(UUID value) {
 		this.value = value;
 	}
+
+	@Override
+	public String toString() {
+		return "id " + value;
+	}
 }

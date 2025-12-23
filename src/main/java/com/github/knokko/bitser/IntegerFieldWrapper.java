@@ -87,6 +87,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 		Class<?> type = field.type;
 		if (type == byte.class || type == Byte.class) return (byte) longValue;
 		else if (type == short.class || type == Short.class) return (short) longValue;
+		else if (type == char.class || type == Character.class) return (char) longValue;
 		else if (type == int.class || type == Integer.class) return (int) longValue;
 		else if (type == long.class || type == Long.class || type == null) return longValue;
 		else throw new InvalidBitFieldException("Unexpected integer type " + type);
@@ -117,7 +118,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 			}
 			return toRightType(longValue);
 		} else {
-			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + field.type + " for field " + field);
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to integer for field " + field);
 		}
 	}
 

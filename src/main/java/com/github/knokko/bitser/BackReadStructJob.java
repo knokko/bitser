@@ -30,7 +30,9 @@ class BackReadStructJob {
 				String fieldName = "field " + legacyField.id;
 				try {
 					legacyClassInstance.hasFieldValues[legacyField.id] = true;
-					if (ReadHelper.readOptional(deserializer.input, legacyField.bitField.field.optional)) continue;
+					if (ReadHelper.readOptional(deserializer.input, legacyField.bitField.field.optional)) {
+						continue;
+					}
 					if (legacyField.bitField instanceof ReferenceFieldWrapper) {
 //						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
 //								structObject, field.classField, (ReferenceFieldWrapper) field.bitField,

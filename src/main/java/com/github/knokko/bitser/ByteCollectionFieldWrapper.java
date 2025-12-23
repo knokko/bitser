@@ -1,8 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackArrayValue;
-import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
+import com.github.knokko.bitser.legacy.*;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.IntegerField;
@@ -212,7 +211,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		deserializer.input.prepareProperty("byte-collection-length", -1);
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
 		deserializer.input.finishProperty();
-		Object value = Array.newInstance(field.type.getComponentType(), size);
+		Object value = constructCollectionWithSize(size);
 		readData(deserializer.input, value);
 		return new BackArrayValue(value);
 	}
@@ -229,7 +228,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		}
 
 		int size = Array.getLength(legacyArray);
-		Object newArray = constructCollectionWithSize(field.type, size);
+		Object newArray = Array.newInstance(field.type.getComponentType(), size);
 		for (int index = 0; index < size; index++) {
 			Object legacyValue = Array.get(legacyArray, index);
 			setFromLegacyValue(newArray, index, legacyValue);
@@ -387,7 +386,12 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	private Object convertLegacyNumber(Object legacyValue) {
 		if (legacyValue instanceof Boolean) return legacyValue;
-		Number legacyNumber = legacyValue instanceof Character ? ((int) ((char) legacyValue)) : (Number) legacyValue;
+		if (legacyValue instanceof BackBooleanValue) return ((BackBooleanValue) legacyValue).value;
+		Number legacyNumber;
+		if (legacyValue instanceof Character) legacyNumber = (int) ((char) legacyValue);
+		else if (legacyValue instanceof BackFloatValue) legacyNumber = ((BackFloatValue) legacyValue).value;
+		else if (legacyValue instanceof BackIntValue) legacyNumber = ((BackIntValue) legacyValue).value;
+		else legacyNumber = (Number) legacyValue;
 		if (field.type == byte[].class) return legacyNumber.byteValue();
 		if (field.type == short[].class) return legacyNumber.shortValue();
 		if (field.type == char[].class) return (char) legacyNumber.intValue();
