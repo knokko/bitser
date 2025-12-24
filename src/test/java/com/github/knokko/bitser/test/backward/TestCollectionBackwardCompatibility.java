@@ -94,7 +94,7 @@ public class TestCollectionBackwardCompatibility {
 
 		ShallowBefore back = bitser.deserializeFromBytesSimple(
 				ShallowBefore.class,
-				bitser.serializeToBytes(after, Bitser.BACKWARD_COMPATIBLE),
+				bitser.serializeToBytesSimple(after, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(before.sinTable, back.sinTable);

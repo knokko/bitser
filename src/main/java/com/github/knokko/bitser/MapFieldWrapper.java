@@ -2,6 +2,8 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
+import com.github.knokko.bitser.legacy.BackArrayValue;
+import com.github.knokko.bitser.legacy.BackMapValue;
 import com.github.knokko.bitser.legacy.LegacyMapInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
@@ -268,6 +270,66 @@ class MapFieldWrapper extends BitFieldWrapper {
 		deserializer.populateJobs.add(new PopulateMapJob(map, keys, values, childNode));
 
 		return map;
+	}
+
+	@Override
+	public Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		deserializer.input.prepareProperty("map-size", -1);
+		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "map-size", deserializer.input);
+		deserializer.input.finishProperty();
+
+		Object[] keys = new Object[size];
+		Object[] values = new Object[size];
+		if (size == 0) return new BackMapValue(keys, values);
+
+		if (keysWrapper instanceof ReferenceFieldWrapper) {
+//			deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+//					keys, (ReferenceFieldWrapper) keysWrapper, childNode
+//			));
+		} else {
+			deserializer.arrayJobs.add(new BackReadArrayJob(
+					keys, keysWrapper, childNode
+			));
+		}
+
+		if (valuesWrapper instanceof ReferenceFieldWrapper) {
+//			deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
+//					values, (ReferenceFieldWrapper) valuesWrapper, childNode
+//			));
+		} else {
+			deserializer.arrayJobs.add(new BackReadArrayJob(
+					values, valuesWrapper, childNode
+			));
+		}
+
+		return new BackMapValue(keys, values);
+	}
+
+	@Override
+	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
+		if (!(legacyValue instanceof BackMapValue)) {
+			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
+					" to map for field " + field);
+		}
+		BackMapValue legacyMap = (BackMapValue) legacyValue;
+		int size = legacyMap.keys.length;
+
+		Map<?, ?> modernMap = (Map<?, ?>) constructCollectionWithSize(field.type, size);
+		Object modernKeys = Array.newInstance(keysWrapper.field.type, size);
+		Object modernValues = Array.newInstance(valuesWrapper.field.type, size);
+
+		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
+		deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+				legacyMap.keys, modernKeys, keysWrapper, childNode
+		));
+		deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+				legacyMap.values, modernValues, valuesWrapper, childNode
+		));
+		deserializer.populateJobs.add(new PopulateMapJob(
+				modernMap, (Object[]) modernKeys, (Object[]) modernValues, childNode)
+		);
+		return modernMap;
 	}
 
 	private void readElementSet(

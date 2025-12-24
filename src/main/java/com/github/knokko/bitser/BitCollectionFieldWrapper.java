@@ -316,7 +316,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		if (!(legacyValue instanceof BackArrayValue)) {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
-					" to " + field.type.getSimpleName() + " for field " + field);
+					" to collection/array for field " + field);
 		}
 		Object legacyArray = ((BackArrayValue) legacyValue).array;
 		int length = Array.getLength(legacyArray);
