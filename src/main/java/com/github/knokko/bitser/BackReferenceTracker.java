@@ -128,7 +128,6 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		Object getWithOrLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
-			if (ReadHelper.readOptional(input, referenceWrapper.field.optional)) return null;
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
 			else return getUnstable(input);
 		}

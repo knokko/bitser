@@ -216,7 +216,8 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (map.isEmpty()) return;
 		if (keysWrapper instanceof ReferenceFieldWrapper) {
 			serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
-					map.keySet().toArray(), (ReferenceFieldWrapper) keysWrapper, childNode
+					map.keySet().toArray(), (ReferenceFieldWrapper) keysWrapper,
+					"this map must not contain null keys", childNode
 			));
 		} else {
 			serializer.arrayJobs.add(new WriteArrayJob(
@@ -226,7 +227,8 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
 			serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
-					map.values().toArray(), (ReferenceFieldWrapper) valuesWrapper, childNode
+					map.values().toArray(), (ReferenceFieldWrapper) valuesWrapper,
+					"this map must not contain null values", childNode
 			));
 		} else {
 			serializer.arrayJobs.add(new WriteArrayJob(

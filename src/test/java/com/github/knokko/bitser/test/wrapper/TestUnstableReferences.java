@@ -2,6 +2,7 @@ package com.github.knokko.bitser.test.wrapper;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
+import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
@@ -421,5 +422,28 @@ public class TestUnstableReferences {
 		).getMessage();
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
 		assertContains(errorMessage, "-> type");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class RequiredReferenceList {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "label")
+		final String target = "abc";
+
+		@BitField(id = 1)
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "label")
+		String[] references = { target, null };
+	}
+
+	@Test
+	public void testForbidNullReferences() {
+		String errorMessage = assertThrows(
+				InvalidBitValueException.class,
+				() -> new Bitser(true).serializeToBytesSimple(new RequiredReferenceList())
+		).getMessage();
+		assertContains(errorMessage, "RequiredReferenceList -> references");
+		assertContains(errorMessage, "must not have null elements");
 	}
 }

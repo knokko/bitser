@@ -113,13 +113,6 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		void save(ReferenceFieldWrapper referenceWrapper, Object reference, BitOutputStream output) throws Throwable {
-			if (referenceWrapper.field.optional) {
-				output.prepareProperty("optional", -1);
-				output.write(reference != null);
-				output.finishProperty();
-				if (reference == null) return;
-			} else if (reference == null) throw new InvalidBitValueException("Reference must not be null");
-
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) {
 				BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
 				UUID id = valueInfo.getStableId(reference);
@@ -147,7 +140,6 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		Object get(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
-			if (ReadHelper.readOptional(input, referenceWrapper.field.optional)) return null;
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
 			else return getUnstable(input);
 		}

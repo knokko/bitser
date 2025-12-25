@@ -19,6 +19,7 @@ class BackReadArrayReferenceJob {
 
 		int size = Array.getLength(array);
 		for (int index = 0; index < size; index++) {
+			if (ReadHelper.readOptional(deserializer.input, elementsWrapper.field.optional)) continue;
 			Array.set(array, index, targets.getWithOrLegacy(elementsWrapper, deserializer.input));
 		}
 	}

@@ -6,11 +6,16 @@ class WriteArrayReferenceJob {
 
 	final Object array;
 	final ReferenceFieldWrapper elementsWrapper;
+	final String nullErrorMessage;
 	final RecursionNode node;
 
-	WriteArrayReferenceJob(Object array, ReferenceFieldWrapper elementsWrapper, RecursionNode node) {
+	WriteArrayReferenceJob(
+			Object array, ReferenceFieldWrapper elementsWrapper,
+			String nullErrorMessage, RecursionNode node
+	) {
 		this.array = array;
 		this.elementsWrapper = elementsWrapper;
+		this.nullErrorMessage = nullErrorMessage;
 		this.node = node;
 	}
 
@@ -18,7 +23,11 @@ class WriteArrayReferenceJob {
 		int length = Array.getLength(array);
 		ReferenceTracker.LabelTargets targets = serializer.references.get(elementsWrapper);
 		for (int index = 0; index < length; index++) {
-			targets.save(elementsWrapper, Array.get(array, index), serializer.output);
+			Object reference = Array.get(array, index);
+			if (WriteHelper.writeOptional(
+					serializer.output, reference, elementsWrapper.field.optional, nullErrorMessage)
+			) continue;
+			targets.save(elementsWrapper, reference, serializer.output);
 		}
 	}
 }

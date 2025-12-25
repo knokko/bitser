@@ -210,7 +210,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			if (length == 0) return;
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
-						value, (ReferenceFieldWrapper) valuesWrapper, childNode
+						value, (ReferenceFieldWrapper) valuesWrapper,
+						"this array must not have null elements", childNode
 				));
 			} else {
 				serializer.arrayJobs.add(new WriteArrayJob(
@@ -231,7 +232,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			if (collection.isEmpty()) return;
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				serializer.arrayReferenceJobs.add(new WriteArrayReferenceJob(
-						collection.toArray(), (ReferenceFieldWrapper) valuesWrapper, childNode
+						collection.toArray(), (ReferenceFieldWrapper) valuesWrapper,
+						"this collection must not have null elements", childNode
 				));
 			} else {
 				serializer.arrayJobs.add(new WriteArrayJob(
