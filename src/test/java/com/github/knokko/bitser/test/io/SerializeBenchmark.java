@@ -412,27 +412,17 @@ public class SerializeBenchmark {
 		long handwrittenReadTime3 = System.nanoTime() - startHandwrittenRead3;
 		System.out.println("Needed " + (handwrittenReadTime3 / 1000_000) + " ms to read handwritten (3)");
 
-		long startOldWrite = System.nanoTime();
-		byte[] oldBytes = bitser.serializeToBytes(root);
-		long writeOldTime = System.nanoTime() - startOldWrite;
+		long startBackWrite = System.nanoTime();
+		byte[] backBytes = bitser.serializeToBytesSimple(root, Bitser.BACKWARD_COMPATIBLE);
+		long writeBackTime = System.nanoTime() - startBackWrite;
+		System.out.println("Needed " + (writeBackTime / 1000_000) + " ms to write new backward " + backBytes.length + " bytes");
 
-		System.out.println("Needed " + (writeOldTime / 1000_000) + " ms to write old " + oldBytes.length + " bytes");
-
-		long startOldRead = System.nanoTime();
-		bitser.deserializeFromBytes(RootStruct.class, oldBytes);
-		long readOldTime = System.nanoTime() - startOldRead;
-		System.out.println("Needed " + (readOldTime / 1000_000) + " ms to read old ");
-
-		long startOldBackWrite = System.nanoTime();
-		byte[] oldBackBytes = bitser.serializeToBytes(root, Bitser.BACKWARD_COMPATIBLE);
-		long writeOldBackTime = System.nanoTime() - startOldBackWrite;
-
-		System.out.println("Needed " + (writeOldBackTime / 1000_000) + " ms to write old backward " + oldBackBytes.length + " bytes");
-
-		long startOldBackRead = System.nanoTime();
-		bitser.deserializeFromBytes(RootStruct.class, oldBackBytes, Bitser.BACKWARD_COMPATIBLE);
-		long readOldBackTime = System.nanoTime() - startOldBackRead;
-		System.out.println("Needed " + (readOldBackTime / 1000_000) + " ms to read old backward");
+		profiler.start();
+		long startBackRead = System.nanoTime();
+		bitser.deserializeFromBytesSimple(RootStruct.class, backBytes, Bitser.BACKWARD_COMPATIBLE);
+		long readBackTime = System.nanoTime() - startBackRead;
+		profiler.stop();
+		System.out.println("Needed " + (readBackTime / 1000_000) + " ms to read new backward");
 
 		storage.getThreadStorage(Thread.currentThread().getId()).print(System.out, 10, 1.0);
 	}
