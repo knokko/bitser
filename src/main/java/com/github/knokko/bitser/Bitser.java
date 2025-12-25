@@ -94,6 +94,7 @@ public class Bitser {
 		if (backwardCompatible) {
 			LegacyClasses legacy = new LegacyClasses();
 
+			// TODO Eliminate
 			legacy.setRoot(Recursor.compute(
 					legacy, new LegacyInfo(cache, new FunctionContext(this, true, withParameters)),
 					recursor -> wrapper.registerClasses(object, recursor)
@@ -286,6 +287,7 @@ public class Bitser {
 //	}
 
 	public boolean deepEquals(Object a, Object b) {
+		// TODO Recursive -> iterative
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
 		BitStructWrapper<?> wrapperA = cache.getWrapper(a.getClass());
@@ -294,6 +296,7 @@ public class Bitser {
 	}
 
 	public int hashCode(Object value) {
+		// TODO Recursive -> iterative
 		if (value == null) return 0;
 		return cache.getWrapper(value.getClass()).hashCode(value, cache);
 	}

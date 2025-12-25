@@ -1,7 +1,6 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -48,7 +47,15 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 	}
 
-	LabelTargets get(ReferenceFieldWrapper referenceWrapper) {
+	Object get(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
+		return get(referenceWrapper).get(referenceWrapper, input);
+	}
+
+	void save(ReferenceFieldWrapper referenceWrapper, Object reference, BitOutputStream output) throws Throwable {
+		get(referenceWrapper).save(referenceWrapper, reference, output);
+	}
+
+	private LabelTargets get(ReferenceFieldWrapper referenceWrapper) {
 		if (referenceWrapper instanceof StableReferenceFieldWrapper) {
 			BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
 			if (valueInfo == null) {

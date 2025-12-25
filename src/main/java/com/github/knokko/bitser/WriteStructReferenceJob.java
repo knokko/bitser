@@ -13,6 +13,6 @@ class WriteStructReferenceJob {
 	}
 
 	void save(Serializer serializer) throws Throwable {
-		serializer.references.get(fieldWrapper).save(fieldWrapper, value, serializer.output);
+		serializer.references.save(fieldWrapper, value, serializer.output);
 	}
 }

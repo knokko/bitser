@@ -16,12 +16,10 @@ class ReadArrayReferenceJob {
 	}
 
 	void resolve(Deserializer deserializer) throws Throwable {
-		ReferenceTracker.LabelTargets targets = deserializer.references.get(elementsWrapper);
-
 		int size = Array.getLength(array);
 		for (int index = 0; index < size; index++) {
 			if (ReadHelper.readOptional(deserializer.input, elementsWrapper.field.optional)) continue;
-			Array.set(array, index, targets.get(elementsWrapper, deserializer.input));
+			Array.set(array, index, deserializer.references.get(elementsWrapper, deserializer.input));
 		}
 	}
 }

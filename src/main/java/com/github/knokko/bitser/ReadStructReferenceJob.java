@@ -17,6 +17,6 @@ class ReadStructReferenceJob {
 	}
 
 	void resolve(Deserializer deserializer) throws Throwable {
-		classField.set(structObject, deserializer.references.get(fieldWrapper).get(fieldWrapper, deserializer.input));
+		classField.set(structObject, deserializer.references.get(fieldWrapper, deserializer.input));
 	}
 }

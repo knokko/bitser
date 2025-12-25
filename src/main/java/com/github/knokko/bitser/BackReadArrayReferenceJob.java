@@ -15,12 +15,10 @@ class BackReadArrayReferenceJob {
 	}
 
 	void resolve(BackDeserializer deserializer) throws Throwable {
-		BackReferenceTracker.LabelTargets targets = deserializer.references.get(elementsWrapper);
-
 		int size = Array.getLength(array);
 		for (int index = 0; index < size; index++) {
 			if (ReadHelper.readOptional(deserializer.input, elementsWrapper.field.optional)) continue;
-			Array.set(array, index, targets.getWithOrLegacy(elementsWrapper, deserializer.input));
+			Array.set(array, index, deserializer.references.getWithOrLegacy(elementsWrapper, deserializer.input));
 		}
 	}
 }

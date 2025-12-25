@@ -18,7 +18,7 @@ class BackReadStructReferenceJob {
 	}
 
 	void resolve(BackDeserializer deserializer) throws Throwable {
-		legacyValuesArray[legacyValuesIndex] = deserializer.references.get(legacyWrapper).getWithOrLegacy(
+		legacyValuesArray[legacyValuesIndex] = deserializer.references.getWithOrLegacy(
 				legacyWrapper, deserializer.input
 		);
 	}

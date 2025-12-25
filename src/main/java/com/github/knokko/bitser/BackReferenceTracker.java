@@ -22,8 +22,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 
 	@Override
 	void registerTarget(String label, Object target) {
-		BackReferenceTracker.LabelTargets entries = labels.computeIfAbsent(label, LabelTargets::new);
-		entries.registerWith(target, cache);
+		labels.computeIfAbsent(label, LabelTargets::new).registerWith(target, cache);
 	}
 
 	void setWithObjects(List<Object> withObjects) {
@@ -34,10 +33,8 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 	}
 
-	// TODO Delete?
 	void registerLegacyTarget(String label, Object target) {
-		LabelTargets entries = labels.computeIfAbsent(label, LabelTargets::new);
-		entries.registerLegacy(target);
+		labels.computeIfAbsent(label, LabelTargets::new).registerLegacy(target);
 	}
 
 	void handleWithJobs() {
@@ -77,14 +74,14 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		return modernReference;
 	}
 
-	LabelTargets get(ReferenceFieldWrapper referenceWrapper) {
+	Object getWithOrLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
 		LabelTargets targets = labels.get(referenceWrapper.label);
 		if (targets == null) {
 			throw new ReferenceBitserException(
 					"Can't find legacy @ReferenceFieldTarget with label " + referenceWrapper.label
 			);
 		}
-		return targets;
+		return targets.getWithOrLegacy(referenceWrapper, input);
 	}
 
 	static class LabelTargets {
