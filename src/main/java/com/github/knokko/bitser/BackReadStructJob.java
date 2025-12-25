@@ -20,14 +20,9 @@ class BackReadStructJob {
 	void read(BackDeserializer deserializer) {
 		for (int hierarchyIndex = 0; hierarchyIndex < legacyInfo.classHierarchy.size(); hierarchyIndex++) {
 			LegacyClass legacyClass = legacyInfo.classHierarchy.get(hierarchyIndex);
-			//SingleClassWrapper modernClass = modernInfo.classHierarchy.get(hierarchyIndex);
 			BackClassInstance legacyClassInstance = legacyObject.hierarchy[hierarchyIndex];
-//			Object[] functionValues;
-//			if (structClass.functions.isEmpty()) functionValues = new Object[0];
-//			else functionValues = new Object[structClass.functions.get(structClass.functions.size() - 1).id + 1];
 
 			for (LegacyField legacyField : legacyClass.fields) {
-
 				String fieldName = "field " + legacyField.id;
 				try {
 					legacyClassInstance.hasFieldValues[legacyField.id] = true;
@@ -62,32 +57,37 @@ class BackReadStructJob {
 					throw new RecursorException(node.generateTrace(fieldName), failed);
 				}
 			}
-//			for (SingleClassWrapper.FunctionWrapper function : structClass.functions) {
-//				try {
-//					if (ReadHelper.readOptional(deserializer.input, function.bitField.field.optional)) continue;
-//					if (function.bitField instanceof ReferenceFieldWrapper) {
-//						throw new InvalidBitFieldException("Bit functions returning references are not supported");
-//					} else {
-//						String methodName = function.classMethod.getName();
-//						deserializer.input.pushContext(node, methodName);
-//						functionValues[function.id] = function.bitField.read(deserializer, node, methodName);
-//						deserializer.input.popContext(node, methodName);
-//
-//
-//						if (function.bitField.field.referenceTargetLabel != null) {
-//							throw new InvalidBitFieldException(
-//									"Bit functions returning reference targets are not supported"
-//							);
-//						}
-//					}
-//				} catch (Throwable failed) {
-//					throw new RecursorException(node.generateTrace(function.classMethod.getName()), failed);
-//				}
-//			}
-//
-//			if (structObject instanceof BitPostInit) {
-//				serializedFunctionValues.put(structClass.myClass, functionValues);
-//			}
+
+			// TODO Try code reuse
+			for (LegacyField legacyFunction : legacyClass.functions) {
+				String functionName = "function " + legacyFunction.id;
+				try {
+					legacyClassInstance.hasFunctionValues[legacyFunction.id] = true;
+					if (ReadHelper.readOptional(deserializer.input, legacyFunction.bitField.field.optional)) {
+						continue;
+					}
+
+					if (legacyFunction.bitField instanceof ReferenceFieldWrapper) {
+						deserializer.structReferenceJobs.add(new BackReadStructReferenceJob(
+								legacyClassInstance.functionValues, legacyFunction.id,
+								(ReferenceFieldWrapper) legacyFunction.bitField, new RecursionNode(node, functionName)
+						));
+					} else {
+						deserializer.input.pushContext(node, functionName);
+						Object value = legacyFunction.bitField.read(deserializer, node, functionName);
+						deserializer.input.popContext(node, functionName);
+
+						legacyClassInstance.functionValues[legacyFunction.id] = value;
+						if (legacyFunction.bitField instanceof UUIDFieldWrapper &&
+								((UUIDFieldWrapper) legacyFunction.bitField).isStableReferenceId
+						) {
+							legacyObject.stableID = ((BackUUIDValue) value).value;
+						}
+					}
+				} catch (Throwable failed) {
+					throw new RecursorException(node.generateTrace(functionName), failed);
+				}
+			}
 		}
 
 //		if (structObject instanceof BitPostInit) {

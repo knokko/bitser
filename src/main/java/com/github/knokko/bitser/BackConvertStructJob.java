@@ -6,6 +6,9 @@ import com.github.knokko.bitser.legacy.BackReference;
 import com.github.knokko.bitser.legacy.BackStructInstance;
 import com.github.knokko.bitser.util.RecursorException;
 
+import java.util.HashMap;
+import java.util.Map;
+
 class BackConvertStructJob {
 
 	final Object modernObject;
@@ -25,9 +28,14 @@ class BackConvertStructJob {
 	}
 
 	void convert(BackDeserializer deserializer) {
+		Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
+		Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
+		Map<Class<?>, Object[]> modernFunctionValues = new HashMap<>();
+
 		for (int hierarchyIndex = 0; hierarchyIndex < modernInfo.classHierarchy.size(); hierarchyIndex++) {
 			SingleClassWrapper modernClass = modernInfo.classHierarchy.get(hierarchyIndex);
 			BackClassInstance legacyValues = legacyObject.hierarchy[hierarchyIndex];
+
 			for (SingleClassWrapper.FieldWrapper modernField : modernClass.fields) {
 				String fieldName = modernField.classField.getName();
 				try {
@@ -71,6 +79,81 @@ class BackConvertStructJob {
 					throw new RecursorException(node.generateTrace(fieldName), failed);
 				}
 			}
+
+			if (modernObject instanceof BitPostInit) {
+				Object[] currentModernFunctionValues = new Object[legacyValues.functionValues.length];
+
+				legacyFieldValues.put(modernClass.myClass, legacyValues.fieldValues);
+				legacyFunctionValues.put(modernClass.myClass, legacyValues.functionValues);
+				modernFunctionValues.put(modernClass.myClass, currentModernFunctionValues);
+
+				for (int functionID = 0; functionID < currentModernFunctionValues.length; functionID++) {
+					if (!legacyValues.hasFunctionValues[functionID]) continue;
+					Object legacyFunctionValue = legacyValues.functionValues[functionID];
+
+					// TODO Turn modernClass.functions into array?
+					SingleClassWrapper.FunctionWrapper modernFunction = null;
+					for (SingleClassWrapper.FunctionWrapper candidateFunction : modernClass.functions) {
+						if (candidateFunction.id == functionID) {
+							modernFunction = candidateFunction;
+							break;
+						}
+					}
+
+					if (modernFunction == null) {
+						if (legacyFunctionValue instanceof BackReference) {
+							deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
+									currentModernFunctionValues, functionID,
+									((BackReference) legacyFunctionValue).reference,
+									new RecursionNode(node, "legacy function " + functionID)
+							));
+						} else {
+							currentModernFunctionValues[functionID] = legacyFunctionValue;
+						}
+					} else {
+						try {
+							if (legacyFunctionValue == null) {
+								if (modernFunction.bitField.field.optional) continue;
+								else throw new LegacyBitserException(
+										"Can't store legacy null for " + modernFunction.classMethod.getName() +
+												" for function " + modernFunction
+								);
+							}
+
+							if (modernFunction.bitField instanceof ReferenceFieldWrapper) {
+								if (legacyFunctionValue instanceof BackReference) {
+									deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
+											currentModernFunctionValues, modernFunction.id,
+											((BackReference) legacyFunctionValue).reference,
+											new RecursionNode(node, modernFunction.classMethod.getName())
+									));
+								} else {
+									throw new LegacyBitserException(
+											"Can't store legacy " + legacyFunctionValue +
+													" as result of reference function " + modernFunction.classMethod
+									);
+								}
+							} else {
+								Object modernFunctionValue = modernFunction.bitField.convert(
+										deserializer, legacyFunctionValue, node, modernFunction.classMethod.getName()
+								);
+								currentModernFunctionValues[modernFunction.id] = modernFunctionValue;
+							}
+						} catch (Throwable failed) {
+							throw new RecursorException(node.generateTrace(modernFunction.classMethod.getName()), failed);
+						}
+
+					}
+				}
+			}
+		}
+
+		if (modernObject instanceof BitPostInit) {
+			BitPostInit.Context context = new BitPostInit.Context(
+					deserializer.bitser, true, modernFunctionValues,
+					legacyFieldValues, legacyFunctionValues, deserializer.withParameters
+			);
+			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) modernObject, context));
 		}
 	}
 }

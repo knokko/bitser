@@ -64,7 +64,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 		if (value instanceof SimpleLazyBits) {
 			SimpleLazyBits<?> lazy = (SimpleLazyBits<?>) value;
 			List<Object> options = new ArrayList<>();
-			//if (recursor.info.legacy != null) options.add(Bitser.BACKWARD_COMPATIBLE);
+			if (serializer.backwardCompatible) options.add(Bitser.BACKWARD_COMPATIBLE);
 			if (serializer.forbidLazySaving) options.add(Bitser.FORBID_LAZY_SAVING);
 			if (serializer.floatDistribution != null) options.add(serializer.floatDistribution);
 			if (serializer.intDistribution != null) options.add(serializer.intDistribution);
@@ -126,7 +126,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 					modernObject, modernInfo, legacyObject,
 					new RecursionNode(parentNode, fieldName)
 			));
-			return modernObject;
+			return new SimpleLazyBits<>(modernObject);
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + rawLegacyInstance + " to lazy for field " + field);
 		}

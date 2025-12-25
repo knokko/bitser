@@ -86,7 +86,7 @@ public class TestLazyFieldWrapper {
 		assertEquals("simple", incompatible.lazy.get().words.get(0));
 		assertEquals("test", incompatible.lazy.get().words.get(1));
 
-		SimpleOuterStruct compatible = bitser.deepCopy(input, Bitser.BACKWARD_COMPATIBLE);
+		SimpleOuterStruct compatible = bitser.stupidDeepCopy(input, Bitser.BACKWARD_COMPATIBLE);
 		DifferentOuterStruct different2 = bitser.deserializeFromBytesSimple(
 				DifferentOuterStruct.class,
 				bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE),
@@ -144,8 +144,7 @@ public class TestLazyFieldWrapper {
 		assertNull(incompatible.lazy);
 		assertEquals(12, incompatible.suffix);
 
-		// TODO Backward compatible stupidDeepCopy
-		OptionalOuterStruct compatible = new Bitser(true).deepCopy(outer, Bitser.BACKWARD_COMPATIBLE);
+		OptionalOuterStruct compatible = new Bitser(true).stupidDeepCopy(outer, Bitser.BACKWARD_COMPATIBLE);
 		assertNull(compatible.lazy);
 		assertEquals(12, compatible.suffix);
 
@@ -192,10 +191,9 @@ public class TestLazyFieldWrapper {
 
 		Bitser bitser = new Bitser(true);
 
-		// TODO Backward-compatible stupid deepcopy
-		SimpleOuterStruct output = bitser.deserializeFromBytes(
+		SimpleOuterStruct output = bitser.deserializeFromBytesSimple(
 				SimpleOuterStruct.class,
-				bitser.serializeToBytes(input, Bitser.BACKWARD_COMPATIBLE),
+				bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 
@@ -228,13 +226,11 @@ public class TestLazyFieldWrapper {
 		input.lazy.get().words.add("not anymore");
 
 		Bitser bitser = new Bitser(true);
-		// TODO Backward-compatible stupid deepcopy
-		byte[] bytes = bitser.serializeToBytes(input, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE);
 
-		// TODO Backward-compatible stupid deepcopy
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytes(StringStruct1.class, bytes, Bitser.BACKWARD_COMPATIBLE)
+				() -> bitser.deserializeFromBytesSimple(StringStruct1.class, bytes, Bitser.BACKWARD_COMPATIBLE)
 		).getMessage();
 		assertContains(errorMessage, "LegacyLazyBytes");
 		assertContains(errorMessage, "java.lang.String");
@@ -246,9 +242,10 @@ public class TestLazyFieldWrapper {
 		Bitser bitser = new Bitser(false);
 		OptionalOuterStruct optional = new OptionalOuterStruct();
 		optional.suffix = 456;
-		// TODO Backward-compatible stupid deepcopy
-		byte[] bytes = bitser.serializeToBytes(optional, Bitser.BACKWARD_COMPATIBLE);
-		StringStruct0 stringStruct = bitser.deserializeFromBytes(StringStruct0.class, bytes, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.serializeToBytesSimple(optional, Bitser.BACKWARD_COMPATIBLE);
+		StringStruct0 stringStruct = bitser.deserializeFromBytesSimple(
+				StringStruct0.class, bytes, Bitser.BACKWARD_COMPATIBLE
+		);
 		assertNull(stringStruct.test);
 		assertEquals(456, stringStruct.suffix);
 	}
@@ -269,9 +266,10 @@ public class TestLazyFieldWrapper {
 		Bitser bitser = new Bitser(false);
 		OptionalOuterStruct optional = new OptionalOuterStruct();
 		optional.suffix = 123;
-		// TODO Backward-compatible stupid deepcopy
-		byte[] bytes = bitser.serializeToBytes(optional, Bitser.BACKWARD_COMPATIBLE);
-		NonLazyOptional nonLazy = bitser.deserializeFromBytes(NonLazyOptional.class, bytes, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.serializeToBytesSimple(optional, Bitser.BACKWARD_COMPATIBLE);
+		NonLazyOptional nonLazy = bitser.deserializeFromBytesSimple(
+				NonLazyOptional.class, bytes, Bitser.BACKWARD_COMPATIBLE
+		);
 		assertNull(nonLazy.inner);
 		assertEquals((byte) 123, nonLazy.suffix);
 	}

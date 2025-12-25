@@ -26,8 +26,10 @@ class BackDeserializer {
 	final ArrayList<BackConvertStructJob> convertStructJobs = new ArrayList<>();
 	final ArrayList<BackConvertArrayJob> convertArrayJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructReferenceJob> convertStructReferenceJobs = new ArrayList<>();
+	final ArrayList<BackConvertStructFunctionReferenceJob> convertStructFunctionReferenceJobs = new ArrayList<>();
 	final ArrayList<BackConvertArrayReferenceJob> convertArrayReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
+	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
 
 	final BackReferenceTracker references;
 
@@ -131,6 +133,15 @@ class BackDeserializer {
 		}
 		convertStructReferenceJobs.clear();
 
+		for (BackConvertStructFunctionReferenceJob job : convertStructFunctionReferenceJobs) {
+			try {
+				job.convert(this);
+			} catch (Throwable failed) {
+				throw new RecursorException(job.node.generateTrace(null), failed);
+			}
+		}
+		convertStructFunctionReferenceJobs.clear();
+
 		for (BackConvertArrayReferenceJob job : convertArrayReferenceJobs) {
 			try {
 				job.convert(this);
@@ -150,5 +161,10 @@ class BackDeserializer {
 			}
 		}
 		populateJobs.clear();
+
+		for (PostInitJob job : postInitJobs) {
+			job.structObject.postInit(job.context);
+		}
+		postInitJobs.clear();
 	}
 }

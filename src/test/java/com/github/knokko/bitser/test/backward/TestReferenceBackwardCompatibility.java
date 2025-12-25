@@ -4,9 +4,7 @@ import com.github.knokko.bitser.BitPostInit;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.LegacyStructInstance;
-import com.github.knokko.bitser.legacy.LegacyValues;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
+import com.github.knokko.bitser.legacy.*;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.options.WithParameter;
 import org.junit.jupiter.api.Test;
@@ -202,7 +200,8 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			best = (NewDummy) context.legacyFunctionValues.get(ReferenceMethodNew.class)[0];
+			assertInstanceOf(BackReference.class, context.legacyFunctionValues.get(ReferenceMethodNew.class)[0]);
+			best = (NewDummy) context.functionValues.get(ReferenceMethodNew.class)[0];
 		}
 	}
 
@@ -219,10 +218,10 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			LegacyStructInstance legacyDummy = (LegacyStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
-			LegacyValues legacyValues = legacyDummy.valuesHierarchy.get(0);
-			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hadValues);
-			int x = (int) (long) legacyValues.values[2];
+			BackStructInstance legacyDummy = (BackStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
+			BackClassInstance legacyValues = legacyDummy.hierarchy[0];
+			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hasFieldValues);
+			int x = (int) ((BackIntValue) legacyValues.fieldValues[2]).value;
 			//noinspection SuspiciousNameCombination
 			best = new NewDummy(x, x);
 		}
@@ -641,7 +640,7 @@ public class TestReferenceBackwardCompatibility {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class NonReferenceFunction {
+	private static class NonReferenceFunction implements BitPostInit {
 
 		@BitField(id = 0)
 		Dummy target;
@@ -651,10 +650,13 @@ public class TestReferenceBackwardCompatibility {
 		Dummy reference() {
 			return new Dummy(65);
 		}
+
+		@Override
+		public void postInit(Context context) {}
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class ReferenceFunction {
+	private static class ReferenceFunction implements BitPostInit {
 
 		@BitField(id = 0)
 		@ReferenceFieldTarget(label = "test")
@@ -666,6 +668,9 @@ public class TestReferenceBackwardCompatibility {
 		Dummy reference() {
 			return target;
 		}
+
+		@Override
+		public void postInit(Context context) {}
 	}
 
 	@Test
@@ -675,7 +680,7 @@ public class TestReferenceBackwardCompatibility {
 		unstable.target = new Dummy(45);
 
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class,
+				LegacyBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(
 						NonReferenceFunction.class,
 						bitser.serializeToBytesSimple(unstable, Bitser.BACKWARD_COMPATIBLE),
@@ -692,7 +697,7 @@ public class TestReferenceBackwardCompatibility {
 		simple.target = new Dummy(2);
 
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class,
+				LegacyBitserException.class,
 				() -> bitser.deserializeFromBytesSimple(
 						ReferenceFunction.class,
 						bitser.serializeToBytesSimple(simple, Bitser.BACKWARD_COMPATIBLE),
@@ -738,8 +743,10 @@ public class TestReferenceBackwardCompatibility {
 	private static class OptionalNonReference {
 
 		@BitField(id = 0)
+		@SuppressWarnings("unused")
 		Dummy target;
 
+		@SuppressWarnings("unused")
 		@BitField(id = 1, optional = true)
 		Dummy reference;
 	}
