@@ -82,9 +82,6 @@ class BackConvertStructJob {
 						modernField.classField.set(modernObject, modernFieldValue);
 						if (modernField.bitField.field.referenceTargetLabel != null) {
 							deserializer.references.registerModern(legacyFieldValue, modernFieldValue);
-							// TODO Test rename reference labels
-							// TODO Test case where the legacy value is a reference target, but the modern value is not
-							// TODO Test case where the legacy value is no reference target, but the modern value is
 						}
 					}
 				} catch (Throwable failed) {

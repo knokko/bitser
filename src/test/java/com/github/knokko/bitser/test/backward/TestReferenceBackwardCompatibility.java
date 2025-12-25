@@ -1006,4 +1006,122 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(1, copy.reference1.size());
 		assertEquals(1, copy.reference2.size());
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class BeforeRename {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "old")
+		final StableDummy target = new StableDummy(4.5);
+
+		@BitField(id = 1)
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "old")
+		final StableDummy unstable = target;
+
+		@BitField(id = 2)
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = true, label = "old")
+		final StableDummy stable = target;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class AfterRename {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "new")
+		StableDummy target;
+
+		@BitField(id = 1)
+		@ReferenceField(stable = false, label = "new")
+		StableDummy unstable;
+
+		@BitField(id = 2)
+		@ReferenceField(stable = true, label = "new")
+		StableDummy stable;
+	}
+
+	@Test
+	public void testRenameReferenceLabels() {
+		Bitser bitser = new Bitser(false);
+		BeforeRename before = new BeforeRename();
+		AfterRename notBackward = bitser.deserializeFromBytesSimple(
+				AfterRename.class,
+				bitser.serializeToBytesSimple(before)
+		);
+
+		assertEquals(4.5, notBackward.target.rating);
+		assertSame(notBackward.target, notBackward.unstable);
+		assertSame(notBackward.target, notBackward.stable);
+
+		AfterRename backward = bitser.deserializeFromBytesSimple(
+				AfterRename.class,
+				bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
+		assertEquals(4.5, backward.target.rating);
+		assertSame(backward.target, backward.unstable);
+		assertSame(backward.target, backward.stable);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class NoTargetYet {
+
+		@BitField(id = 0)
+		StableDummy noTarget;
+
+		@BitField(id = 1, optional = true)
+		StableDummy noReference1;
+
+		@SuppressWarnings("unused")
+		@BitField(id = 2, optional = true)
+		StableDummy noReference2;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class IsTargetNow {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "dummies")
+		StableDummy target;
+
+		@BitField(id = 1, optional = true)
+		@ReferenceField(stable = false, label = "dummies")
+		StableDummy reference;
+
+		@BitField(id = 2, optional = true)
+		@ReferenceField(stable = true, label = "dummies")
+		StableDummy reference2;
+	}
+
+	@Test
+	public void testSimpleToTarget() {
+		NoTargetYet simple = new NoTargetYet();
+		simple.noTarget = new StableDummy(-2.5);
+
+		Bitser bitser = new Bitser(true);
+		IsTargetNow target = bitser.deserializeFromBytesSimple(
+				IsTargetNow.class,
+				bitser.serializeToBytesSimple(simple, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
+		assertEquals(-2.5, target.target.rating);
+		assertNull(target.reference);
+		assertNull(target.reference2);
+	}
+
+	@Test
+	public void testTargetToSimple() {
+		IsTargetNow target = new IsTargetNow();
+		target.target = new StableDummy(1.0);
+
+		Bitser bitser = new Bitser(false);
+		NoTargetYet nope = bitser.deserializeFromBytesSimple(
+				NoTargetYet.class,
+				bitser.serializeToBytesSimple(target, Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		);
+		assertEquals(1.0, nope.noTarget.rating);
+		assertNull(nope.noReference1);
+	}
 }
