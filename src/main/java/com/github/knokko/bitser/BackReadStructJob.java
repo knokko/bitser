@@ -1,7 +1,9 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.legacy.BackClassInstance;
+import com.github.knokko.bitser.legacy.BackReference;
 import com.github.knokko.bitser.legacy.BackStructInstance;
+import com.github.knokko.bitser.legacy.BackUUIDValue;
 import com.github.knokko.bitser.util.RecursorException;
 
 class BackReadStructJob {
@@ -34,19 +36,27 @@ class BackReadStructJob {
 						continue;
 					}
 					if (legacyField.bitField instanceof ReferenceFieldWrapper) {
-//						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
-//								structObject, field.classField, (ReferenceFieldWrapper) field.bitField,
-//								new RecursionNode(node, fieldName))
-//						);
+						deserializer.structReferenceJobs.add(new BackReadStructReferenceJob(
+								legacyClassInstance.fieldValues, legacyField.id,
+								(ReferenceFieldWrapper) legacyField.bitField, new RecursionNode(node, fieldName)
+						));
 					} else {
 						deserializer.input.pushContext(node, fieldName);
 						Object value = legacyField.bitField.read(deserializer, node, fieldName);
 						deserializer.input.popContext(node, fieldName);
 
 						legacyClassInstance.fieldValues[legacyField.id] = value;
-//						if (field.bitField.field.referenceTargetLabel != null) {
-//							deserializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
-//						}
+						if (legacyField.bitField instanceof UUIDFieldWrapper &&
+								((UUIDFieldWrapper) legacyField.bitField).isStableReferenceId
+						) {
+							legacyObject.stableID = ((BackUUIDValue) value).value;
+						}
+
+						if (legacyField.bitField.field.referenceTargetLabel != null) {
+							deserializer.references.registerLegacyTarget(
+									legacyField.bitField.field.referenceTargetLabel, value
+							);
+						}
 					}
 				} catch (Throwable failed) {
 					throw new RecursorException(node.generateTrace(fieldName), failed);

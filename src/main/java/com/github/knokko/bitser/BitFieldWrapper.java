@@ -127,13 +127,9 @@ abstract class BitFieldWrapper {
 
 	abstract Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable;
 
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		throw new UnsupportedOperationException("TODO");
-	}
+	abstract Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable;
 
-	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		throw new UnsupportedOperationException("TODO");
-	}
+	abstract Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName);
 
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (!field.optional && value == null) {

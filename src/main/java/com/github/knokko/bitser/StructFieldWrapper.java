@@ -232,7 +232,6 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + field.type); // TODO Test this
 	}
 
-
 	@Override
 	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object value, Consumer<Object> setValue) {
 		if (value == null) {

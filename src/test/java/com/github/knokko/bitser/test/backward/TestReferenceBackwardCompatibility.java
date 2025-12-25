@@ -501,7 +501,7 @@ public class TestReferenceBackwardCompatibility {
 		oldRoot.friends.add(new FriendWrapper(new Dummy(31), oldRoot.targets[0].dummy));
 		oldRoot.targets[1] = new OldTargetWrapper(new StableDummy(99), oldRoot.friends.get(0).friend);
 
-		NewNestedRoot newRoot = bitser.deserializeFromBytes(NewNestedRoot.class, bitser.serializeToBytes(
+		NewNestedRoot newRoot = bitser.deserializeFromBytesSimple(NewNestedRoot.class, bitser.serializeToBytesSimple(
 				oldRoot, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(4.5, newRoot.stableRoot.rating);
