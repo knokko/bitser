@@ -229,7 +229,9 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			));
 			return modernObject;
 		}
-		throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to " + field.type); // TODO Test this
+		throw new LegacyBitserException(
+				"Can't convert from legacy " + legacyValue + " to " + field.type + " for field " + field
+		);
 	}
 
 	@Override

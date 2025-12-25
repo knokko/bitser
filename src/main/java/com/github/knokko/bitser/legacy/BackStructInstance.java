@@ -13,4 +13,9 @@ public class BackStructInstance {
 		this.allowedClassIndex = allowedClassIndex;
 		this.hierarchy = hierarchy;
 	}
+
+	@Override
+	public String toString() {
+		return "BackStructInstance";
+	}
 }

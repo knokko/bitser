@@ -1,0 +1,25 @@
+package com.github.knokko.bitser;
+
+import java.lang.reflect.Array;
+
+class BackReadArrayReferenceJob {
+
+	final Object array;
+	final ReferenceFieldWrapper elementsWrapper;
+	final RecursionNode node;
+
+	BackReadArrayReferenceJob(Object array, ReferenceFieldWrapper elementsWrapper, RecursionNode node) {
+		this.array = array;
+		this.elementsWrapper = elementsWrapper;
+		this.node = node;
+	}
+
+	void resolve(BackDeserializer deserializer) throws Throwable {
+		BackReferenceTracker.LabelTargets targets = deserializer.references.get(elementsWrapper);
+
+		int size = Array.getLength(array);
+		for (int index = 0; index < size; index++) {
+			Array.set(array, index, targets.getLegacy(elementsWrapper, deserializer.input));
+		}
+	}
+}

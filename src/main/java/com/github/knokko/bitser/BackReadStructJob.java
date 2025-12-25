@@ -1,7 +1,6 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.legacy.BackClassInstance;
-import com.github.knokko.bitser.legacy.BackReference;
 import com.github.knokko.bitser.legacy.BackStructInstance;
 import com.github.knokko.bitser.legacy.BackUUIDValue;
 import com.github.knokko.bitser.util.RecursorException;
@@ -35,6 +34,7 @@ class BackReadStructJob {
 					if (ReadHelper.readOptional(deserializer.input, legacyField.bitField.field.optional)) {
 						continue;
 					}
+
 					if (legacyField.bitField instanceof ReferenceFieldWrapper) {
 						deserializer.structReferenceJobs.add(new BackReadStructReferenceJob(
 								legacyClassInstance.fieldValues, legacyField.id,

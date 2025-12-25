@@ -40,7 +40,7 @@ class BackConvertStructJob {
 						if (modernField.bitField.field.optional) {
 							modernField.classField.set(modernObject, null);
 							continue;
-						} else throw new LegacyBitserException("Can't store legacy null in " + fieldName);
+						} else throw new LegacyBitserException("Can't store legacy null in " + fieldName + " for field " + modernField);
 					}
 
 					if (modernField.bitField instanceof ReferenceFieldWrapper) {
@@ -50,7 +50,10 @@ class BackConvertStructJob {
 									new RecursionNode(node, modernField.classField.getName())
 							));
 						} else {
-							throw new LegacyBitserException("Can't store legacy " + legacyFieldValue + " in reference field");
+							throw new LegacyBitserException(
+									"Can't store legacy " + legacyFieldValue +
+											" in reference field " + modernField.classField
+							);
 						}
 					} else {
 						Object modernFieldValue = modernField.bitField.convert(

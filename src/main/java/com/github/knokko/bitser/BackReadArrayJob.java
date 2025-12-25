@@ -25,7 +25,9 @@ class BackReadArrayJob {
 
 			Array.set(array, index, element);
 			if (elementsWrapper.field.referenceTargetLabel != null) {
-				// TODO deserializer.references.registerTarget(elementsWrapper.field.referenceTargetLabel, element);
+				deserializer.references.registerLegacyTarget(
+						elementsWrapper.field.referenceTargetLabel, element
+				);
 			}
 		}
 	}

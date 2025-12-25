@@ -299,10 +299,9 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (length == 0) return new BackArrayValue(array);
 
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
-//				deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
-//						array, (ReferenceFieldWrapper) valuesWrapper, childNode
-//				));
-			throw new UnsupportedOperationException("TODO");
+			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
+					array, (ReferenceFieldWrapper) valuesWrapper, childNode
+			));
 		} else {
 			deserializer.arrayJobs.add(new BackReadArrayJob(
 					array, valuesWrapper, childNode
@@ -324,15 +323,29 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (field.type.isArray()) {
 			Object modernArray = Array.newInstance(field.type.getComponentType(), length);
-			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
-					legacyArray, modernArray, valuesWrapper, childNode
-			));
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
+						legacyArray, modernArray, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+						legacyArray, modernArray, valuesWrapper, childNode
+				));
+			}
+
 			return modernArray;
 		} else {
 			Object modernArray = Array.newInstance(valuesWrapper.field.type, length);
-			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
-					legacyArray, modernArray, valuesWrapper, childNode
-			));
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
+						legacyArray, modernArray, (ReferenceFieldWrapper) valuesWrapper, childNode
+				));
+			} else {
+				deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+						legacyArray, modernArray, valuesWrapper, childNode
+				));
+			}
+
 			Object modernCollection = constructCollectionWithSize(length);
 			deserializer.populateJobs.add(new PopulateCollectionJob(
 					(Collection<?>) modernCollection, (Object[]) modernArray, childNode)

@@ -22,10 +22,11 @@ class BackDeserializer {
 	final ArrayList<BackReadStructJob> structJobs = new ArrayList<>();
 	final ArrayList<BackReadArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<BackReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
-	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
+	final ArrayList<BackReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructJob> convertStructJobs = new ArrayList<>();
 	final ArrayList<BackConvertArrayJob> convertArrayJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructReferenceJob> convertStructReferenceJobs = new ArrayList<>();
+	final ArrayList<BackConvertArrayReferenceJob> convertArrayReferenceJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 
 	final BackReferenceTracker references;
@@ -91,16 +92,16 @@ class BackDeserializer {
 		}
 		structReferenceJobs.clear();
 
-//		for (ReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
-//			try {
-//				input.pushContext(referenceJob.node, "(array-reference-job)");
-//				referenceJob.resolve(this);
-//				input.popContext(referenceJob.node, "(array-reference-job)");
-//			} catch (Throwable failed) {
-//				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
-//			}
-//		}
-//		arrayReferenceJobs.clear();
+		for (BackReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
+			try {
+				input.pushContext(referenceJob.node, "(array-reference-job)");
+				referenceJob.resolve(this);
+				input.popContext(referenceJob.node, "(array-reference-job)");
+			} catch (Throwable failed) {
+				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
+			}
+		}
+		arrayReferenceJobs.clear();
 
 		while (!convertStructJobs.isEmpty() || !convertArrayJobs.isEmpty()) {
 			if (!convertStructJobs.isEmpty()) {
@@ -128,8 +129,16 @@ class BackDeserializer {
 				throw new RecursorException(job.node.generateTrace(null), failed);
 			}
 		}
+		convertStructReferenceJobs.clear();
 
-		// TODO convertArrayReferenceJobs
+		for (BackConvertArrayReferenceJob job : convertArrayReferenceJobs) {
+			try {
+				job.convert(this);
+			} catch (Throwable failed) {
+				throw new RecursorException(job.node.generateTrace(null), failed);
+			}
+		}
+		convertArrayReferenceJobs.clear();
 
 		// TODO Sort them by -depth, and create nasty unit test with reference (target) keys
 		populateJobs.sort(Comparator.comparingInt(a -> a.node.depth));

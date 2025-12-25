@@ -219,7 +219,9 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	Object convert(BackDeserializer deserializer, Object rawLegacyValue, RecursionNode parentNode, String fieldName) {
 		if (!(rawLegacyValue instanceof BackArrayValue)) {
-			throw new LegacyBitserException("Can't convert from legacy " + rawLegacyValue + " to " + field.type);
+			throw new LegacyBitserException(
+					"Can't convert from legacy " + rawLegacyValue + " to " + field.type + " for field " + field
+			);
 		}
 
 		Object legacyArray = ((BackArrayValue) rawLegacyValue).array;

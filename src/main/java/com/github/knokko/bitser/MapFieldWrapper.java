@@ -2,7 +2,6 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackArrayValue;
 import com.github.knokko.bitser.legacy.BackMapValue;
 import com.github.knokko.bitser.legacy.LegacyMapInstance;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
@@ -284,9 +283,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 		if (size == 0) return new BackMapValue(keys, values);
 
 		if (keysWrapper instanceof ReferenceFieldWrapper) {
-//			deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
-//					keys, (ReferenceFieldWrapper) keysWrapper, childNode
-//			));
+			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
+					keys, (ReferenceFieldWrapper) keysWrapper, childNode
+			));
 		} else {
 			deserializer.arrayJobs.add(new BackReadArrayJob(
 					keys, keysWrapper, childNode
@@ -294,9 +293,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 		}
 
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
-//			deserializer.arrayReferenceJobs.add(new ReadArrayReferenceJob(
-//					values, (ReferenceFieldWrapper) valuesWrapper, childNode
-//			));
+			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
+					values, (ReferenceFieldWrapper) valuesWrapper, childNode
+			));
 		} else {
 			deserializer.arrayJobs.add(new BackReadArrayJob(
 					values, valuesWrapper, childNode
@@ -320,12 +319,26 @@ class MapFieldWrapper extends BitFieldWrapper {
 		Object modernValues = Array.newInstance(valuesWrapper.field.type, size);
 
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		deserializer.convertArrayJobs.add(new BackConvertArrayJob(
-				legacyMap.keys, modernKeys, keysWrapper, childNode
-		));
-		deserializer.convertArrayJobs.add(new BackConvertArrayJob(
-				legacyMap.values, modernValues, valuesWrapper, childNode
-		));
+		if (keysWrapper instanceof ReferenceFieldWrapper) {
+			deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
+					legacyMap.keys, modernKeys, (ReferenceFieldWrapper) keysWrapper, childNode
+			));
+		} else {
+			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+					legacyMap.keys, modernKeys, keysWrapper, childNode
+			));
+		}
+
+		if (valuesWrapper instanceof ReferenceFieldWrapper) {
+			deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
+					legacyMap.values, modernValues, (ReferenceFieldWrapper) valuesWrapper, childNode
+			));
+		} else {
+			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
+					legacyMap.values, modernValues, valuesWrapper, childNode
+			));
+		}
+
 		deserializer.populateJobs.add(new PopulateMapJob(
 				modernMap, (Object[]) modernKeys, (Object[]) modernValues, childNode)
 		);

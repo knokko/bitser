@@ -39,6 +39,9 @@ class BackConvertArrayJob {
 
 			Object modernElement = modernWrapper.convert(deserializer, legacyElement, node, "elements");
 			Array.set(modernArray, index, modernElement);
+			if (modernWrapper.field.referenceTargetLabel != null) {
+				deserializer.references.registerModern(legacyElement, modernElement);
+			}
 		}
 	}
 }
