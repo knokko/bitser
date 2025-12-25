@@ -53,7 +53,7 @@ public class TestByteCollectionField {
 		assertNull(loaded.data);
 
 		array.data = new byte[0];
-		loaded = bitser.deepCopy(array);
+		loaded = bitser.stupidDeepCopy(array);
 		assertEquals(0, loaded.data.length);
 
 		array.data = new byte[]{-128, -1, 0, 1, 127};

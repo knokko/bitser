@@ -28,6 +28,14 @@ class BackConvertStructJob {
 	}
 
 	void convert(BackDeserializer deserializer) {
+		if (legacyObject.hierarchy.length != modernInfo.classHierarchy.size()) { // TODO Why is classHierarchy collection rather than array?
+			LegacyBitserException legacyException = new LegacyBitserException(
+					"Class hierarchy size changed from " + legacyObject.hierarchy.length +
+							" to " + modernInfo.classHierarchy.size()
+			);
+			throw new RecursorException(node.generateTrace(null), legacyException);
+		}
+
 		Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
 		Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
 		Map<Class<?>, Object[]> modernFunctionValues = new HashMap<>();
@@ -81,6 +89,7 @@ class BackConvertStructJob {
 			}
 
 			if (modernObject instanceof BitPostInit) {
+				// TODO change size to max(#legacy functions, #modern functions)
 				Object[] currentModernFunctionValues = new Object[legacyValues.functionValues.length];
 
 				legacyFieldValues.put(modernClass.myClass, legacyValues.fieldValues);
@@ -142,7 +151,6 @@ class BackConvertStructJob {
 						} catch (Throwable failed) {
 							throw new RecursorException(node.generateTrace(modernFunction.classMethod.getName()), failed);
 						}
-
 					}
 				}
 			}
@@ -153,7 +161,7 @@ class BackConvertStructJob {
 					deserializer.bitser, true, modernFunctionValues,
 					legacyFieldValues, legacyFunctionValues, deserializer.withParameters
 			);
-			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) modernObject, context));
+			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) modernObject, context,  node));
 		}
 	}
 }

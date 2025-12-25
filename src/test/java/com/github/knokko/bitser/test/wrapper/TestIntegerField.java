@@ -102,7 +102,6 @@ public class TestIntegerField {
 
 		Bitser bitser = new Bitser(false);
 		DigitSizes incompatible = bitser.stupidDeepCopy(sizes);
-		// TODO Stupid backward compatible
 		DigitSizes compatible = bitser.stupidDeepCopy(sizes, Bitser.BACKWARD_COMPATIBLE);
 
 		for (int number = -500; number < 500; number++) {
@@ -134,8 +133,7 @@ public class TestIntegerField {
 		common.scores.add(-2000);
 		common.scores.add(3000);
 
-		// TODO Stupid backward compatible
-		CommonValues[] loadedValues = { bitser.stupidDeepCopy(common), bitser.deepCopy(common, Bitser.BACKWARD_COMPATIBLE) };
+		CommonValues[] loadedValues = { bitser.stupidDeepCopy(common), bitser.stupidDeepCopy(common, Bitser.BACKWARD_COMPATIBLE) };
 		for (CommonValues loaded : loadedValues) {
 			assertEquals(0, loaded.scores.get(0));
 			assertEquals(50, loaded.scores.get(1));

@@ -82,7 +82,7 @@ class ReadStructJob {
 					deserializer.bitser, false, serializedFunctionValues,
 					null, null, deserializer.withParameters
 			);
-			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) structObject, context));
+			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) structObject, context, node));
 		}
 	}
 }

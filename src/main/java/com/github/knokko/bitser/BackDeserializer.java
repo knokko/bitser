@@ -100,7 +100,7 @@ class BackDeserializer {
 				referenceJob.resolve(this);
 				input.popContext(referenceJob.node, "(array-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
+				throw new RecursorException(referenceJob.node.generateTrace("elements"), failed);
 			}
 		}
 		arrayReferenceJobs.clear();
@@ -119,7 +119,7 @@ class BackDeserializer {
 					job.convert(this);
 					input.popContext(job.node, "(back-convert-array-job)");
 				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace(null), failed);
+					throw new RecursorException(job.node.generateTrace("elements"), failed);
 				}
 			}
 		}
@@ -162,6 +162,8 @@ class BackDeserializer {
 		}
 		populateJobs.clear();
 
+		// Let's post-init the deepest structs first, since I think that makes most sense
+		postInitJobs.sort(Comparator.comparingInt(job -> -job.node.depth));
 		for (PostInitJob job : postInitJobs) {
 			job.structObject.postInit(job.context);
 		}

@@ -59,8 +59,7 @@ public class TestLinkedLists {
 		root.next = new BitLinkedList();
 		root.next.value = "world";
 
-		// TODO Backward compatible test
-		BitLinkedList recovered = bitser.deepCopy(root, Bitser.BACKWARD_COMPATIBLE);
+		BitLinkedList recovered = bitser.stupidDeepCopy(root, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals("hello", recovered.value);
 		assertEquals("world", recovered.next.value);
 		assertNull(recovered.next.next);
@@ -88,8 +87,7 @@ public class TestLinkedLists {
 		Bitser bitser = new Bitser(true);
 		BitLinkedList list = BitLinkedList.generateRandom();
 
-		// TODO Backward compatible test
-		BitLinkedList recovered = bitser.deepCopy(list, Bitser.BACKWARD_COMPATIBLE);
+		BitLinkedList recovered = bitser.stupidDeepCopy(list, Bitser.BACKWARD_COMPATIBLE);
 		int totalLength = 0;
 
 		BitLinkedList node = recovered;

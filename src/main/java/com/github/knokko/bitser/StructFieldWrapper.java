@@ -215,12 +215,15 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			if (allowed.length != 1) throw new UnexpectedBitserException(
 					"LegacyLazyBytes should have been denied at fixLegacyTypes"
 			);
-			return deserializer.bitser.deserializeFromBytes(
+			return deserializer.bitser.deserializeFromBytesSimple( // TODO Test this
 					allowed[0], ((LegacyLazyBytes) legacyValue).bytes, Bitser.BACKWARD_COMPATIBLE
 			);
 		}
 		if (legacyValue instanceof BackStructInstance) {
 			BackStructInstance legacyObject = (BackStructInstance) legacyValue;
+			if (legacyObject.allowedClassIndex >= allowed.length) throw new LegacyBitserException(
+					"Encountered unknown subclass while loading " + field
+			);
 			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(allowed[legacyObject.allowedClassIndex]);
 			Object modernObject = modernInfo.createEmptyInstance();
 			deserializer.convertStructJobs.add(new BackConvertStructJob(
@@ -244,7 +247,7 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			if (allowed.length != 1) throw new UnexpectedBitserException(
 					"LegacyLazyBytes should have been denied at fixLegacyTypes"
 			);
-			setValue.accept(recursor.info.bitser.deserializeFromBytes(
+			setValue.accept(recursor.info.bitser.deserializeFromBytesSimple(
 					allowed[0], ((LegacyLazyBytes) value).bytes, Bitser.BACKWARD_COMPATIBLE
 			));
 			return;

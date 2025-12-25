@@ -69,7 +69,7 @@ public class TestMapField {
 		// 4 bits for the key
 		// 4 bits for the value
 		BitCountStream counter = new BitCountStream();
-		bitser.serialize(intMap, counter);
+		bitser.serializeSimple(intMap, counter);
 		assertEquals(10, counter.getCounter());
 	}
 
@@ -155,7 +155,7 @@ public class TestMapField {
 		valueMap.map.put("price", 11);
 		valueMap.map.put("weight", 10);
 
-		ImplicitValueFieldMap loaded = new Bitser(false).deepCopy(valueMap);
+		ImplicitValueFieldMap loaded = new Bitser(false).stupidDeepCopy(valueMap);
 		assertEquals(2, loaded.map.size());
 		assertEquals(11, loaded.map.get("price"));
 		assertEquals(10, loaded.map.get("weight"));
@@ -357,8 +357,7 @@ public class TestMapField {
 		original.name = "Tim";
 		original.map.put(original.name, mini);
 
-		// TODO Backward-compatible test
-		ReferenceToStructMap copy = new Bitser(true).deepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		ReferenceToStructMap copy = new Bitser(true).stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals("Tim", copy.name);
 		assertEquals(3, copy.map.get(copy.name).size);
 	}

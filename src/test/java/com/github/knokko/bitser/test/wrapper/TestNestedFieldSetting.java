@@ -48,7 +48,7 @@ public class TestNestedFieldSetting {
 		alternating.nested.add(hashSet);
 		alternating.test = "test1234";
 
-		AlternatingOptionalCollection loaded = new Bitser(true).deepCopy(alternating);
+		AlternatingOptionalCollection loaded = new Bitser(true).stupidDeepCopy(alternating);
 		assertEquals("test1234", loaded.test);
 		assertEquals(1, loaded.nested.size());
 
@@ -93,7 +93,7 @@ public class TestNestedFieldSetting {
 		alternating.nested = nested;
 		alternating.test = "ok";
 
-		AlternatingOptionalArray loaded = new Bitser(false).deepCopy(alternating);
+		AlternatingOptionalArray loaded = new Bitser(false).stupidDeepCopy(alternating);
 		assertNotSame(nested, loaded.nested);
 		assertEquals(1, loaded.nested.length);
 		assertEquals(2, loaded.nested[0].length);
@@ -115,7 +115,7 @@ public class TestNestedFieldSetting {
 
 	@Test
 	public void testAlternatingMadnessNull() {
-		assertNull(new Bitser(true).deepCopy(new AlternatingMadness()).nested);
+		assertNull(new Bitser(true).stupidDeepCopy(new AlternatingMadness()).nested);
 	}
 
 	@Test
@@ -134,7 +134,7 @@ public class TestNestedFieldSetting {
 		alternating.nested.add(null);
 		alternating.nested.add(setArray);
 
-		AlternatingMadness loaded = new Bitser(true).deepCopy(alternating);
+		AlternatingMadness loaded = new Bitser(true).stupidDeepCopy(alternating);
 		assertEquals(2, loaded.nested.size());
 		assertNull(loaded.nested.get(0));
 		assertEquals(1, loaded.nested.get(1).length);
@@ -163,7 +163,7 @@ public class TestNestedFieldSetting {
 		WithCustomSizes sizes = new WithCustomSizes();
 		sizes.list.add(innerList);
 
-		WithCustomSizes loaded = new Bitser(false).deepCopy(sizes);
+		WithCustomSizes loaded = new Bitser(false).stupidDeepCopy(sizes);
 		assertEquals(1, loaded.list.size());
 		LinkedList<Boolean> loadedList = loaded.list.get(0);
 		assertEquals(2, loadedList.size());
@@ -174,7 +174,7 @@ public class TestNestedFieldSetting {
 		// 4 bits to store the size of the inner list
 		// 2 bits to store the boolean values
 		BitCountStream counter = new BitCountStream();
-		new Bitser(true).serialize(sizes, counter);
+		new Bitser(true).serializeSimple(sizes, counter);
 		assertEquals(7, counter.getCounter());
 	}
 
@@ -209,7 +209,7 @@ public class TestNestedFieldSetting {
 		referenceLists.targetList.add(list2);
 		referenceLists.referenceList = list2;
 
-		ReferenceLists1 loaded = new Bitser(true).deepCopy(referenceLists);
+		ReferenceLists1 loaded = new Bitser(true).stupidDeepCopy(referenceLists);
 		assertEquals(2, loaded.targetList.size());
 		assertEquals(1, loaded.targetList.get(0).size());
 		assertEquals("hello", loaded.targetList.get(0).get(0));
@@ -242,7 +242,7 @@ public class TestNestedFieldSetting {
 		referenceLists.targetList.add("hello");
 		referenceLists.referenceList.add(referenceLists.targetList);
 
-		ReferenceLists2 loaded = new Bitser(true).deepCopy(referenceLists);
+		ReferenceLists2 loaded = new Bitser(true).stupidDeepCopy(referenceLists);
 		assertEquals(1, loaded.targetList.size());
 		assertEquals("hello", loaded.targetList.get(0));
 
@@ -284,7 +284,7 @@ public class TestNestedFieldSetting {
 		referenceLists.referenceList1.get(0).add(referenceLists.targetList2.get(0));
 		referenceLists.referenceList2.add(referenceLists.targetList1.get(0));
 
-		ReferenceLists3 loaded = new Bitser(false).deepCopy(referenceLists);
+		ReferenceLists3 loaded = new Bitser(false).stupidDeepCopy(referenceLists);
 		assertEquals(1, loaded.targetList1.size());
 		assertEquals("hello", loaded.targetList1.get(0));
 		assertEquals(1, loaded.targetList2.size());
@@ -312,7 +312,7 @@ public class TestNestedFieldSetting {
 	public void testDuplicateNestedFieldSettings1() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new DuplicateNestedFieldSettings1(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new DuplicateNestedFieldSettings1(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple NestedFieldSetting's for path ");
 	}
@@ -331,7 +331,7 @@ public class TestNestedFieldSetting {
 	public void testDuplicateNestedFieldSettings2() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new DuplicateNestedFieldSettings2(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new DuplicateNestedFieldSettings2(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple NestedFieldSetting's for path cc");
 	}
@@ -348,7 +348,7 @@ public class TestNestedFieldSetting {
 	public void testForbidOptionalBitFields() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new OptionalBitField(), new BitCountStream())
+				() -> new Bitser(true).serializeSimple(new OptionalBitField(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "optional BitField is not allowed on collection field");
 		assertContains(errorMessage, "use @NestedFieldSetting instead");
@@ -357,11 +357,12 @@ public class TestNestedFieldSetting {
 	@Test
 	public void testInvalidAlternatingOptionalCollections() {
 		AlternatingOptionalCollection alternating = new AlternatingOptionalCollection();
+		alternating.test = "test";
 		alternating.nested.add(null);
 
 		String error1 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(alternating, new BitCountStream())
+				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error1, "must not have null elements");
 
@@ -380,14 +381,14 @@ public class TestNestedFieldSetting {
 
 		String error2 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(alternating, new BitCountStream())
+				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error2, "must not have null elements");
 
 		alternating.nested = null;
 		String error3 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(alternating, new BitCountStream())
+				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error3, "must not be null");
 	}
@@ -395,20 +396,21 @@ public class TestNestedFieldSetting {
 	@Test
 	public void testInvalidAlternatingOptionalArray() {
 		AlternatingOptionalArray alternating = new AlternatingOptionalArray();
+		alternating.test = "test";
 		alternating.nested = new float[][][][] {
 				null
 		};
 
 		String error1 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(alternating, new BitCountStream())
+				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error1, "must not have null elements");
 
 		alternating.nested = null;
 		String error2 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(alternating, new BitCountStream())
+				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error2, "must not be null");
 	}
@@ -446,7 +448,7 @@ public class TestNestedFieldSetting {
 		highValue.add(innerSet);
 		innerSet.add(321);
 
-		monster = bitser.deepCopy(monster);
+		monster = bitser.stupidDeepCopy(monster); // TODO Test both with and without backward compatibility
 		assertEquals(1, monster.root.size());
 
 		assertEquals(1, monster.root.get(key).length);

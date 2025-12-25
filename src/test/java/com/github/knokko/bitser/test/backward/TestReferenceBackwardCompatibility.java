@@ -260,7 +260,7 @@ public class TestReferenceBackwardCompatibility {
 		before.dummies.add(new Dummy(5));
 
 		ReferenceMethodNewCorrupted after = bitser.deserializeFromBytesSimple(
-				ReferenceMethodNewCorrupted.class, bitser.serializeToBytes(
+				ReferenceMethodNewCorrupted.class, bitser.serializeToBytesSimple(
 						before, Bitser.BACKWARD_COMPATIBLE, new WithParameter("best", 0)
 				), Bitser.BACKWARD_COMPATIBLE
 		);

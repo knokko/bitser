@@ -122,8 +122,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream4() {
-		// TODO Backward-compatible test
-		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserialize(
+		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserializeSimple(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(new byte[0])), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "End of stream reached");

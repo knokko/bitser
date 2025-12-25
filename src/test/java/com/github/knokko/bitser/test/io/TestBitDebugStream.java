@@ -141,8 +141,7 @@ public class TestBitDebugStream {
 		RootStruct original = generate();
 
 		check(bitser.stupidDeepCopy(original));
-		// TODO Backward-compatible test
-		check(bitser.deepCopy(original, Bitser.BACKWARD_COMPATIBLE));
+		check(bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE));
 	}
 
 	@Test
@@ -171,17 +170,16 @@ public class TestBitDebugStream {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
 		PrintWriter writer = new PrintWriter(debugBytes);
 		BitDebugStream debug = new BitDebugStream(contentBytes, writer);
-		// TODO Backward-compatible test
-		new Bitser(false).serialize(generate(), debug, Bitser.BACKWARD_COMPATIBLE);
+		new Bitser(false).serializeSimple(generate(), debug, Bitser.BACKWARD_COMPATIBLE);
 		debug.finish();
 		writer.flush();
 		writer.close();
 
-		// TODO Backward-compatible test
-		check(new Bitser(true).deserializeFromBytes(
+		check(new Bitser(true).deserializeFromBytesSimple(
 				RootStruct.class, contentBytes.toByteArray(), Bitser.BACKWARD_COMPATIBLE
 		));
 
+		System.out.println(new String(debugBytes.toByteArray()));
 		Scanner actualScanner = new Scanner(new ByteArrayInputStream(debugBytes.toByteArray()));
 		Scanner expectedScanner = new Scanner(Objects.requireNonNull(
 				TestBitDebugStream.class.getResourceAsStream("expected-debug-backward-compatible.yaml")

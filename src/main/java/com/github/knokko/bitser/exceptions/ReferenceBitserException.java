@@ -10,12 +10,12 @@ package com.github.knokko.bitser.exceptions;
  *     </li>
  *     <li>
  *         The original BitStruct is serialized:
- *         {@code byte[] bytes = bitser.serializeToBytes(originalStruct, withObject)}
+ *         {@code byte[] bytes = bitser.serializeToBytesSimple(originalStruct, withObject)}
  *     </li>
  *     <li>{@code vennie} is removed from {@code withObject}</li>
  *     <li>
  *         An attempt is made to deserialize it:
- *         {@code bitser.deserializeFromBytes(originalStruct.getClass(), bytes, withObject)}
+ *         {@code bitser.deserializeFromBytesSimple(originalStruct.getClass(), bytes, withObject)}
  *     </li>
  * </ol>
  */

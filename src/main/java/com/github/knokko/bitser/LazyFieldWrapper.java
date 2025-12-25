@@ -46,7 +46,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 
 				byte[] bytes = lazy.bytes;
 				if (bytes == null || recursor.info.forbidLazySaving) {
-					bytes = recursor.info.bitser.serializeToBytes(lazy.get(), options.toArray());
+					bytes = recursor.info.bitser.serializeToBytesSimple(lazy.get(), options.toArray());
 				}
 				encodeUnknownLength(bytes.length, context.output);
 				context.output.write(bytes);

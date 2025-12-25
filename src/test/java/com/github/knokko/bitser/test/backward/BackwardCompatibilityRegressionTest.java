@@ -152,7 +152,7 @@ public class BackwardCompatibilityRegressionTest {
 		battleStuff.monsters.add(monster);
 		ContentRoot root = new ContentRoot(itemStuff, battleStuff);
 
-		ContentRoot copied = new Bitser(false).deepCopy(root, Bitser.BACKWARD_COMPATIBLE);
+		ContentRoot copied = new Bitser(false).stupidDeepCopy(root, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(300, copied.itemStuff.plotItems.size());
 		assertEquals(25, copied.itemStuff.dreamStones.size());
 		assertEquals(2, copied.battleStuff.monsters.size());
@@ -191,7 +191,7 @@ public class BackwardCompatibilityRegressionTest {
 		StateRoot state = new StateRoot();
 		state.kills = 1234;
 
-		StateRoot copy = new Bitser(true).deepCopy(state, content, Bitser.BACKWARD_COMPATIBLE);
+		StateRoot copy = new Bitser(true).stupidDeepCopy(state, content, Bitser.BACKWARD_COMPATIBLE);
 		assertNull(copy.monster);
 		assertEquals(1234, copy.kills);
 	}
@@ -204,12 +204,15 @@ public class BackwardCompatibilityRegressionTest {
 		final String state = "state";
 
 		@BitField(id = 1)
+		@SuppressWarnings("unused")
 		@ReferenceField(stable = false, label = "combatants")
 		final String target = state;
 	}
 
 	@BitStruct(backwardCompatible = true)
 	static class TestClass {
+
+		@SuppressWarnings("unused")
 		@BitField(id = 0, optional = true)
 		private OptionalClass state;
 
@@ -223,7 +226,7 @@ public class BackwardCompatibilityRegressionTest {
 		Bitser bitser = new Bitser(false);
 		TestClass instance = new TestClass();
 		instance.test = 1234;
-		TestClass copy = bitser.deepCopy(instance, Bitser.BACKWARD_COMPATIBLE);
+		TestClass copy = bitser.stupidDeepCopy(instance, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(1234, copy.test);
 	}
 }
