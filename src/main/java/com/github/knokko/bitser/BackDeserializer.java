@@ -6,7 +6,6 @@ import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.util.RecursorException;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Map;
 
 class BackDeserializer {
@@ -147,22 +146,6 @@ class BackDeserializer {
 		}
 		convertArrayReferenceJobs.clear();
 
-		// TODO Sort them by -depth, and create nasty unit test with reference (target) keys
-		populateJobs.sort(Comparator.comparingInt(a -> a.node.depth));
-		for (PopulateJob populateJob : populateJobs) {
-			try {
-				populateJob.populate();
-			} catch (Throwable failed) {
-				throw new RecursorException(populateJob.node.generateTrace(null), failed);
-			}
-		}
-		populateJobs.clear();
-
-		// Let's post-init the deepest structs first, since I think that makes most sense
-		postInitJobs.sort(Comparator.comparingInt(job -> -job.node.depth));
-		for (PostInitJob job : postInitJobs) {
-			job.structObject.postInit(job.context);
-		}
-		postInitJobs.clear();
+		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}
 }
