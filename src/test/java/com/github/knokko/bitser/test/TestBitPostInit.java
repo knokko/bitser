@@ -263,7 +263,9 @@ public class TestBitPostInit {
 				if (values[1] != null) {
 					names = new ArrayList<>(1);
 					names.add(((BackStringValue) values[1]).value);
-					assertArrayEquals(new Object[3], currentValues);
+					assertArrayEquals(new Object[] {
+							null, new BackStringValue("java.io.IOException"), null
+					}, currentValues);
 				} else {
 					BackArrayValue legacyNames = (BackArrayValue) values[2];
 					Object[] rawNames = (Object[]) legacyNames.array;
@@ -403,6 +405,16 @@ public class TestBitPostInit {
 	}
 
 	@Test
+	public void testFunctionContext() {
+		Bitser bitser = new Bitser(false);
+		UsesFunctionContext loaded = bitser.deserializeFromBytesSimple(
+				UsesFunctionContext.class,
+				bitser.serializeToBytesSimple(new UsesFunctionContext(), new WithParameter("b", 7))
+		);
+		assertEquals(12, loaded.c);
+	}
+
+	@Test
 	public void testBackwardCompatibleFunctionContext() {
 		Bitser bitser = new Bitser(false);
 		UsesFunctionContext loaded = bitser.deserializeFromBytesSimple(
@@ -413,7 +425,5 @@ public class TestBitPostInit {
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(12, loaded.c);
-
-		// TODO Also test without backward compatibility
 	}
 }

@@ -215,7 +215,7 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 			if (allowed.length != 1) throw new UnexpectedBitserException(
 					"LegacyLazyBytes should have been denied at fixLegacyTypes"
 			);
-			return deserializer.bitser.deserializeFromBytesSimple( // TODO Test this
+			return deserializer.bitser.deserializeFromBytesSimple(
 					allowed[0], ((LegacyLazyBytes) legacyValue).bytes, Bitser.BACKWARD_COMPATIBLE
 			);
 		}

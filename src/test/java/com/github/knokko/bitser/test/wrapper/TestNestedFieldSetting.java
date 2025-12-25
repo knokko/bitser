@@ -415,7 +415,7 @@ public class TestNestedFieldSetting {
 		assertContains(error2, "must not be null");
 	}
 
-	@BitStruct(backwardCompatible = false)
+	@BitStruct(backwardCompatible = true)
 	private static class MonsterCollection {
 
 		@SuppressWarnings("unused")
@@ -426,10 +426,21 @@ public class TestNestedFieldSetting {
 		@IntegerField(expectUniform = false)
 		private static final boolean VALUE_PROPERTIES = false;
 
+		@BitField(id = 0)
 		@NestedFieldSetting(path = "kc", fieldName = "KEY_PROPERTIES")
 		@NestedFieldSetting(path = "vcc", optional = true)
 		@NestedFieldSetting(path = "vccc", fieldName = "VALUE_PROPERTIES")
 		final HashMap<ArrayList<Short>, HashSet<TreeSet<Integer>>[]> root = new HashMap<>();
+	}
+
+	private void checkNestedMonster(MonsterCollection monster, ArrayList<Short> key, TreeSet<Integer> innerSet) {
+		assertEquals(1, monster.root.size());
+
+		assertEquals(1, monster.root.get(key).length);
+		HashSet<TreeSet<Integer>>highValue = monster.root.get(key)[0];
+		assertEquals(2, highValue.size());
+		assertTrue(highValue.contains(null));
+		assertTrue(highValue.contains(innerSet));
 	}
 
 	@Test
@@ -448,13 +459,7 @@ public class TestNestedFieldSetting {
 		highValue.add(innerSet);
 		innerSet.add(321);
 
-		monster = bitser.stupidDeepCopy(monster); // TODO Test both with and without backward compatibility
-		assertEquals(1, monster.root.size());
-
-		assertEquals(1, monster.root.get(key).length);
-		highValue = monster.root.get(key)[0];
-		assertEquals(2, highValue.size());
-		assertTrue(highValue.contains(null));
-		assertTrue(highValue.contains(innerSet));
+		checkNestedMonster(bitser.stupidDeepCopy(monster), key, innerSet);
+		checkNestedMonster(bitser.stupidDeepCopy(monster, Bitser.BACKWARD_COMPATIBLE), key, innerSet);
 	}
 }

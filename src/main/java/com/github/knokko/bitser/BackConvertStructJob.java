@@ -9,6 +9,8 @@ import com.github.knokko.bitser.util.RecursorException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.Math.max;
+
 class BackConvertStructJob {
 
 	final Object modernObject;
@@ -28,7 +30,7 @@ class BackConvertStructJob {
 	}
 
 	void convert(BackDeserializer deserializer) {
-		if (legacyObject.hierarchy.length != modernInfo.classHierarchy.size()) { // TODO Why is classHierarchy collection rather than array?
+		if (legacyObject.hierarchy.length != modernInfo.classHierarchy.size()) {
 			LegacyBitserException legacyException = new LegacyBitserException(
 					"Class hierarchy size changed from " + legacyObject.hierarchy.length +
 							" to " + modernInfo.classHierarchy.size()
@@ -89,25 +91,31 @@ class BackConvertStructJob {
 			}
 
 			if (modernObject instanceof BitPostInit) {
-				// TODO change size to max(#legacy functions, #modern functions)
-				Object[] currentModernFunctionValues = new Object[legacyValues.functionValues.length];
+				int largestModernFunctionID = -1;
+				for (SingleClassWrapper.FunctionWrapper candidateFunction : modernClass.functions) {
+					largestModernFunctionID = max(largestModernFunctionID, candidateFunction.id);
+				}
+				SingleClassWrapper.FunctionWrapper[] modernFunctions = new SingleClassWrapper.FunctionWrapper[
+						1 + largestModernFunctionID
+				];
+				for (SingleClassWrapper.FunctionWrapper modernFunction : modernClass.functions) {
+					modernFunctions[modernFunction.id] = modernFunction;
+				}
+
+				Object[] currentModernFunctionValues = new Object[
+						max(modernFunctions.length, legacyValues.functionValues.length)
+				];
 
 				legacyFieldValues.put(modernClass.myClass, legacyValues.fieldValues);
 				legacyFunctionValues.put(modernClass.myClass, legacyValues.functionValues);
 				modernFunctionValues.put(modernClass.myClass, currentModernFunctionValues);
 
-				for (int functionID = 0; functionID < currentModernFunctionValues.length; functionID++) {
+				for (int functionID = 0; functionID < legacyValues.functionValues.length; functionID++) {
 					if (!legacyValues.hasFunctionValues[functionID]) continue;
 					Object legacyFunctionValue = legacyValues.functionValues[functionID];
 
-					// TODO Turn modernClass.functions into array?
 					SingleClassWrapper.FunctionWrapper modernFunction = null;
-					for (SingleClassWrapper.FunctionWrapper candidateFunction : modernClass.functions) {
-						if (candidateFunction.id == functionID) {
-							modernFunction = candidateFunction;
-							break;
-						}
-					}
+					if (functionID < modernFunctions.length) modernFunction = modernFunctions[functionID];
 
 					if (modernFunction == null) {
 						if (legacyFunctionValue instanceof BackReference) {

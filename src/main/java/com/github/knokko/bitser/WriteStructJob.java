@@ -5,7 +5,7 @@ import com.github.knokko.bitser.util.RecursorException;
 
 class WriteStructJob {
 
-	final Object structObject; // TODO Turn into array, to make it bulk write
+	final Object structObject;
 	final BitStructWrapper<?> structInfo;
 	final RecursionNode node;
 

@@ -92,7 +92,7 @@ class Deserializer {
 		arrayReferenceJobs.clear();
 
 		// TODO Sort them by -depth, and create nasty unit test with reference (target) keys
-		populateJobs.sort(Comparator.comparingInt(a -> a.node.depth));
+		//populateJobs.sort(Comparator.comparingInt(a -> -a.node.depth));
 		for (PopulateJob populateJob : populateJobs) {
 			try {
 				populateJob.populate();
@@ -102,6 +102,8 @@ class Deserializer {
 		}
 		populateJobs.clear();
 
+		// Let's post-init the deepest structs first, since I think that makes most sense
+		postInitJobs.sort(Comparator.comparingInt(job -> -job.node.depth));
 		for (PostInitJob postInitJob : postInitJobs) {
 			postInitJob.structObject.postInit(postInitJob.context);
 		}
