@@ -84,8 +84,7 @@ class BackReferenceTracker {
 		}
 
 		Object getLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
-			// TODO Check whether the optional is saved twice, also check for normal ReferenceTracker
-			if (referenceWrapper.field.optional && !input.read()) return null;
+			if (ReadHelper.readOptional(input, referenceWrapper.field.optional)) return null;
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
 			else return getUnstable(input);
 		}

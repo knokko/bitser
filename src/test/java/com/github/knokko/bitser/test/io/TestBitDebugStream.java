@@ -5,13 +5,11 @@ import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.io.BitDebugStream;
 import com.github.knokko.bitser.options.DebugBits;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -165,24 +163,21 @@ public class TestBitDebugStream {
 	}
 
 	@Test
-	public void testDebugWithBackwardCompatibility() throws IOException {
-		ByteArrayOutputStream contentBytes = new ByteArrayOutputStream();
+	public void testDebugWithBackwardCompatibility() {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
-		PrintWriter writer = new PrintWriter(debugBytes);
-		BitDebugStream debug = new BitDebugStream(contentBytes, writer);
-		new Bitser(false).serializeSimple(generate(), debug, Bitser.BACKWARD_COMPATIBLE);
-		debug.finish();
-		writer.flush();
-		writer.close();
+		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
+
+		byte[] contentBytes = new Bitser(false).serializeToBytesSimple(
+				generate(), debugOption, Bitser.BACKWARD_COMPATIBLE
+		);
 
 		check(new Bitser(true).deserializeFromBytesSimple(
-				RootStruct.class, contentBytes.toByteArray(), Bitser.BACKWARD_COMPATIBLE
+				RootStruct.class, contentBytes, debugOption, Bitser.BACKWARD_COMPATIBLE
 		));
 
-		System.out.println(new String(debugBytes.toByteArray()));
 		Scanner actualScanner = new Scanner(new ByteArrayInputStream(debugBytes.toByteArray()));
 		Scanner expectedScanner = new Scanner(Objects.requireNonNull(
-				TestBitDebugStream.class.getResourceAsStream("expected-debug-backward-compatible.yaml")
+				TestBitDebugStream.class.getResourceAsStream("expected-debug-backward-compatible.txt")
 		));
 
 		while (expectedScanner.hasNextLine()) {

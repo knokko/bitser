@@ -108,16 +108,12 @@ class BackDeserializer {
 		while (!convertStructJobs.isEmpty() || !convertArrayJobs.isEmpty()) {
 			if (!convertStructJobs.isEmpty()) {
 				BackConvertStructJob job = convertStructJobs.remove(convertStructJobs.size() - 1);
-				input.pushContext(job.node, "(back-convert-struct-job)");
 				job.convert(this);
-				input.popContext(job.node, "(back-convert-struct-job)");
 			}
 			if (!convertArrayJobs.isEmpty()) {
 				BackConvertArrayJob job = convertArrayJobs.remove(convertArrayJobs.size() - 1);
 				try {
-					input.pushContext(job.node, "(back-convert-array-job)");
 					job.convert(this);
-					input.popContext(job.node, "(back-convert-array-job)");
 				} catch (Throwable failed) {
 					throw new RecursorException(job.node.generateTrace("elements"), failed);
 				}

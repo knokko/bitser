@@ -77,7 +77,6 @@ public class Bitser {
 	}
 
 	private void rawSerializeSimple(Object object, BitOutputStream output, Object... withAndOptions) {
-		output.pushContext("prepare", -1);
 		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
 
 		boolean backwardCompatible = false;
@@ -109,10 +108,8 @@ public class Bitser {
 //		));
 //		LabelContext labelContext = new LabelContext(new HashSet<>());
 
-		output.popContext("prepare", -1);
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
-			output.pushContext("register-legacy-classes", -1);
 			legacy = new LegacyClasses();
 
 			final LegacyClasses rememberLegacy = legacy;
@@ -121,22 +118,17 @@ public class Bitser {
 					recursor -> wrapper.registerClasses(object, recursor)
 			).get());
 
-			output.popContext("register-legacy-classes", -1);
-			output.pushContext("legacy-classes", -1);
 			//ByteArrayOutputStream legacyBytes = new ByteArrayOutputStream();
 			//BitOutputStream legacyOutput = new LayeredBitOutputStream(legacyBytes, output);
 			try {
-				// TODO Switch to serializeSimple
 				output.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
-				serialize(legacy, output, new WithParameter("legacy-classes", legacy));
+				serializeSimple(legacy, output, new WithParameter("legacy-classes", legacy));
 				output.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
 				//legacyOutput.finish();
 			} catch (IOException io) {
 				throw new RuntimeException(io);
 			}
 
-			output.popContext("legacy-classes", -1);
-//
 //			output.pushContext("legacy-reference-labels", -1);
 //			Recursor.run(labelContext, labelInfo, deserializeFromBytes(
 //					LegacyClasses.class, legacyBytes.toByteArray()
@@ -148,7 +140,6 @@ public class Bitser {
 //			output.popContext("collect-reference-labels", -1);
 		}
 
-		output.pushContext("with-reference-labels", -1);
 		for (Object withObject : withAndOptions) {
 			if (withObject == BACKWARD_COMPATIBLE || withObject == FORBID_LAZY_SAVING) continue;
 			if (withObject instanceof WithParameter || withObject instanceof DistributionTracker) continue;
@@ -158,7 +149,6 @@ public class Bitser {
 //					cache.getWrapper(withObject.getClass())::collectReferenceLabels
 //			);
 		}
-		output.popContext("with-reference-labels", -1);
 
 //		output.pushContext("register-reference-targets", -1);
 //		ReferenceIdMapper idMapper = new ReferenceIdMapper(labelContext);
@@ -168,7 +158,6 @@ public class Bitser {
 //		output.popContext("register-reference-targets", -1);
 
 		ArrayList<Object> withObjects = new ArrayList<>();
-		output.pushContext("with-reference-targets", -1);
 		for (Object maybeWithObject : withAndOptions) {
 			if (maybeWithObject == BACKWARD_COMPATIBLE || maybeWithObject == FORBID_LAZY_SAVING) continue;
 			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof DistributionTracker) continue;
@@ -178,13 +167,11 @@ public class Bitser {
 //					cache.getWrapper(withObject.getClass()).registerReferenceTargets(withObject, recursor)
 //			);
 		}
-		output.popContext("with-reference-targets", -1);
 
 //		output.pushContext("id-mapper", -1);
 //		idMapper.save(output);
 //		output.popContext("id-mapper", -1);
 
-		output.pushContext("output", -1);
 		Serializer serializer = new Serializer(
 				this, withParameters, output, backwardCompatible, object,
 				forbidLazySaving, integerDistribution, floatDistribution
@@ -196,7 +183,6 @@ public class Bitser {
 //				new WriteInfo(this, withParameters, legacy, output.usesContextInfo(), forbidLazySaving),
 //				recursor -> wrapper.write(object, recursor)
 //		);
-		output.popContext("output", -1);
 	}
 
 	private void rawSerialize(Object object, BitOutputStream output, Object... withAndOptions) throws IOException {
@@ -373,10 +359,9 @@ public class Bitser {
 		}
 
 		LegacyClasses legacy = null;
-		// TODO Replace with deserializeSimple
 		if (backwardCompatible) {
 			input.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
-			legacy = deserialize(LegacyClasses.class, input, sizeLimit);
+			legacy = deserializeSimple(LegacyClasses.class, input, sizeLimit);
 			input.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
 		}
 

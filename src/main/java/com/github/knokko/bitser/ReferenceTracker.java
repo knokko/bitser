@@ -150,7 +150,7 @@ class ReferenceTracker {
 		}
 
 		Object get(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
-			if (referenceWrapper.field.optional && !input.read()) return null;
+			if (ReadHelper.readOptional(input, referenceWrapper.field.optional)) return null;
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
 			else return getUnstable(input);
 		}
