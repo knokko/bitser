@@ -141,7 +141,7 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 
 	@Override
 	void registerReferenceTargets(
-			ReferenceTracker references, Object value,
+			AbstractReferenceTracker references, Object value,
 			RecursionNode parentNode, String fieldName
 	) {
 		BitStructWrapper<?> structInfo = references.cache.getWrapper(value.getClass());

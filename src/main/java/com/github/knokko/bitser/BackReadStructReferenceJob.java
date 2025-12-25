@@ -1,7 +1,5 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.BackReference;
-
 class BackReadStructReferenceJob {
 
 	final Object[] legacyValuesArray;
@@ -20,7 +18,8 @@ class BackReadStructReferenceJob {
 	}
 
 	void resolve(BackDeserializer deserializer) throws Throwable {
-		Object legacyReference = deserializer.references.get(legacyWrapper).getLegacy(legacyWrapper, deserializer.input);
-		legacyValuesArray[legacyValuesIndex] = new BackReference(legacyReference);
+		legacyValuesArray[legacyValuesIndex] = deserializer.references.get(legacyWrapper).getWithOrLegacy(
+				legacyWrapper, deserializer.input
+		);
 	}
 }

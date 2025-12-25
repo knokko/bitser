@@ -1,5 +1,7 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.legacy.BackReference;
+
 import java.lang.reflect.Array;
 
 class BackConvertArrayReferenceJob {
@@ -23,8 +25,12 @@ class BackConvertArrayReferenceJob {
 		int length = Array.getLength(legacyArray);
 		for (int index = 0; index < length; index++) {
 			Object legacyElement = Array.get(legacyArray, index);
-			Object modernElement = deserializer.references.getModern(legacyElement);
-			Array.set(modernArray, index, modernElement);
+			if (legacyElement instanceof BackReference) {
+				Object modernElement = deserializer.references.getModern(((BackReference) legacyElement).reference);
+				Array.set(modernArray, index, modernElement);
+			} else {
+				Array.set(modernArray, index, ((WithReference) legacyElement).reference);
+			}
 		}
 	}
 }

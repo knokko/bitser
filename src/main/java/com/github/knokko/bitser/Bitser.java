@@ -441,6 +441,7 @@ public class Bitser {
 			BackDeserializer deserializer = new BackDeserializer(
 					this, input, legacy, sizeLimit, withParameters, wrapper
 			);
+			deserializer.references.setWithObjects(withObjects);
 			deserializer.run();
 			//noinspection unchecked
 			return (T) deserializer.rootStruct;

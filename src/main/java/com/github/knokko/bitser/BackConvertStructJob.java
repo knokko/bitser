@@ -67,6 +67,8 @@ class BackConvertStructJob {
 									modernObject, modernField.classField, ((BackReference) legacyFieldValue).reference,
 									new RecursionNode(node, modernField.classField.getName())
 							));
+						} else if (legacyFieldValue instanceof WithReference) {
+							modernField.classField.set(modernObject, ((WithReference) legacyFieldValue).reference);
 						} else {
 							throw new LegacyBitserException(
 									"Can't store legacy " + legacyFieldValue +

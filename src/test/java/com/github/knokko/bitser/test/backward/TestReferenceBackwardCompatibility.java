@@ -770,7 +770,7 @@ public class TestReferenceBackwardCompatibility {
 	}
 
 	@Test
-	public void testBackwardCompatibleWith() {
+	public void testBackwardCompatibleWithStruct() {
 		Bitser bitser = new Bitser(false);
 		OldNestedRoot oldWith = new OldNestedRoot();
 		oldWith.stableRoot = new StableDummy(1.0);
@@ -808,6 +808,50 @@ public class TestReferenceBackwardCompatibility {
 		), newWith, Bitser.BACKWARD_COMPATIBLE);
 		assertSame(newWith.targets.get(0).dummy, back.friends.iterator().next().cross);
 		assertSame(newWith.friendRoot, back.targets.get(0).friend);
+	}
+
+	@Test
+	public void testBackwardCompatibleWithArray() {
+		Bitser bitser = new Bitser(false);
+		OldNestedRoot oldWith = new OldNestedRoot();
+		oldWith.stableRoot = new StableDummy(1.0);
+		oldWith.friendRoot = new Dummy(2);
+		oldWith.targets = new OldTargetWrapper[] { new OldTargetWrapper(new StableDummy(3), oldWith.friendRoot) };
+		oldWith.friends.add(new FriendWrapper(new Dummy(4), oldWith.stableRoot));
+
+		OldMixedReferenceList oldSubject = new OldMixedReferenceList();
+		oldSubject.stableReferences.add(oldWith.targets[0].dummy);
+		oldSubject.unstableReferences.add(new ArrayList<>());
+		oldSubject.unstableReferences.get(0).add(oldWith.targets[0].dummy);
+		oldSubject.targets.add(new StableDummy(8));
+
+		byte[] oldSubjectBytes = bitser.serializeToBytesSimple(oldSubject, oldWith, Bitser.BACKWARD_COMPATIBLE);
+		byte[] oldWithBytes = bitser.serializeToBytesSimple(oldWith, Bitser.BACKWARD_COMPATIBLE);
+
+		NewNestedRoot newWith = bitser.deserializeFromBytesSimple(NewNestedRoot.class, oldWithBytes, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(1.0, newWith.stableRoot.rating);
+		assertEquals(2, newWith.friendRoot.x);
+		assertEquals(3.0, newWith.targets.get(0).dummy.rating);
+		assertSame(newWith.friendRoot, newWith.targets.get(0).friend);
+		assertEquals(4, newWith.friends.iterator().next().friend.x);
+		assertSame(newWith.stableRoot, newWith.friends.iterator().next().cross);
+
+		NewMixedReferenceList newSubject = bitser.deserializeFromBytesSimple(
+				NewMixedReferenceList.class, oldSubjectBytes, Bitser.BACKWARD_COMPATIBLE, newWith
+		);
+		assertNotNull(newSubject.targets);
+		assertEquals(8.0, newSubject.targets[0].rating);
+		assertSame(newWith.targets.get(0).dummy, newSubject.stableReferences.get(0));
+		assertSame(newWith.targets.get(0).dummy, newSubject.unstableReferences[0][0]);
+
+		NewMixedReferenceList back = bitser.deserializeFromBytesSimple(
+				NewMixedReferenceList.class,
+				bitser.serializeToBytesSimple(newSubject, Bitser.BACKWARD_COMPATIBLE, newWith),
+				newWith,
+				Bitser.BACKWARD_COMPATIBLE
+		);
+		assertSame(newWith.targets.get(0).dummy, back.stableReferences.get(0));
+		assertSame(newWith.targets.get(0).dummy, back.unstableReferences[0][0]);
 	}
 
 	@BitStruct(backwardCompatible = true)

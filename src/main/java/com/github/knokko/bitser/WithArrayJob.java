@@ -14,7 +14,7 @@ class WithArrayJob {
 		this.node = node;
 	}
 
-	void register(ReferenceTracker references) {
+	void register(AbstractReferenceTracker references) {
 		int length = Array.getLength(array);
 		for (int index = 0; index < length; index++) {
 			Object element = Array.get(array, index);

@@ -3,26 +3,48 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
+import com.github.knokko.bitser.legacy.BackReference;
 import com.github.knokko.bitser.legacy.BackStructInstance;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
-class BackReferenceTracker {
+class BackReferenceTracker extends AbstractReferenceTracker {
 
 	private final HashMap<String, LabelTargets> labels = new HashMap<>();
 	private final HashMap<ReferenceTracker.IdentityWrapper, Object> legacyToModern = new HashMap<>();
-	final BitserCache cache;
 
 	BackReferenceTracker(BitserCache cache) {
-		this.cache = cache;
+		super(cache);
+	}
+
+	@Override
+	void registerTarget(String label, Object target) {
+		BackReferenceTracker.LabelTargets entries = labels.computeIfAbsent(label, LabelTargets::new);
+		entries.registerWith(target, cache);
+	}
+
+	void setWithObjects(List<Object> withObjects) {
+		for (Object withObject : withObjects) {
+			BitStructWrapper<?> structInfo = cache.getWrapper(withObject.getClass());
+			RecursionNode node = new RecursionNode("with " + withObject.getClass().getSimpleName());
+			structJobs.add(new WithStructJob(withObject, structInfo, node));
+		}
 	}
 
 	// TODO Delete?
 	void registerLegacyTarget(String label, Object target) {
 		LabelTargets entries = labels.computeIfAbsent(label, LabelTargets::new);
 		entries.registerLegacy(target);
+	}
+
+	void handleWithJobs() {
+		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
+			if (!structJobs.isEmpty()) structJobs.remove(structJobs.size() - 1).register(this);
+			if (!arrayJobs.isEmpty()) arrayJobs.remove(arrayJobs.size() - 1).register(this);
+		}
 	}
 
 	void registerModern(Object legacyTarget, Object modernTarget) {
@@ -33,11 +55,12 @@ class BackReferenceTracker {
 
 	void processStableLegacyIDs() {
 		for (LabelTargets targets : labels.values()) {
-			for (Object legacyTarget : targets.idsToLegacy) {
+			for (Object rawLegacyTarget : targets.idsToLegacyOrWith) {
+				Object legacyTarget = ((BackReference) rawLegacyTarget).reference;
 				if (legacyTarget instanceof BackStructInstance) {
 					UUID stableID = ((BackStructInstance) legacyTarget).stableID;
 					if (stableID != null) {
-						if (targets.stable.put(stableID, (BackStructInstance) legacyTarget) != null) {
+						if (targets.stable.put(stableID, new BackReference(legacyTarget)) != null) {
 							throw new ReferenceBitserException("Multiple legacy stable targets have ID " + stableID);
 						}
 					}
@@ -68,32 +91,53 @@ class BackReferenceTracker {
 
 		private final String myLabel;
 
-		private final HashMap<UUID, BackStructInstance> stable = new HashMap<>();
-		final HashMap<ReferenceTracker.IdentityWrapper, Integer> legacyToIDs = new HashMap<>();
-		final ArrayList<Object> idsToLegacy = new ArrayList<>();
+		private final HashMap<UUID, Object> stable = new HashMap<>();
+		final HashMap<ReferenceTracker.IdentityWrapper, Integer> legacyOrWithToIDs = new HashMap<>();
+		final ArrayList<Object> idsToLegacyOrWith = new ArrayList<>();
 
 		LabelTargets(String label) {
 			this.myLabel = label;
 		}
 
 		void registerLegacy(Object target) {
-			if (legacyToIDs.put(new ReferenceTracker.IdentityWrapper(target), legacyToIDs.size()) != null) {
+			if (legacyOrWithToIDs.put(new ReferenceTracker.IdentityWrapper(target), legacyOrWithToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple legacy unstable targets have identity " + target);
 			}
-			idsToLegacy.add(target);
+			idsToLegacyOrWith.add(new BackReference(target));
 		}
 
-		Object getLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
+		void registerWith(Object target, BitserCache cache) {
+			if (legacyOrWithToIDs.put(new ReferenceTracker.IdentityWrapper(target), legacyOrWithToIDs.size()) != null) {
+				throw new ReferenceBitserException("Multiple legacy unstable targets have identity " + target);
+			}
+			idsToLegacyOrWith.add(new WithReference(target));
+			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
+			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
+				UUID id = maybeWrapper.getStableId(target);
+				Object withSameID = stable.put(id, new WithReference(target));
+				if (withSameID != null) {
+					if (((WithReference) withSameID).reference == target) {
+						throw new ReferenceBitserException("Multiple stable targets have identity " + target);
+					} else {
+						throw new ReferenceBitserException(
+								"Multiple stable targets have ID " + id + ": " + target + " and " + withSameID
+						);
+					}
+				}
+			}
+		}
+
+		Object getWithOrLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
 			if (ReadHelper.readOptional(input, referenceWrapper.field.optional)) return null;
 			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
 			else return getUnstable(input);
 		}
 
-		private BackStructInstance getStable(BitInputStream input) throws Throwable {
+		private Object getStable(BitInputStream input) throws Throwable {
 			input.prepareProperty("legacy-stable-id", -1);
 			UUID id = new UUID(IntegerBitser.decodeFullLong(input), IntegerBitser.decodeFullLong(input));
 			input.finishProperty();
-			BackStructInstance value = stable.get(id);
+			Object value = stable.get(id);
 			if (value == null) {
 				throw new ReferenceBitserException(
 						"Can't find legacy stable reference target with label " + myLabel + " and ID " + id
@@ -104,9 +148,9 @@ class BackReferenceTracker {
 
 		private Object getUnstable(BitInputStream input) throws Throwable {
 			input.prepareProperty("legacy-unstable-id", -1);
-			int index = (int) IntegerBitser.decodeUniformInteger(0, legacyToIDs.size() - 1, input);
+			int index = (int) IntegerBitser.decodeUniformInteger(0, legacyOrWithToIDs.size() - 1, input);
 			input.finishProperty();
-			return idsToLegacy.get(index);
+			return idsToLegacyOrWith.get(index);
 		}
 	}
 }

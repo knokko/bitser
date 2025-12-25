@@ -116,7 +116,7 @@ abstract class BitFieldWrapper {
 	abstract void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue);
 
 	void registerReferenceTargets(
-			ReferenceTracker references, Object value,
+			AbstractReferenceTracker references, Object value,
 			RecursionNode parentNode, String fieldName
 	) {}
 

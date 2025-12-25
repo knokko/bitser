@@ -11,18 +11,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-class ReferenceTracker {
+class ReferenceTracker extends AbstractReferenceTracker {
 
 	private final HashMap<String, LabelTargets> labels = new HashMap<>();
-	final BitserCache cache;
-
-	final ArrayList<WithStructJob> structJobs = new ArrayList<>();
-	final ArrayList<WithArrayJob> arrayJobs = new ArrayList<>();
 
 	ReferenceTracker(BitserCache cache) {
-		this.cache = cache;
+		super(cache);
 	}
 
+	@Override
 	void registerTarget(String label, Object target) {
 		LabelTargets entries = labels.computeIfAbsent(label, key -> new LabelTargets(key, cache));
 		entries.register(target);

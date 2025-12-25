@@ -80,6 +80,7 @@ class BackDeserializer {
 		}
 
 		references.processStableLegacyIDs();
+		references.handleWithJobs();
 
 		for (BackReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {

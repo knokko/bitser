@@ -182,7 +182,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	void registerReferenceTargets(
-			ReferenceTracker references, Object value,
+			AbstractReferenceTracker references, Object value,
 			RecursionNode parentNode, String fieldName
 	) {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);

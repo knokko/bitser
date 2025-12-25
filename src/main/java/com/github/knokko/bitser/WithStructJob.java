@@ -14,7 +14,7 @@ class WithStructJob {
 		this.node = node;
 	}
 
-	void register(ReferenceTracker references) {
+	void register(AbstractReferenceTracker references) {
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
 			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
 				try {
