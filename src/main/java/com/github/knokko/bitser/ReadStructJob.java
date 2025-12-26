@@ -6,17 +6,7 @@ import com.github.knokko.bitser.exceptions.RecursionException;
 import java.util.HashMap;
 import java.util.Map;
 
-class ReadStructJob {
-
-	final Object structObject;
-	final BitStructWrapper<?> structInfo;
-	final RecursionNode node;
-
-	ReadStructJob(Object structObject, BitStructWrapper<?> structInfo, RecursionNode node) {
-		this.structObject = structObject;
-		this.structInfo = structInfo;
-		this.node = node;
-	}
+record ReadStructJob(Object structObject, BitStructWrapper<?> structInfo, RecursionNode node) {
 
 	void read(Deserializer deserializer) {
 		Map<Class<?>, Object[]> serializedFunctionValues = new HashMap<>();

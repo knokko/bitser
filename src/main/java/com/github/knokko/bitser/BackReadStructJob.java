@@ -7,17 +7,7 @@ import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 
-class BackReadStructJob {
-
-	final LegacyStructInstance legacyObject;
-	final LegacyStruct legacyInfo;
-	final RecursionNode node;
-
-	BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyInfo, RecursionNode node) {
-		this.legacyObject = legacyObject;
-		this.legacyInfo = legacyInfo;
-		this.node = node;
-	}
+record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyInfo, RecursionNode node) {
 
 	private void readFieldsOrFunctions(
 			BackDeserializer deserializer, ArrayList<LegacyField> fieldsOrFunctions, String namePrefix,

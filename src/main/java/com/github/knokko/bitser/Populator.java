@@ -101,9 +101,9 @@ class Populator {
 			populateUntilStable(criticalJobs);
 
 			// Let's post-init the deepest structs first, since I think that makes most sense
-			postInitJobs.sort(Comparator.comparingInt(job -> -job.node.depth));
+			postInitJobs.sort(Comparator.comparingInt(job -> -job.node().depth));
 			for (PostInitJob postInitJob : postInitJobs) {
-				postInitJob.structObject.postInit(postInitJob.context);
+				postInitJob.structObject().postInit(postInitJob.context());
 			}
 			postInitJobs.clear();
 		}

@@ -73,22 +73,22 @@ class Serializer {
 
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
-				output.pushContext(referenceJob.node, "(struct-reference-job)");
+				output.pushContext(referenceJob.node(), "(struct-reference-job)");
 				referenceJob.save(this);
-				output.popContext(referenceJob.node, "(struct-reference-job)");
+				output.popContext(referenceJob.node(), "(struct-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursionException(referenceJob.node.generateTrace(null), failed);
+				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
 			}
 		}
 		structReferenceJobs.clear();
 
 		for (WriteArrayReferenceJob referenceJob : arrayReferenceJobs) {
 			try {
-				output.pushContext(referenceJob.node, "(array-reference-job)");
+				output.pushContext(referenceJob.node(), "(array-reference-job)");
 				referenceJob.save(this);
-				output.popContext(referenceJob.node, "(array-reference-job)");
+				output.popContext(referenceJob.node(), "(array-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursionException(referenceJob.node.generateTrace(null), failed);
+				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
 			}
 		}
 		arrayReferenceJobs.clear();

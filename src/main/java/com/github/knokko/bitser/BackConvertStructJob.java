@@ -11,23 +11,10 @@ import java.util.Map;
 
 import static java.lang.Math.max;
 
-class BackConvertStructJob {
-
-	final Object modernObject;
-	final BitStructWrapper<?> modernInfo;
-	final LegacyStructInstance legacyObject;
-	final RecursionNode node;
-
-	BackConvertStructJob(
-			Object modernObject, BitStructWrapper<?> modernInfo,
-			LegacyStructInstance legacyObject,
-			RecursionNode node
-	) {
-		this.modernObject = modernObject;
-		this.modernInfo = modernInfo;
-		this.legacyObject = legacyObject;
-		this.node = node;
-	}
+record BackConvertStructJob(
+		Object modernObject, BitStructWrapper<?> modernInfo,
+		LegacyStructInstance legacyObject, RecursionNode node
+) {
 
 	void convert(BackDeserializer deserializer) {
 		if (legacyObject.hierarchy.length != modernInfo.classHierarchy.size()) {
@@ -58,7 +45,9 @@ class BackConvertStructJob {
 						if (modernField.bitField.field.optional) {
 							modernField.classField.set(modernObject, null);
 							continue;
-						} else throw new LegacyBitserException("Can't store legacy null in " + fieldName + " for field " + modernField);
+						} else throw new LegacyBitserException(
+								"Can't store legacy null in " + fieldName + " for field " + modernField
+						);
 					}
 
 					if (modernField.bitField instanceof ReferenceFieldWrapper) {
@@ -96,14 +85,14 @@ class BackConvertStructJob {
 				}
 				SingleClassWrapper.FunctionWrapper[] modernFunctions = new SingleClassWrapper.FunctionWrapper[
 						1 + largestModernFunctionID
-				];
+						];
 				for (SingleClassWrapper.FunctionWrapper modernFunction : modernClass.functions) {
 					modernFunctions[modernFunction.id] = modernFunction;
 				}
 
 				Object[] currentModernFunctionValues = new Object[
 						max(modernFunctions.length, legacyValues.functionValues.length)
-				];
+						];
 
 				legacyFieldValues.put(modernClass.myClass, legacyValues.fieldValues);
 				legacyFunctionValues.put(modernClass.myClass, legacyValues.functionValues);
@@ -168,7 +157,7 @@ class BackConvertStructJob {
 					deserializer.bitser, true, modernFunctionValues,
 					legacyFieldValues, legacyFunctionValues, deserializer.withParameters
 			);
-			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) modernObject, context,  node));
+			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) modernObject, context, node));
 		}
 	}
 }

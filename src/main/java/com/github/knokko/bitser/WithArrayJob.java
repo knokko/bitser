@@ -2,17 +2,7 @@ package com.github.knokko.bitser;
 
 import java.lang.reflect.Array;
 
-class WithArrayJob {
-
-	final Object array;
-	final BitFieldWrapper elementsWrapper;
-	final RecursionNode node;
-
-	WithArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNode node) {
-		this.array = array;
-		this.elementsWrapper = elementsWrapper;
-		this.node = node;
-	}
+record WithArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNode node) {
 
 	void register(AbstractReferenceTracker references) {
 		int length = Array.getLength(array);

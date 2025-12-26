@@ -2,17 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.RecursionException;
 
-class WithStructJob {
-
-	final Object structObject;
-	final BitStructWrapper<?> structInfo;
-	final RecursionNode node;
-
-	WithStructJob(Object structObject, BitStructWrapper<?> structInfo, RecursionNode node) {
-		this.structObject = structObject;
-		this.structInfo = structInfo;
-		this.node = node;
-	}
+record WithStructJob(Object structObject, BitStructWrapper<?> structInfo, RecursionNode node) {
 
 	void register(AbstractReferenceTracker references) {
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {

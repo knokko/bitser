@@ -7,19 +7,7 @@ import com.github.knokko.bitser.legacy.LegacyIntValue;
 
 import java.lang.reflect.Array;
 
-class BackConvertArrayJob {
-
-	final Object legacyArray;
-	final Object modernArray;
-	final BitFieldWrapper modernWrapper;
-	final RecursionNode node;
-
-	BackConvertArrayJob(Object legacyArray, Object modernArray, BitFieldWrapper modernWrapper, RecursionNode node) {
-		this.legacyArray = legacyArray;
-		this.modernArray = modernArray;
-		this.modernWrapper = modernWrapper;
-		this.node = node;
-	}
+record BackConvertArrayJob(Object legacyArray, Object modernArray, BitFieldWrapper modernWrapper, RecursionNode node) {
 
 	void convert(BackDeserializer deserializer) {
 		int length = Array.getLength(legacyArray);
@@ -30,11 +18,14 @@ class BackConvertArrayJob {
 			if (legacyElement instanceof Character) legacyElement = new LegacyIntValue((Character) legacyElement);
 			if (legacyElement instanceof Float) legacyElement = new LegacyFloatValue((Float) legacyElement);
 			if (legacyElement instanceof Double) legacyElement = new LegacyFloatValue((Double) legacyElement);
-			if (legacyElement instanceof Number) legacyElement = new LegacyIntValue(((Number) legacyElement).longValue());
+			if (legacyElement instanceof Number)
+				legacyElement = new LegacyIntValue(((Number) legacyElement).longValue());
 
 			if (legacyElement == null) {
 				if (modernWrapper.field.optional) continue;
-				throw new LegacyBitserException("An element of " + modernWrapper.field + " is null, which is no longer allowed");
+				throw new LegacyBitserException(
+						"An element of " + modernWrapper.field + " is null, which is no longer allowed"
+				);
 			}
 
 			Object modernElement = modernWrapper.convert(deserializer, legacyElement, node, "elements");
