@@ -2,19 +2,7 @@ package com.github.knokko.bitser;
 
 import java.lang.reflect.Array;
 
-class WriteArrayJob {
-
-	final Object array;
-	final BitFieldWrapper elementsWrapper;
-	final RecursionNode node;
-	final String nullErrorMessage;
-
-	WriteArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNode node, String nullErrorMessage) {
-		this.array = array;
-		this.elementsWrapper = elementsWrapper;
-		this.node = node;
-		this.nullErrorMessage = nullErrorMessage;
-	}
+record WriteArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNode node, String nullErrorMessage) {
 
 	void write(Serializer serializer) throws Throwable {
 		int length = Array.getLength(array);

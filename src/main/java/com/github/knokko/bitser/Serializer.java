@@ -53,18 +53,18 @@ class Serializer {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				WriteStructJob job = structJobs.remove(structJobs.size() - 1);
-				output.pushContext(job.node, "(struct-job)");
+				output.pushContext(job.node(), "(struct-job)");
 				job.write(this);
-				output.popContext(job.node, "(struct-job)");
+				output.popContext(job.node(), "(struct-job)");
 			}
 			if (!arrayJobs.isEmpty()) {
 				WriteArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
-					output.pushContext(job.node, "(array-job)");
+					output.pushContext(job.node(), "(array-job)");
 					job.write(this);
-					output.popContext(job.node, "(array-job)");
+					output.popContext(job.node(), "(array-job)");
 				} catch (Throwable failed) {
-					throw new RecursionException(job.node.generateTrace(null), failed);
+					throw new RecursionException(job.node().generateTrace(null), failed);
 				}
 			}
 		}
