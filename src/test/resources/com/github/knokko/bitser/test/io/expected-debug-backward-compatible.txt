@@ -52,7 +52,7 @@ end LegacyClasses -> classes -> elements -> fields -> element
 end LegacyClasses -> classes -> elements -> fields -> (array-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0101
+allowed-class-index: 0001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010100
@@ -60,7 +60,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
@@ -351,7 +351,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> in
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0101
+allowed-class-index: 0001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010110
@@ -359,12 +359,12 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> field
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> field
@@ -457,7 +457,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> in
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0001
+allowed-class-index: 0110
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 10
@@ -465,7 +465,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
 optional: 0
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
@@ -511,7 +511,7 @@ optional: 0
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper -> field -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0001
+allowed-class-index: 0110
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
@@ -519,7 +519,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
 optional: 0
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
@@ -788,7 +788,7 @@ end LegacyClasses -> classes -> elements -> fields -> element
 end LegacyClasses -> classes -> elements -> fields -> (array-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0101
+allowed-class-index: 0001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010100
@@ -796,7 +796,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
@@ -1087,7 +1087,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> in
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0101
+allowed-class-index: 0001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010110
@@ -1095,12 +1095,12 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> field
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> field
@@ -1193,7 +1193,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> in
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0001
+allowed-class-index: 0110
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 10
@@ -1201,7 +1201,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
 optional: 0
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField
@@ -1247,7 +1247,7 @@ optional: 0
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper -> field -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField
-allowed-class-index: 0001
+allowed-class-index: 0110
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
@@ -1255,7 +1255,7 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> id
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
-allowed-class-index: 0110
+allowed-class-index: 1001
 end LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
 optional: 0
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> sizeField

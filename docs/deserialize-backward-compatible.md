@@ -1,4 +1,6 @@
 # Deserialize with backward compatibility
+TODO Fix this because it is outdated
+
 This page summarizes how we can deserialize an object of interest in a
 backward-compatible manner. For instance, we could have saved an object
 of interest to disk a week ago, added new fields to its class, and

@@ -12,10 +12,8 @@ abstract class BitFieldWrapper {
 	private static final Class<?>[] BITSER_HIERARCHY = {
 			BooleanFieldWrapper.class, IntegerFieldWrapper.class, FloatFieldWrapper.class,
 			StringFieldWrapper.class, UUIDFieldWrapper.class, EnumFieldWrapper.class,
-			StructFieldWrapper.class,
-			LazyFieldWrapper.class,
 			BitCollectionFieldWrapper.class, ByteCollectionFieldWrapper.class, MapFieldWrapper.class,
-			StableReferenceFieldWrapper.class, UnstableReferenceFieldWrapper.class
+			StructFieldWrapper.class, LazyFieldWrapper.class, ReferenceFieldWrapper.class,
 	};
 
 	@BitField

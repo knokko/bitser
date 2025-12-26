@@ -3,19 +3,26 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 
-abstract class ReferenceFieldWrapper extends BitFieldWrapper {
+@BitStruct(backwardCompatible = false)
+class ReferenceFieldWrapper extends BitFieldWrapper {
 
 	@BitField
 	final String label;
 
-	ReferenceFieldWrapper(VirtualField field, String label) {
+	@BitField
+	final boolean stable;
+
+	ReferenceFieldWrapper(VirtualField field, String label, boolean stable) {
 		super(field);
 		this.label = label;
+		this.stable = stable;
 	}
 
-	ReferenceFieldWrapper() {
+	@SuppressWarnings("unused")
+	private ReferenceFieldWrapper() {
 		super();
 		this.label = "";
+		this.stable = false;
 	}
 
 	@Override

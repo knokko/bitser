@@ -56,7 +56,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 	}
 
 	private LabelTargets get(ReferenceFieldWrapper referenceWrapper) {
-		if (referenceWrapper instanceof StableReferenceFieldWrapper) {
+		if (referenceWrapper.stable) {
 			BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
 			if (valueInfo == null) {
 				assert referenceWrapper.field.type != null;
@@ -120,7 +120,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		void save(ReferenceFieldWrapper referenceWrapper, Object reference, BitOutputStream output) throws Throwable {
-			if (referenceWrapper instanceof StableReferenceFieldWrapper) {
+			if (referenceWrapper.stable) {
 				BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
 				UUID id = valueInfo.getStableId(reference);
 				output.prepareProperty("stable-id", -1);
@@ -147,7 +147,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		Object get(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
-			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
+			if (referenceWrapper.stable) return getStable(input);
 			else return getUnstable(input);
 		}
 

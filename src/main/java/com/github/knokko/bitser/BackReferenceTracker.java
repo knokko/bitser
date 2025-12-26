@@ -125,7 +125,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		Object getWithOrLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {
-			if (referenceWrapper instanceof StableReferenceFieldWrapper) return getStable(input);
+			if (referenceWrapper.stable) return getStable(input);
 			else return getUnstable(input);
 		}
 
