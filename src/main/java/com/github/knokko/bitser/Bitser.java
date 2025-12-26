@@ -2,7 +2,6 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.io.*;
 import com.github.knokko.bitser.exceptions.*;
-import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.options.DebugBits;
 import com.github.knokko.bitser.options.WithParameter;
@@ -65,8 +64,6 @@ public class Bitser {
 	}
 
 	private void rawSerializeSimple(Object object, BitOutputStream output, Object... withAndOptions) {
-		BitStructWrapper<?> wrapper = cache.getWrapper(object.getClass());
-
 		boolean backwardCompatible = false;
 		boolean forbidLazySaving = false;
 		IntegerDistributionTracker integerDistribution = null;
@@ -93,12 +90,7 @@ public class Bitser {
 
 		if (backwardCompatible) {
 			LegacyClasses legacy = new LegacyClasses();
-
-			// TODO Eliminate
-			legacy.setRoot(Recursor.compute(
-					legacy, new LegacyInfo(cache, new FunctionContext(this, true, withParameters)),
-					recursor -> wrapper.registerClasses(object, recursor)
-			).get());
+			new UsedStructCollector(cache, legacy, object.getClass()).collect();
 
 			try {
 				output.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
@@ -158,14 +150,38 @@ public class Bitser {
 	private <T> T rawDeserializeSimple(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
 		CollectionSizeLimit sizeLimit = null;
 		boolean backwardCompatible = false;
-		for (Object withObject : withAndOptions) {
-			if (withObject == BACKWARD_COMPATIBLE) {
+		Map<String, Object> withParameters = new HashMap<>();
+		ArrayList<Object> withObjects = new ArrayList<>();
+
+		for (Object maybeWithObject : withAndOptions) {
+			if (maybeWithObject == BACKWARD_COMPATIBLE) {
 				backwardCompatible = true;
+				continue;
 			}
-			if (withObject instanceof CollectionSizeLimit) {
+			if (maybeWithObject instanceof CollectionSizeLimit) {
 				if (sizeLimit != null) throw new IllegalArgumentException("Encountered multiple size limits");
-				sizeLimit = (CollectionSizeLimit) withObject;
+				sizeLimit = (CollectionSizeLimit) maybeWithObject;
+				continue;
 			}
+			if (maybeWithObject instanceof WithParameter) {
+				WithParameter parameter = (WithParameter) maybeWithObject;
+				if (withParameters.containsKey(parameter.key)) {
+					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
+				}
+				withParameters.put(parameter.key, parameter.value);
+				continue;
+			}
+			if (maybeWithObject == null || maybeWithObject instanceof DebugBits) continue;
+			if (maybeWithObject == FORBID_LAZY_SAVING) {
+				System.out.println("Ignoring FORBID_LAZY_SAVING option in Bitser.deserialize");
+				continue;
+			}
+			if (maybeWithObject instanceof DistributionTracker) {
+				System.out.println("Ignoring DistributionTracker option in Bitser.deserialize");
+				continue;
+			}
+
+			withObjects.add(maybeWithObject);
 		}
 
 		LegacyClasses legacy = null;
@@ -176,34 +192,6 @@ public class Bitser {
 		}
 
 		BitStructWrapper<T> wrapper = cache.getWrapper(objectClass);
-
-		Map<String, Object> withParameters = new HashMap<>();
-		for (Object withObject : withAndOptions) {
-			if (withObject instanceof WithParameter) {
-				WithParameter parameter = (WithParameter) withObject;
-				if (withParameters.containsKey(parameter.key)) {
-					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
-				}
-				withParameters.put(parameter.key, parameter.value);
-			}
-		}
-
-		ArrayList<Object> withObjects = new ArrayList<>();
-		for (Object maybeWithObject : withAndOptions) {
-			if (maybeWithObject == null || maybeWithObject == BACKWARD_COMPATIBLE) continue;
-			if (maybeWithObject == FORBID_LAZY_SAVING) {
-				System.out.println("Ignoring FORBID_LAZY_SAVING option in Bitser.deserialize");
-				continue;
-			}
-			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof CollectionSizeLimit) continue;
-			if (maybeWithObject instanceof DebugBits) continue;
-			if (maybeWithObject instanceof DistributionTracker) {
-				System.out.println("Ignoring DistributionTracker option in Bitser.deserialize");
-				continue;
-			}
-
-			withObjects.add(maybeWithObject);
-		}
 
 		if (legacy != null) {
 			BackDeserializer deserializer = new BackDeserializer(
@@ -253,38 +241,6 @@ public class Bitser {
 		//noinspection unchecked
 		return (T) deserializeFromBytesSimple(object.getClass(), serializeToBytesSimple(object, with), with);
 	}
-
-//	public <T> BitStructConnection<T> createStructConnection(
-//			T initialState, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		return createRawStructConnection(initialState, initialState.getClass(), reportChanges);
-//	}
-//
-//	private <T> BitStructConnection<T> createRawStructConnection(
-//			T initialState, Class<?> theClass, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		return cache.getWrapper(theClass).createConnection(this, initialState, reportChanges);
-//	}
-//
-//	public boolean needsChildConnection(BitFieldWrapper childWrapper) {
-//		if (childWrapper instanceof StructFieldWrapper) return true;
-//		assert childWrapper.field.type != null;
-//		return List.class.isAssignableFrom(childWrapper.field.type);
-//	}
-//
-//	public <T> BitConnection createChildConnection(
-//			T child, BitFieldWrapper childWrapper, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		if (childWrapper instanceof StructFieldWrapper) {
-//			return createRawStructConnection(child, childWrapper.field.type, reportChanges);
-//		}
-//		assert childWrapper.field.type != null;
-//		if (List.class.isAssignableFrom(childWrapper.field.type)) {
-//			//noinspection unchecked
-//			return new BitListConnection<>(this, (List<T>) child, childWrapper.getChildWrapper(), reportChanges);
-//		}
-//		return null;
-//	}
 
 	public boolean deepEquals(Object a, Object b) {
 		// TODO Recursive -> iterative

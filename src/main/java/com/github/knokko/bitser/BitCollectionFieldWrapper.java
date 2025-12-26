@@ -4,7 +4,6 @@ import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.BackArrayValue;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -32,20 +31,8 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		super.registerLegacyClasses(value, recursor);
-		if (value == null) return;
-		if (value.getClass().isArray()) {
-			int size = Array.getLength(value);
-			for (int index = 0; index < size; index++) {
-				Object element = Array.get(value, index);
-				valuesWrapper.registerLegacyClasses(element, recursor);
-			}
-		} else {
-			for (Object element : (Collection<?>) value) {
-				valuesWrapper.registerLegacyClasses(element, recursor);
-			}
-		}
+	void registerLegacyClasses(UsedStructCollector collector) {
+		valuesWrapper.registerLegacyClasses(collector);
 	}
 
 	@Override

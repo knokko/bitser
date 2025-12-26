@@ -30,7 +30,7 @@ abstract class BitFieldWrapper {
 		this.field = new VirtualField();
 	}
 
-	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {}
+	void registerLegacyClasses(UsedStructCollector collector) {}
 
 	void registerReferenceTargets(
 			AbstractReferenceTracker references, Object value,

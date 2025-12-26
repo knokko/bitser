@@ -2,8 +2,6 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
-import com.github.knokko.bitser.util.JobOutput;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -81,25 +79,10 @@ class BitStructWrapper<T> {
 		return stableIdField;
 	}
 
-	JobOutput<LegacyStruct> registerClasses(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
+	void assertBackwardCompatible() {
 		if (!this.bitStruct.backwardCompatible()) {
 			throw new InvalidBitFieldException("BitStruct " + classHierarchy.get(0) + " is not backward compatible");
 		}
-
-		JobOutput<LegacyStruct> legacyStruct = recursor.computeFlat("declaring class", legacy ->
-				legacy.addStruct(constructor.getDeclaringClass())
-		);
-		for (int index = 0; index < classHierarchy.size(); index++) {
-			final int rememberIndex = index;
-			SingleClassWrapper currentClass = classHierarchy.get(index);
-			JobOutput<LegacyClass> registered = currentClass.register(object, recursor);
-			recursor.runFlat(currentClass.myClass.getSimpleName(), legacy -> {
-				if (legacyStruct.get().classHierarchy.size() == rememberIndex) {
-					legacyStruct.get().classHierarchy.add(registered.get());
-				}
-			});
-		}
-		return legacyStruct;
 	}
 
 	boolean hasStableId() {

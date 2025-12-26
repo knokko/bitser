@@ -1,7 +1,6 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
-import com.github.knokko.bitser.field.ReferenceField;
 import com.github.knokko.bitser.field.ReferenceFieldTarget;
 
 import java.util.ArrayList;
@@ -23,36 +22,34 @@ class LegacyClasses {
 	private final Map<Class<?>, LegacyClass> classMap = new HashMap<>();
 	private final Map<Class<?>, LegacyStruct> structMap = new HashMap<>();
 
-	@ReferenceField(stable = false, label = "structs")
-	private LegacyStruct root;
-
-	void setRoot(LegacyStruct root) {
-		if (this.root != null) throw new UnexpectedBitserException("Root must be set exactly once");
-		this.root = root;
-	}
-
 	LegacyStruct getRoot() {
-		return root;
+		return structs.get(0);
 	}
 
-	LegacyClass addClass(Class<?> javaClass) {
-		if (!classMap.containsKey(javaClass)) {
-			LegacyClass legacyClass = new LegacyClass();
-			classMap.put(javaClass, legacyClass);
-			classes.add(legacyClass);
-		}
-
+	LegacyClass getClass(Class<?> javaClass) {
 		return classMap.get(javaClass);
 	}
 
-	LegacyStruct addStruct(Class<?> javaClass) {
-		if (!structMap.containsKey(javaClass)) {
-			LegacyStruct legacyStruct = new LegacyStruct();
-			structMap.put(javaClass, legacyStruct);
-			structs.add(legacyStruct);
+	LegacyClass addClass(Class<?> javaClass) {
+		if (classMap.containsKey(javaClass)) {
+			throw new UnexpectedBitserException("Class " + javaClass + " was already registered");
 		}
 
-		return structMap.get(javaClass);
+		LegacyClass legacyClass = new LegacyClass();
+		classes.add(legacyClass);
+		classMap.put(javaClass, legacyClass);
+		return legacyClass;
+	}
+
+	LegacyStruct addStruct(Class<?> javaClass) {
+		if (structMap.containsKey(javaClass)) {
+			throw new UnexpectedBitserException("Struct class " + javaClass + " was already registered");
+		}
+
+		LegacyStruct legacyStruct = new LegacyStruct();
+		structs.add(legacyStruct);
+		structMap.put(javaClass, legacyStruct);
+		return legacyStruct;
 	}
 
 	LegacyStruct getStruct(Class<?> javaClass) {

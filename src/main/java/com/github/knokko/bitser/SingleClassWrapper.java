@@ -3,8 +3,6 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.util.JobOutput;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -153,42 +151,6 @@ class SingleClassWrapper {
 	@Override
 	public String toString() {
 		return myClass.getName();
-	}
-
-	JobOutput<LegacyClass> register(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		JobOutput<LegacyClass> legacyClass = recursor.computeFlat(myClass.getSimpleName(), legacy ->
-				legacy.addClass(myClass)
-		);
-
-		for (int index = 0; index < fieldsSortedById.size(); index++) {
-			FieldWrapper field = fieldsSortedById.get(index);
-			final int rememberIndex = index;
-			recursor.runFlat(field.classField.getName(), legacy -> {
-				if (legacyClass.get().fields.size() == rememberIndex) {
-					legacyClass.get().fields.add(new LegacyField(field.id, field.bitField));
-				}
-			});
-			recursor.runNested(field.classField.getName(), nested ->
-					field.bitField.registerLegacyClasses(field.bitField.field.getValue.apply(object), nested)
-			);
-		}
-
-		for (int index = 0; index < functions.size(); index++) {
-			FunctionWrapper function = functions.get(index);
-			final int rememberIndex = index;
-			recursor.runFlat(function.classMethod.getName(), legacy -> {
-				if (legacyClass.get().functions.size() == rememberIndex) {
-					legacyClass.get().functions.add(new LegacyField(function.id, function.bitField));
-				}
-			});
-
-			recursor.runNested(function.classMethod.getName(), nested -> {
-				Object returnValue = function.computeValue(object, recursor.info.functionContext);
-				function.bitField.registerLegacyClasses(returnValue, nested);
-			});
-		}
-
-		return legacyClass;
 	}
 
 	void shallowCopy(Object original, Object target) {

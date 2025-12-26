@@ -7,7 +7,6 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.*;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -65,10 +64,8 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	}
 
 	@Override
-	void registerLegacyClasses(Object value, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		super.registerLegacyClasses(value, recursor);
-		if (value == null) return;
-		recursor.info.cache.getWrapper(value.getClass()).registerClasses(value, recursor);
+	void registerLegacyClasses(UsedStructCollector collector) {
+		for (Class<?> allowedStructClass : allowed) collector.maybeRegisterStruct(allowedStructClass);
 	}
 
 	@Override

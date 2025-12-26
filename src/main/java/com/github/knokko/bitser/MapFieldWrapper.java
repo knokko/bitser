@@ -6,7 +6,6 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
@@ -53,19 +52,9 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	void registerLegacyClasses(Object map, Recursor<LegacyClasses, LegacyInfo> recursor) {
-		super.registerLegacyClasses(map, recursor);
-		if (map == null) return;
-		recursor.runNested("keys", nested ->
-				((Map<?, ?>) map).forEach((key, value) ->
-						keysWrapper.registerLegacyClasses(key, nested)
-				)
-		);
-		recursor.runNested("values", nested ->
-				((Map<?, ?>) map).forEach((key, value) ->
-						valuesWrapper.registerLegacyClasses(value, nested)
-				)
-		);
+	void registerLegacyClasses(UsedStructCollector collector) {
+		keysWrapper.registerLegacyClasses(collector);
+		valuesWrapper.registerLegacyClasses(collector);
 	}
 
 	@Override
