@@ -1,6 +1,6 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.BackClassInstance;
+import com.github.knokko.bitser.legacy.LegacyClassValues;
 import com.github.knokko.bitser.field.BitField;
 
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ class LegacyClass implements BitPostInit {
 		return "LegacyClass(#fields=" + fields.size() + ",#functions=" + functions.size() + ")";
 	}
 
-	BackClassInstance constructEmptyInstance() {
-		return new BackClassInstance(largestFieldId, largestFunctionId);
+	LegacyClassValues constructEmptyInstance() {
+		return new LegacyClassValues(largestFieldId, largestFunctionId);
 	}
 }

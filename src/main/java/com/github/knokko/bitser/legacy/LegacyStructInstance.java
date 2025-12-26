@@ -2,14 +2,14 @@ package com.github.knokko.bitser.legacy;
 
 import java.util.UUID;
 
-public class BackStructInstance {
+public class LegacyStructInstance {
 
 	public final int allowedClassIndex;
-	public final BackClassInstance[] hierarchy;
+	public final LegacyClassValues[] hierarchy;
 
 	public UUID stableID;
 
-	public BackStructInstance(int allowedClassIndex, BackClassInstance[] hierarchy) {
+	public LegacyStructInstance(int allowedClassIndex, LegacyClassValues[] hierarchy) {
 		this.allowedClassIndex = allowedClassIndex;
 		this.hierarchy = hierarchy;
 	}

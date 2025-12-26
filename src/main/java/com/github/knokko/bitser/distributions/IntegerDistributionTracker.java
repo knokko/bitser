@@ -1,4 +1,4 @@
-package com.github.knokko.bitser.util;
+package com.github.knokko.bitser.distributions;
 
 import com.github.knokko.bitser.IntegerBitser;
 import com.github.knokko.bitser.field.IntegerField;

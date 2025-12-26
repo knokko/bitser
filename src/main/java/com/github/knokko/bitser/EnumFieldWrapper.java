@@ -5,8 +5,8 @@ import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.legacy.BackEnumName;
-import com.github.knokko.bitser.legacy.BackEnumOrdinal;
+import com.github.knokko.bitser.legacy.LegacyEnumName;
+import com.github.knokko.bitser.legacy.LegacyEnumOrdinal;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -113,27 +113,27 @@ class EnumFieldWrapper extends BitFieldWrapper {
 					minNameLength, maxNameLength, true, 0, new long[0]
 			);
 			String name = StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input);
-			return new BackEnumName(name);
+			return new LegacyEnumName(name);
 		}
 
 		if (mode == BitEnum.Mode.Ordinal) {
 			deserializer.input.prepareProperty("enum-ordinal", -1);
 			int ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
 			deserializer.input.finishProperty();
-			return new BackEnumOrdinal(ordinal);
+			return new LegacyEnumOrdinal(ordinal);
 		} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (legacyValue instanceof BackEnumName) {
+		if (legacyValue instanceof LegacyEnumName) {
 			try {
-				return getConstantByName(((BackEnumName) legacyValue).name);
+				return getConstantByName(((LegacyEnumName) legacyValue).name);
 			} catch (NoSuchFieldException fieldNoLongerExists) {
 				throw new LegacyBitserException("Missing legacy " + legacyValue + " in " + field);
 			}
-		} else if (legacyValue instanceof BackEnumOrdinal) {
-			int ordinal = ((BackEnumOrdinal) legacyValue).ordinal;
+		} else if (legacyValue instanceof LegacyEnumOrdinal) {
+			int ordinal = ((LegacyEnumOrdinal) legacyValue).ordinal;
 			Object[] constants = field.type.getEnumConstants();
 			if (ordinal >= constants.length) {
 				throw new LegacyBitserException("Missing legacy ordinal " + ordinal + " in " + field);

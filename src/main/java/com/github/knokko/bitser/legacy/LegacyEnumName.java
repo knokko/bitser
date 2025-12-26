@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackEnumName {
+public class LegacyEnumName {
 
 	public final String name;
 
-	public BackEnumName(String name) {
+	public LegacyEnumName(String name) {
 		this.name = name;
 	}
 

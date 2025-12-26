@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackStringValue {
+public class LegacyStringValue {
 
 	public final String value;
 
-	public BackStringValue(String value) {
+	public LegacyStringValue(String value) {
 		this.value = value;
 	}
 
@@ -20,6 +20,6 @@ public class BackStringValue {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof BackStringValue && this.value.equals(((BackStringValue) other).value);
+		return other instanceof LegacyStringValue && this.value.equals(((LegacyStringValue) other).value);
 	}
 }

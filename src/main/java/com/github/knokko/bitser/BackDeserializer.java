@@ -1,9 +1,9 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.legacy.BackStructInstance;
+import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -46,7 +46,7 @@ class BackDeserializer {
 		this.withParameters = withParameters;
 		this.rootStruct = rootStructInfo.createEmptyInstance();
 
-		BackStructInstance legacyRootStruct = legacy.getRoot().constructEmptyInstance(0);
+		LegacyStructInstance legacyRootStruct = legacy.getRoot().constructEmptyInstance(0);
 		this.structJobs.add(new BackReadStructJob(
 				legacyRootStruct, legacy.getRoot(),
 				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
@@ -74,7 +74,7 @@ class BackDeserializer {
 					job.read(this);
 					input.popContext(job.node, "(array-job)");
 				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace(null), failed);
+					throw new RecursionException(job.node.generateTrace(null), failed);
 				}
 			}
 		}
@@ -89,7 +89,7 @@ class BackDeserializer {
 				input.popContext(referenceJob.node, "(struct-reference-job)");
 			} catch (Throwable failed) {
 				String topContext = "field/function " + referenceJob.legacyValuesIndex;
-				throw new RecursorException(referenceJob.node.generateTrace(topContext), failed);
+				throw new RecursionException(referenceJob.node.generateTrace(topContext), failed);
 			}
 		}
 		structReferenceJobs.clear();
@@ -100,7 +100,7 @@ class BackDeserializer {
 				referenceJob.resolve(this);
 				input.popContext(referenceJob.node, "(array-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace("elements"), failed);
+				throw new RecursionException(referenceJob.node.generateTrace("elements"), failed);
 			}
 		}
 		arrayReferenceJobs.clear();
@@ -115,7 +115,7 @@ class BackDeserializer {
 				try {
 					job.convert(this);
 				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace("elements"), failed);
+					throw new RecursionException(job.node.generateTrace("elements"), failed);
 				}
 			}
 		}
@@ -124,7 +124,7 @@ class BackDeserializer {
 			try {
 				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursorException(job.node.generateTrace(null), failed);
+				throw new RecursionException(job.node.generateTrace(null), failed);
 			}
 		}
 		convertStructReferenceJobs.clear();
@@ -133,7 +133,7 @@ class BackDeserializer {
 			try {
 				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursorException(job.node.generateTrace(null), failed);
+				throw new RecursionException(job.node.generateTrace(null), failed);
 			}
 		}
 		convertStructFunctionReferenceJobs.clear();
@@ -142,7 +142,7 @@ class BackDeserializer {
 			try {
 				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursorException(job.node.generateTrace(null), failed);
+				throw new RecursionException(job.node.generateTrace(null), failed);
 			}
 		}
 		convertArrayReferenceJobs.clear();

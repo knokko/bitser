@@ -1,7 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +45,7 @@ class ReadStructJob {
 						}
 					}
 				} catch (Throwable failed) {
-					throw new RecursorException(node.generateTrace(field.classField.getName()), failed);
+					throw new RecursionException(node.generateTrace(field.classField.getName()), failed);
 				}
 			}
 
@@ -68,7 +68,7 @@ class ReadStructJob {
 						}
 					}
 				} catch (Throwable failed) {
-					throw new RecursorException(node.generateTrace(function.classMethod.getName()), failed);
+					throw new RecursionException(node.generateTrace(function.classMethod.getName()), failed);
 				}
 			}
 

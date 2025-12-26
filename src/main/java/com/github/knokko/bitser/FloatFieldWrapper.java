@@ -4,8 +4,8 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
-import com.github.knokko.bitser.legacy.BackFloatValue;
-import com.github.knokko.bitser.legacy.BackIntValue;
+import com.github.knokko.bitser.legacy.LegacyFloatValue;
+import com.github.knokko.bitser.legacy.LegacyIntValue;
 
 import static com.github.knokko.bitser.FloatBitser.decodeFloat;
 import static com.github.knokko.bitser.FloatBitser.encodeFloat;
@@ -58,17 +58,17 @@ class FloatFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		double value = decodeFloat(!isFloat, floatField, deserializer.input);
-		return new BackFloatValue(value);
+		return new LegacyFloatValue(value);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (legacyValue instanceof BackIntValue) {
-			long longValue = ((BackIntValue) legacyValue).value;
+		if (legacyValue instanceof LegacyIntValue) {
+			long longValue = ((LegacyIntValue) legacyValue).value;
 			if (isFloat) return (float) longValue;
 			return (double) longValue;
-		} else if (legacyValue instanceof BackFloatValue) {
-			double doubleValue = ((BackFloatValue) legacyValue).value;
+		} else if (legacyValue instanceof LegacyFloatValue) {
+			double doubleValue = ((LegacyFloatValue) legacyValue).value;
 			if (isFloat) return (float) doubleValue;
 			return doubleValue;
 		} else {

@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackArrayValue {
+public class LegacyArrayValue {
 
 	public final Object array;
 
-	public BackArrayValue(Object array) {
+	public LegacyArrayValue(Object array) {
 		this.array = array;
 	}
 }

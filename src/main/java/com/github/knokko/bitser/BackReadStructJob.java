@@ -1,19 +1,19 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.BackClassInstance;
-import com.github.knokko.bitser.legacy.BackStructInstance;
-import com.github.knokko.bitser.legacy.BackUUIDValue;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.legacy.LegacyClassValues;
+import com.github.knokko.bitser.legacy.LegacyStructInstance;
+import com.github.knokko.bitser.legacy.LegacyUUIDValue;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 
 class BackReadStructJob {
 
-	final BackStructInstance legacyObject;
+	final LegacyStructInstance legacyObject;
 	final LegacyStruct legacyInfo;
 	final RecursionNode node;
 
-	BackReadStructJob(BackStructInstance legacyObject, LegacyStruct legacyInfo, RecursionNode node) {
+	BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyInfo, RecursionNode node) {
 		this.legacyObject = legacyObject;
 		this.legacyInfo = legacyInfo;
 		this.node = node;
@@ -45,7 +45,7 @@ class BackReadStructJob {
 					if (fieldOrFunction.bitField instanceof UUIDFieldWrapper &&
 							((UUIDFieldWrapper) fieldOrFunction.bitField).isStableReferenceId
 					) {
-						legacyObject.stableID = ((BackUUIDValue) value).value;
+						legacyObject.stableID = ((LegacyUUIDValue) value).value;
 					}
 
 					if (fieldOrFunction.bitField.field.referenceTargetLabel != null) {
@@ -55,7 +55,7 @@ class BackReadStructJob {
 					}
 				}
 			} catch (Throwable failed) {
-				throw new RecursorException(node.generateTrace(fieldOrFunctionName), failed);
+				throw new RecursionException(node.generateTrace(fieldOrFunctionName), failed);
 			}
 		}
 	}
@@ -63,7 +63,7 @@ class BackReadStructJob {
 	void read(BackDeserializer deserializer) {
 		for (int hierarchyIndex = 0; hierarchyIndex < legacyInfo.classHierarchy.size(); hierarchyIndex++) {
 			LegacyClass legacyClass = legacyInfo.classHierarchy.get(hierarchyIndex);
-			BackClassInstance legacyClassInstance = legacyObject.hierarchy[hierarchyIndex];
+			LegacyClassValues legacyClassInstance = legacyObject.hierarchy[hierarchyIndex];
 
 			readFieldsOrFunctions(
 					deserializer, legacyClass.fields, "field ",

@@ -1,4 +1,4 @@
-package com.github.knokko.bitser.util;
+package com.github.knokko.bitser.distributions;
 
 import java.io.PrintWriter;
 import java.util.*;

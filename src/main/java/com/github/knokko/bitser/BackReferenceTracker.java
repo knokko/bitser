@@ -3,8 +3,8 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.legacy.BackReference;
-import com.github.knokko.bitser.legacy.BackStructInstance;
+import com.github.knokko.bitser.legacy.LegacyReference;
+import com.github.knokko.bitser.legacy.LegacyStructInstance;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,11 +53,11 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 	void processStableLegacyIDs() {
 		for (LabelTargets targets : labels.values()) {
 			for (Object rawLegacyTarget : targets.idsToLegacyOrWith) {
-				Object legacyTarget = ((BackReference) rawLegacyTarget).reference;
-				if (legacyTarget instanceof BackStructInstance) {
-					UUID stableID = ((BackStructInstance) legacyTarget).stableID;
+				Object legacyTarget = ((LegacyReference) rawLegacyTarget).reference;
+				if (legacyTarget instanceof LegacyStructInstance) {
+					UUID stableID = ((LegacyStructInstance) legacyTarget).stableID;
 					if (stableID != null) {
-						if (targets.stable.put(stableID, new BackReference(legacyTarget)) != null) {
+						if (targets.stable.put(stableID, new LegacyReference(legacyTarget)) != null) {
 							throw new ReferenceBitserException("Multiple legacy stable targets have ID " + stableID);
 						}
 					}
@@ -100,7 +100,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 			if (legacyOrWithToIDs.put(new ReferenceTracker.IdentityWrapper(target), legacyOrWithToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple legacy unstable targets have identity " + target);
 			}
-			idsToLegacyOrWith.add(new BackReference(target));
+			idsToLegacyOrWith.add(new LegacyReference(target));
 		}
 
 		void registerWith(Object target, BitserCache cache) {

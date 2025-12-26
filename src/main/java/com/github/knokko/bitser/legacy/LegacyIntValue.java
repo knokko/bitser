@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackIntValue {
+public class LegacyIntValue {
 
 	public final long value;
 
-	public BackIntValue(long value) {
+	public LegacyIntValue(long value) {
 		this.value = value;
 	}
 

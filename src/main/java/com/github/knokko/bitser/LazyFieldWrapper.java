@@ -3,7 +3,7 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.legacy.BackStructInstance;
+import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.legacy.LegacyLazyBytes;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 
@@ -92,8 +92,8 @@ class LazyFieldWrapper extends BitFieldWrapper {
 					true,
 					valueClass
 			);
-		} else if (rawLegacyInstance instanceof BackStructInstance) {
-			BackStructInstance legacyObject = (BackStructInstance) rawLegacyInstance;
+		} else if (rawLegacyInstance instanceof LegacyStructInstance) {
+			LegacyStructInstance legacyObject = (LegacyStructInstance) rawLegacyInstance;
 			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(valueClass);
 			Object modernObject = modernInfo.createEmptyInstance();
 			deserializer.convertStructJobs.add(new BackConvertStructJob(

@@ -1,7 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackArrayValue;
+import com.github.knokko.bitser.legacy.LegacyArrayValue;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
 
@@ -153,7 +153,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		deserializer.input.finishProperty();
 
 		Object array = constructCollectionWithSize(length);
-		if (length == 0) return new BackArrayValue(array);
+		if (length == 0) return new LegacyArrayValue(array);
 
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
 			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
@@ -165,16 +165,16 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			));
 		}
 
-		return new BackArrayValue(array);
+		return new LegacyArrayValue(array);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (!(legacyValue instanceof BackArrayValue)) {
+		if (!(legacyValue instanceof LegacyArrayValue)) {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
 					" to collection/array for field " + field);
 		}
-		Object legacyArray = ((BackArrayValue) legacyValue).array;
+		Object legacyArray = ((LegacyArrayValue) legacyValue).array;
 		int length = Array.getLength(legacyArray);
 
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);

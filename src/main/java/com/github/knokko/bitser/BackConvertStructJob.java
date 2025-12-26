@@ -1,10 +1,10 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackClassInstance;
-import com.github.knokko.bitser.legacy.BackReference;
-import com.github.knokko.bitser.legacy.BackStructInstance;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.legacy.LegacyClassValues;
+import com.github.knokko.bitser.legacy.LegacyReference;
+import com.github.knokko.bitser.legacy.LegacyStructInstance;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,12 +15,12 @@ class BackConvertStructJob {
 
 	final Object modernObject;
 	final BitStructWrapper<?> modernInfo;
-	final BackStructInstance legacyObject;
+	final LegacyStructInstance legacyObject;
 	final RecursionNode node;
 
 	BackConvertStructJob(
 			Object modernObject, BitStructWrapper<?> modernInfo,
-			BackStructInstance legacyObject,
+			LegacyStructInstance legacyObject,
 			RecursionNode node
 	) {
 		this.modernObject = modernObject;
@@ -35,7 +35,7 @@ class BackConvertStructJob {
 					"Class hierarchy size changed from " + legacyObject.hierarchy.length +
 							" to " + modernInfo.classHierarchy.size()
 			);
-			throw new RecursorException(node.generateTrace(null), legacyException);
+			throw new RecursionException(node.generateTrace(null), legacyException);
 		}
 
 		Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
@@ -44,7 +44,7 @@ class BackConvertStructJob {
 
 		for (int hierarchyIndex = 0; hierarchyIndex < modernInfo.classHierarchy.size(); hierarchyIndex++) {
 			SingleClassWrapper modernClass = modernInfo.classHierarchy.get(hierarchyIndex);
-			BackClassInstance legacyValues = legacyObject.hierarchy[hierarchyIndex];
+			LegacyClassValues legacyValues = legacyObject.hierarchy[hierarchyIndex];
 
 			for (SingleClassWrapper.FieldWrapper modernField : modernClass.fields) {
 				String fieldName = modernField.classField.getName();
@@ -62,9 +62,9 @@ class BackConvertStructJob {
 					}
 
 					if (modernField.bitField instanceof ReferenceFieldWrapper) {
-						if (legacyFieldValue instanceof BackReference) {
+						if (legacyFieldValue instanceof LegacyReference) {
 							deserializer.convertStructReferenceJobs.add(new BackConvertStructReferenceJob(
-									modernObject, modernField.classField, ((BackReference) legacyFieldValue).reference,
+									modernObject, modernField.classField, ((LegacyReference) legacyFieldValue).reference,
 									new RecursionNode(node, modernField.classField.getName())
 							));
 						} else if (legacyFieldValue instanceof WithReference) {
@@ -85,7 +85,7 @@ class BackConvertStructJob {
 						}
 					}
 				} catch (Throwable failed) {
-					throw new RecursorException(node.generateTrace(fieldName), failed);
+					throw new RecursionException(node.generateTrace(fieldName), failed);
 				}
 			}
 
@@ -117,10 +117,10 @@ class BackConvertStructJob {
 					if (functionID < modernFunctions.length) modernFunction = modernFunctions[functionID];
 
 					if (modernFunction == null) {
-						if (legacyFunctionValue instanceof BackReference) {
+						if (legacyFunctionValue instanceof LegacyReference) {
 							deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
 									currentModernFunctionValues, functionID,
-									((BackReference) legacyFunctionValue).reference,
+									((LegacyReference) legacyFunctionValue).reference,
 									new RecursionNode(node, "legacy function " + functionID)
 							));
 						} else {
@@ -137,10 +137,10 @@ class BackConvertStructJob {
 							}
 
 							if (modernFunction.bitField instanceof ReferenceFieldWrapper) {
-								if (legacyFunctionValue instanceof BackReference) {
+								if (legacyFunctionValue instanceof LegacyReference) {
 									deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
 											currentModernFunctionValues, modernFunction.id,
-											((BackReference) legacyFunctionValue).reference,
+											((LegacyReference) legacyFunctionValue).reference,
 											new RecursionNode(node, modernFunction.classMethod.getName())
 									));
 								} else {
@@ -156,7 +156,7 @@ class BackConvertStructJob {
 								currentModernFunctionValues[modernFunction.id] = modernFunctionValue;
 							}
 						} catch (Throwable failed) {
-							throw new RecursorException(node.generateTrace(modernFunction.classMethod.getName()), failed);
+							throw new RecursionException(node.generateTrace(modernFunction.classMethod.getName()), failed);
 						}
 					}
 				}

@@ -12,7 +12,7 @@ import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.IntegerBitser;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -415,8 +415,8 @@ public class TestBitCollectionField {
 		bitOutput.finish();
 
 		// Without limit
-		RecursorException exception = assertThrows(
-				RecursorException.class,
+		RecursionException exception = assertThrows(
+				RecursionException.class,
 				() -> bitser.deserializeFromBytesSimple(Strings.class, byteOutput.toByteArray())
 		);
 		assertInstanceOf(OutOfMemoryError.class, exception.getCause());

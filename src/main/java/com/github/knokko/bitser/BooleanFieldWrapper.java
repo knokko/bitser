@@ -1,7 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackBooleanValue;
+import com.github.knokko.bitser.legacy.LegacyBooleanValue;
 
 @BitStruct(backwardCompatible = false)
 class BooleanFieldWrapper extends BitFieldWrapper {
@@ -38,13 +38,13 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 		deserializer.input.prepareProperty("boolean-value", -1);
 		boolean result = deserializer.input.read();
 		deserializer.input.finishProperty();
-		return result ? BackBooleanValue.TRUE : BackBooleanValue.FALSE;
+		return result ? LegacyBooleanValue.TRUE : LegacyBooleanValue.FALSE;
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (legacyValue instanceof BackBooleanValue) {
-			return ((BackBooleanValue) legacyValue).value;
+		if (legacyValue instanceof LegacyBooleanValue) {
+			return ((LegacyBooleanValue) legacyValue).value;
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to boolean for field " + field);
 		}

@@ -1,9 +1,9 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.io.BitOutputStream;
-import com.github.knokko.bitser.util.FloatDistributionTracker;
-import com.github.knokko.bitser.util.IntegerDistributionTracker;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.distributions.FloatDistributionTracker;
+import com.github.knokko.bitser.distributions.IntegerDistributionTracker;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -64,7 +64,7 @@ class Serializer {
 					job.write(this);
 					output.popContext(job.node, "(array-job)");
 				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace(null), failed);
+					throw new RecursionException(job.node.generateTrace(null), failed);
 				}
 			}
 		}
@@ -77,7 +77,7 @@ class Serializer {
 				referenceJob.save(this);
 				output.popContext(referenceJob.node, "(struct-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
+				throw new RecursionException(referenceJob.node.generateTrace(null), failed);
 			}
 		}
 		structReferenceJobs.clear();
@@ -88,7 +88,7 @@ class Serializer {
 				referenceJob.save(this);
 				output.popContext(referenceJob.node, "(array-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
+				throw new RecursionException(referenceJob.node.generateTrace(null), failed);
 			}
 		}
 		arrayReferenceJobs.clear();

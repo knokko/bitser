@@ -1,7 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackMapValue;
+import com.github.knokko.bitser.legacy.LegacyMapValue;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.ClassField;
@@ -151,7 +151,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 		Object[] keys = new Object[size];
 		Object[] values = new Object[size];
-		if (size == 0) return new BackMapValue(keys, values);
+		if (size == 0) return new LegacyMapValue(keys, values);
 
 		if (keysWrapper instanceof ReferenceFieldWrapper) {
 			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
@@ -173,16 +173,16 @@ class MapFieldWrapper extends BitFieldWrapper {
 			));
 		}
 
-		return new BackMapValue(keys, values);
+		return new LegacyMapValue(keys, values);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (!(legacyValue instanceof BackMapValue)) {
+		if (!(legacyValue instanceof LegacyMapValue)) {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
 					" to map for field " + field);
 		}
-		BackMapValue legacyMap = (BackMapValue) legacyValue;
+		LegacyMapValue legacyMap = (LegacyMapValue) legacyValue;
 		int size = legacyMap.keys.length;
 
 		Map<?, ?> modernMap = (Map<?, ?>) constructCollectionWithSize(field.type, size);

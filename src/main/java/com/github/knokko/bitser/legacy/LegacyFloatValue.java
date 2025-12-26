@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackFloatValue {
+public class LegacyFloatValue {
 
 	public final double value;
 
-	public BackFloatValue(double value) {
+	public LegacyFloatValue(double value) {
 		this.value = value;
 	}
 

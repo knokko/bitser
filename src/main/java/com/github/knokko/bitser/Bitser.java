@@ -5,7 +5,7 @@ import com.github.knokko.bitser.exceptions.*;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.options.DebugBits;
 import com.github.knokko.bitser.options.WithParameter;
-import com.github.knokko.bitser.util.*;
+import com.github.knokko.bitser.distributions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,7 +23,7 @@ public class Bitser {
 		this.cache = new BitserCache(threadSafe);
 	}
 
-	private void rethrowRecursorException(RecursorException failure) throws IOException {
+	private void rethrowRecursorException(RecursionException failure) throws IOException {
 		Throwable cause = failure.getCause();
 		if (cause instanceof InvalidBitValueException) {
 			throw new InvalidBitValueException(
@@ -54,10 +54,10 @@ public class Bitser {
 
 	public void serializeSimple(
 			Object object, BitOutputStream output, Object... withAndOptions
-	) throws IOException, BitserException, RecursorException, IllegalArgumentException {
+	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
 		try {
 			rawSerializeSimple(object, output, withAndOptions);
-		} catch (RecursorException failure) {
+		} catch (RecursionException failure) {
 			rethrowRecursorException(failure);
 			throw failure;
 		}
@@ -138,10 +138,10 @@ public class Bitser {
 
 	public <T> T deserializeSimple(
 			Class<T> objectClass, BitInputStream input, Object... withAndOptions
-	) throws IOException, BitserException, RecursorException, IllegalArgumentException {
+	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
 		try {
 			return rawDeserializeSimple(objectClass, input, withAndOptions);
-		} catch (RecursorException failure) {
+		} catch (RecursionException failure) {
 			rethrowRecursorException(failure);
 			throw failure;
 		}
@@ -212,7 +212,7 @@ public class Bitser {
 
 	public <T> T deserializeFromBytesSimple(
 			Class<T> objectClass, byte[] bytes, Object... withAndOptions
-	) throws BitserException, RecursorException, IllegalArgumentException {
+	) throws BitserException, RecursionException, IllegalArgumentException {
 		DebugBits debug = null;
 		for (Object option : withAndOptions) {
 			if (option instanceof DebugBits) debug = (DebugBits) option;
@@ -237,7 +237,7 @@ public class Bitser {
 
 	public <T> T stupidDeepCopy(
 			T object, Object... with
-	) throws BitserException, RecursorException, IllegalArgumentException {
+	) throws BitserException, RecursionException, IllegalArgumentException {
 		//noinspection unchecked
 		return (T) deserializeFromBytesSimple(object.getClass(), serializeToBytesSimple(object, with), with);
 	}

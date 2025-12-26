@@ -1,9 +1,9 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.legacy.BackBooleanValue;
-import com.github.knokko.bitser.legacy.BackFloatValue;
-import com.github.knokko.bitser.legacy.BackIntValue;
+import com.github.knokko.bitser.legacy.LegacyBooleanValue;
+import com.github.knokko.bitser.legacy.LegacyFloatValue;
+import com.github.knokko.bitser.legacy.LegacyIntValue;
 
 import java.lang.reflect.Array;
 
@@ -26,11 +26,11 @@ class BackConvertArrayJob {
 		for (int index = 0; index < length; index++) {
 
 			Object legacyElement = Array.get(legacyArray, index);
-			if (legacyElement instanceof Boolean) legacyElement = BackBooleanValue.get((Boolean) legacyElement);
-			if (legacyElement instanceof Character) legacyElement = new BackIntValue((Character) legacyElement);
-			if (legacyElement instanceof Float) legacyElement = new BackFloatValue((Float) legacyElement);
-			if (legacyElement instanceof Double) legacyElement = new BackFloatValue((Double) legacyElement);
-			if (legacyElement instanceof Number) legacyElement = new BackIntValue(((Number) legacyElement).longValue());
+			if (legacyElement instanceof Boolean) legacyElement = LegacyBooleanValue.get((Boolean) legacyElement);
+			if (legacyElement instanceof Character) legacyElement = new LegacyIntValue((Character) legacyElement);
+			if (legacyElement instanceof Float) legacyElement = new LegacyFloatValue((Float) legacyElement);
+			if (legacyElement instanceof Double) legacyElement = new LegacyFloatValue((Double) legacyElement);
+			if (legacyElement instanceof Number) legacyElement = new LegacyIntValue(((Number) legacyElement).longValue());
 
 			if (legacyElement == null) {
 				if (modernWrapper.field.optional) continue;

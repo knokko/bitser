@@ -194,18 +194,18 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		deserializer.input.finishProperty();
 		Object value = constructCollectionWithSize(size);
 		readData(deserializer.input, value);
-		return new BackArrayValue(value);
+		return new LegacyArrayValue(value);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object rawLegacyValue, RecursionNode parentNode, String fieldName) {
-		if (!(rawLegacyValue instanceof BackArrayValue)) {
+		if (!(rawLegacyValue instanceof LegacyArrayValue)) {
 			throw new LegacyBitserException(
 					"Can't convert from legacy " + rawLegacyValue + " to " + field.type + " for field " + field
 			);
 		}
 
-		Object legacyArray = ((BackArrayValue) rawLegacyValue).array;
+		Object legacyArray = ((LegacyArrayValue) rawLegacyValue).array;
 		if (field.type == legacyArray.getClass()) {
 			return legacyArray;
 		}
@@ -332,11 +332,11 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	private Object convertLegacyNumber(Object legacyValue) {
 		if (legacyValue instanceof Boolean) return legacyValue;
-		if (legacyValue instanceof BackBooleanValue) return ((BackBooleanValue) legacyValue).value;
+		if (legacyValue instanceof LegacyBooleanValue) return ((LegacyBooleanValue) legacyValue).value;
 		Number legacyNumber;
 		if (legacyValue instanceof Character) legacyNumber = (int) ((char) legacyValue);
-		else if (legacyValue instanceof BackFloatValue) legacyNumber = ((BackFloatValue) legacyValue).value;
-		else if (legacyValue instanceof BackIntValue) legacyNumber = ((BackIntValue) legacyValue).value;
+		else if (legacyValue instanceof LegacyFloatValue) legacyNumber = ((LegacyFloatValue) legacyValue).value;
+		else if (legacyValue instanceof LegacyIntValue) legacyNumber = ((LegacyIntValue) legacyValue).value;
 		else legacyNumber = (Number) legacyValue;
 		if (field.type == byte[].class) return legacyNumber.byteValue();
 		if (field.type == short[].class) return legacyNumber.shortValue();

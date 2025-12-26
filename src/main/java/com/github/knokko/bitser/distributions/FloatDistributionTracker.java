@@ -1,4 +1,4 @@
-package com.github.knokko.bitser.util;
+package com.github.knokko.bitser.distributions;
 
 import com.github.knokko.bitser.FloatBitser;
 import com.github.knokko.bitser.field.FloatField;

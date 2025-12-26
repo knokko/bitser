@@ -2,7 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -60,7 +60,7 @@ class Deserializer {
 					job.read(this);
 					input.popContext(job.node, "(array-job)");
 				} catch (Throwable failed) {
-					throw new RecursorException(job.node.generateTrace(null), failed);
+					throw new RecursionException(job.node.generateTrace(null), failed);
 				}
 			}
 		}
@@ -74,7 +74,7 @@ class Deserializer {
 				referenceJob.resolve(this);
 				input.popContext(referenceJob.node, "(struct-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(referenceJob.classField.getName()), failed);
+				throw new RecursionException(referenceJob.node.generateTrace(referenceJob.classField.getName()), failed);
 			}
 		}
 		structReferenceJobs.clear();
@@ -85,7 +85,7 @@ class Deserializer {
 				referenceJob.resolve(this);
 				input.popContext(referenceJob.node, "(array-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursorException(referenceJob.node.generateTrace(null), failed);
+				throw new RecursionException(referenceJob.node.generateTrace(null), failed);
 			}
 		}
 		arrayReferenceJobs.clear();

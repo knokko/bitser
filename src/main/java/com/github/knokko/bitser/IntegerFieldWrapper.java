@@ -4,7 +4,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.legacy.BackIntValue;
+import com.github.knokko.bitser.legacy.LegacyIntValue;
 
 import static com.github.knokko.bitser.IntegerBitser.*;
 import static java.lang.Long.max;
@@ -90,13 +90,13 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 		deserializer.input.prepareProperty("int-value", -1);
 		long longValue = decodeInteger(intField, deserializer.input);
 		deserializer.input.finishProperty();
-		return new BackIntValue(longValue);
+		return new LegacyIntValue(longValue);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (legacyValue instanceof BackIntValue) {
-			long longValue = ((BackIntValue) legacyValue).value;
+		if (legacyValue instanceof LegacyIntValue) {
+			long longValue = ((LegacyIntValue) legacyValue).value;
 			if (longValue < intField.minValue || longValue > intField.maxValue) {
 				throw new LegacyBitserException("Legacy value " + longValue + " is out of range for field " + field);
 			}

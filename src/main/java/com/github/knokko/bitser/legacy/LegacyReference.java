@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackReference {
+public class LegacyReference {
 
 	public final Object reference;
 
-	public BackReference(Object reference) {
+	public LegacyReference(Object reference) {
 		this.reference = reference;
 	}
 

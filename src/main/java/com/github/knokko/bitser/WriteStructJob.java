@@ -1,7 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.field.FunctionContext;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 
 class WriteStructJob {
 
@@ -49,7 +49,7 @@ class WriteStructJob {
 					Object value = field.classField.get(structObject);
 					writeField(serializer, field.bitField, value, field.classField.getName());
 				} catch (Throwable failed) {
-					throw new RecursorException(node.generateTrace(field.classField.getName()), failed);
+					throw new RecursionException(node.generateTrace(field.classField.getName()), failed);
 				}
 			}
 
@@ -58,7 +58,7 @@ class WriteStructJob {
 					Object value = function.computeValue(structObject, functionContext);
 					writeField(serializer, function.bitField, value, function.classMethod.getName());
 				} catch (Throwable failed) {
-					throw new RecursorException(node.generateTrace(function.classMethod.getName()), failed);
+					throw new RecursionException(node.generateTrace(function.classMethod.getName()), failed);
 				}
 			}
 		}

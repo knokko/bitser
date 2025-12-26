@@ -200,7 +200,7 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			assertInstanceOf(BackReference.class, context.legacyFunctionValues.get(ReferenceMethodNew.class)[0]);
+			assertInstanceOf(LegacyReference.class, context.legacyFunctionValues.get(ReferenceMethodNew.class)[0]);
 			best = (NewDummy) context.functionValues.get(ReferenceMethodNew.class)[0];
 		}
 	}
@@ -218,10 +218,10 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			BackStructInstance legacyDummy = (BackStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
-			BackClassInstance legacyValues = legacyDummy.hierarchy[0];
+			LegacyStructInstance legacyDummy = (LegacyStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
+			LegacyClassValues legacyValues = legacyDummy.hierarchy[0];
 			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hasFieldValues);
-			int x = (int) ((BackIntValue) legacyValues.fieldValues[2]).value;
+			int x = (int) ((LegacyIntValue) legacyValues.fieldValues[2]).value;
 			//noinspection SuspiciousNameCombination
 			best = new NewDummy(x, x);
 		}

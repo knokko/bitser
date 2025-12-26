@@ -5,7 +5,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.Bitser;
-import com.github.knokko.bitser.util.RecursorException;
+import com.github.knokko.bitser.exceptions.RecursionException;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -128,8 +128,8 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateErrors() {
-		RecursorException exception = assertThrows(
-				RecursorException.class, () -> new Bitser(false).serializeToBytesSimple(new ThrowsError())
+		RecursionException exception = assertThrows(
+				RecursionException.class, () -> new Bitser(false).serializeToBytesSimple(new ThrowsError())
 		);
 		assertEquals("nothing personal", exception.getCause().getMessage());
 		assertContains(exception.debugInfoStack, "-> throwsError");
@@ -147,8 +147,8 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateUncheckedExceptions() {
-		RecursorException exception = assertThrows(
-				RecursorException.class,
+		RecursionException exception = assertThrows(
+				RecursionException.class,
 				() -> new Bitser(false).serializeToBytesSimple(new ThrowsUncheckedException())
 		);
 		assertInstanceOf(UnsupportedOperationException.class, exception.getCause());
@@ -167,8 +167,8 @@ public class TestInvalidBitMethods {
 
 	@Test
 	public void testPropagateCheckedExceptions() {
-		RecursorException exception = assertThrows(
-				RecursorException.class,
+		RecursionException exception = assertThrows(
+				RecursionException.class,
 				() -> new Bitser(true).serializeToBytesSimple(new ThrowsCheckedException())
 		);
 		Exception cause = (Exception) exception.getCause();

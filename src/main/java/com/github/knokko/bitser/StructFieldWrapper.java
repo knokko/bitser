@@ -1,7 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
-import com.github.knokko.bitser.legacy.BackStructInstance;
+import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.legacy.LegacyLazyBytes;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
@@ -130,7 +130,7 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		} else allowedClassIndex = 0;
 
 		LegacyStruct legacyInfo = legacyStructs[allowedClassIndex];
-		BackStructInstance legacyObject = legacyInfo.constructEmptyInstance(allowedClassIndex);
+		LegacyStructInstance legacyObject = legacyInfo.constructEmptyInstance(allowedClassIndex);
 		deserializer.structJobs.add(new BackReadStructJob(
 				legacyObject, legacyInfo,
 				new RecursionNode(parentNode, fieldName)
@@ -148,8 +148,8 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 					allowed[0], ((LegacyLazyBytes) legacyValue).bytes, Bitser.BACKWARD_COMPATIBLE
 			);
 		}
-		if (legacyValue instanceof BackStructInstance) {
-			BackStructInstance legacyObject = (BackStructInstance) legacyValue;
+		if (legacyValue instanceof LegacyStructInstance) {
+			LegacyStructInstance legacyObject = (LegacyStructInstance) legacyValue;
 			if (legacyObject.allowedClassIndex >= allowed.length) throw new LegacyBitserException(
 					"Encountered unknown subclass while loading " + field
 			);

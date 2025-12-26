@@ -3,7 +3,7 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.StableReferenceFieldId;
-import com.github.knokko.bitser.legacy.BackUUIDValue;
+import com.github.knokko.bitser.legacy.LegacyUUIDValue;
 
 import java.util.UUID;
 
@@ -52,13 +52,13 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 		deserializer.input.prepareProperty("uuid", -1);
 		UUID result = new UUID(decodeFullLong(deserializer.input), decodeFullLong(deserializer.input));
 		deserializer.input.finishProperty();
-		return new BackUUIDValue(result);
+		return new LegacyUUIDValue(result);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (legacyValue instanceof BackUUIDValue) {
-			return ((BackUUIDValue) legacyValue).value;
+		if (legacyValue instanceof LegacyUUIDValue) {
+			return ((LegacyUUIDValue) legacyValue).value;
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to UUID for field " + field);
 		}

@@ -1,10 +1,10 @@
 package com.github.knokko.bitser.legacy;
 
-public class BackEnumOrdinal {
+public class LegacyEnumOrdinal {
 
 	public final int ordinal;
 
-	public BackEnumOrdinal(int ordinal) {
+	public LegacyEnumOrdinal(int ordinal) {
 		this.ordinal = ordinal;
 	}
 

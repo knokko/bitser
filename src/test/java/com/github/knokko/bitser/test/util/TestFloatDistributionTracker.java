@@ -3,7 +3,7 @@ package com.github.knokko.bitser.test.util;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.field.FloatField;
-import com.github.knokko.bitser.util.FloatDistributionTracker;
+import com.github.knokko.bitser.distributions.FloatDistributionTracker;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

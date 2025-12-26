@@ -3,9 +3,9 @@ package com.github.knokko.bitser.test;
 import com.github.knokko.bitser.BitPostInit;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
-import com.github.knokko.bitser.legacy.BackArrayValue;
-import com.github.knokko.bitser.legacy.BackIntValue;
-import com.github.knokko.bitser.legacy.BackStringValue;
+import com.github.knokko.bitser.legacy.LegacyArrayValue;
+import com.github.knokko.bitser.legacy.LegacyIntValue;
+import com.github.knokko.bitser.legacy.LegacyStringValue;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.FloatField;
 import com.github.knokko.bitser.field.FunctionContext;
@@ -103,7 +103,7 @@ public class TestBitPostInit {
 		@Override
 		public void postInit(Context context) {
 			assertEquals("world", hello);
-			long percentage = ((BackIntValue) context.legacyFieldValues.get(LegacyConversionAfter.class)[4]).value;
+			long percentage = ((LegacyIntValue) context.legacyFieldValues.get(LegacyConversionAfter.class)[4]).value;
 			this.fraction = percentage * 0.01;
 		}
 	}
@@ -117,7 +117,7 @@ public class TestBitPostInit {
 		@Override
 		public void postInit(Context context) {
 			super.postInit(context);
-			this.owners = new String[] { ((BackStringValue) context.legacyFieldValues.get(AfterParent.class)[4]).value };
+			this.owners = new String[] { ((LegacyStringValue) context.legacyFieldValues.get(AfterParent.class)[4]).value };
 		}
 	}
 
@@ -259,18 +259,18 @@ public class TestBitPostInit {
 			} else {
 				Object[] values = context.legacyFunctionValues.get(MultipleClassNames.class);
 				Object[] currentValues = context.functionValues.get(MultipleClassNames.class);
-				assertEquals(-12L, ((BackIntValue) context.legacyFieldValues.get(MultipleClassNames.class)[1]).value);
+				assertEquals(-12L, ((LegacyIntValue) context.legacyFieldValues.get(MultipleClassNames.class)[1]).value);
 				if (values[1] != null) {
 					names = new ArrayList<>(1);
-					names.add(((BackStringValue) values[1]).value);
+					names.add(((LegacyStringValue) values[1]).value);
 					assertArrayEquals(new Object[] {
-							null, new BackStringValue("java.io.IOException"), null
+							null, new LegacyStringValue("java.io.IOException"), null
 					}, currentValues);
 				} else {
-					BackArrayValue legacyNames = (BackArrayValue) values[2];
+					LegacyArrayValue legacyNames = (LegacyArrayValue) values[2];
 					Object[] rawNames = (Object[]) legacyNames.array;
 					names = new ArrayList<>(rawNames.length);
-					for (Object rawName : rawNames) names.add(((BackStringValue) rawName).value);
+					for (Object rawName : rawNames) names.add(((LegacyStringValue) rawName).value);
 
 					List<String> expectedListAtIndex2 = new ArrayList<>(2);
 					expectedListAtIndex2.add("java.io.File");
@@ -358,7 +358,7 @@ public class TestBitPostInit {
 			Set<String> names = (Set<String>) currentValues[2];
 			assertArrayEquals(new Object[] { null, null, names }, currentValues);
 
-			BackArrayValue legacyNamesInstance = (BackArrayValue) legacyValues[2];
+			LegacyArrayValue legacyNamesInstance = (LegacyArrayValue) legacyValues[2];
 			assertArrayEquals(new Object[] { null, null, legacyNamesInstance }, legacyValues);
 			for (String name : names) {
 				try {
