@@ -1,8 +1,6 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.legacy.LegacyValues;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.util.JobOutput;
@@ -11,10 +9,8 @@ import com.github.knokko.bitser.util.Recursor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.function.Supplier;
 
 import static com.github.knokko.bitser.WrapperFactory.createComplexWrapper;
-import static java.lang.Math.max;
 
 class SingleClassWrapper {
 
@@ -159,24 +155,6 @@ class SingleClassWrapper {
 		return myClass.getName();
 	}
 
-	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
-		for (FieldWrapper field : getFields(recursor.info.backwardCompatible)) {
-			field.bitField.collectReferenceLabels(recursor);
-		}
-		for (FunctionWrapper function : functions) {
-			function.bitField.collectReferenceLabels(recursor);
-		}
-	}
-
-	void registerReferenceTargets(Object parentObject, Recursor<ReferenceIdMapper, BitserCache> recursor) {
-		for (FieldWrapper field : fields) {
-			Object childObject = field.bitField.field.getValue.apply(parentObject);
-			recursor.runNested(field.classField.getName(), nested ->
-					field.bitField.registerReferenceTargets(childObject, nested)
-			);
-		}
-	}
-
 	JobOutput<LegacyClass> register(Object object, Recursor<LegacyClasses, LegacyInfo> recursor) {
 		JobOutput<LegacyClass> legacyClass = recursor.computeFlat(myClass.getSimpleName(), legacy ->
 				legacy.addClass(myClass)
@@ -211,136 +189,6 @@ class SingleClassWrapper {
 		}
 
 		return legacyClass;
-	}
-
-	void write(Object object, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("pushContext", context ->
-				context.output.pushContext(myClass.getSimpleName(), -1)
-		);
-
-		for (FieldWrapper field : getFields(recursor.info.legacy != null)) {
-			if (recursor.info.usesContextInfo) {
-				recursor.runFlat("pushContext", context ->
-						context.output.pushContext(field.classField.getName(), -1)
-				);
-			}
-			recursor.runNested(field.classField.getName(), nested ->
-					field.bitField.writeField(object, nested)
-			);
-			if (recursor.info.usesContextInfo) {
-				recursor.runFlat("popContext", context ->
-						context.output.popContext(field.classField.getName(), -1)
-				);
-			}
-		}
-
-		FunctionContext functionContext = new FunctionContext(
-				recursor.info.bitser, recursor.info.legacy != null, recursor.info.withParameters
-		);
-		for (FunctionWrapper function : functions) {
-			recursor.runFlat("pushContext", context ->
-					context.output.pushContext(function.classMethod.getName(), -1)
-			);
-			recursor.runNested(function.classMethod.getName(), nested ->
-					function.bitField.writeValue(function.computeValue(object, functionContext), nested)
-			);
-			recursor.runFlat("popContext", context ->
-					context.output.popContext(function.classMethod.getName(), -1)
-			);
-		}
-
-		recursor.runFlat("popContext", context ->
-				context.output.popContext(myClass.getSimpleName(), -1)
-		);
-	}
-
-	void setLegacyValues(Recursor<ReadContext, ReadInfo> recursor, Object target, LegacyValues legacy) {
-		int maxFieldId = -1;
-		for (FieldWrapper field : fields) maxFieldId = max(maxFieldId, field.id);
-		for (FieldWrapper field : fieldsSortedById) {
-			if (field.id < legacy.values.length && legacy.hadValues[field.id] &&
-					legacy.hadReferenceValues[field.id] == field.bitField.isReference()
-			) {
-				recursor.runNested(field.classField.getName(), nested ->
-						field.bitField.setLegacyValue(nested, legacy.values[field.id], newValue ->
-								field.bitField.field.setValue.accept(target, newValue)
-						)
-				);
-			}
-		}
-
-		int maxFunctionId = -1;
-		for (FunctionWrapper function : functions) maxFunctionId = max(maxFunctionId, function.id);
-		legacy.convertedFunctionValues = new Object[max(maxFunctionId + 1, legacy.storedFunctionValues.length)];
-		for (FunctionWrapper function : functions) {
-			if (legacy.hadFunctionValues.length > function.id && legacy.hadFunctionValues[function.id]) {
-				recursor.runNested(function.classMethod.getName(), nested ->
-						function.bitField.setLegacyValue(
-								nested, legacy.storedFunctionValues[function.id],
-								newValue -> legacy.convertedFunctionValues[function.id] = newValue
-						)
-				);
-			}
-		}
-	}
-
-	Object[] read(Object target, Recursor<ReadContext, ReadInfo> recursor) {
-		Object[] functionValues;
-		if (functions.isEmpty()) functionValues = new Object[0];
-		else functionValues = new Object[functions.get(functions.size() - 1).id + 1];
-
-		for (FieldWrapper field : getFields(recursor.info.backwardCompatible)) {
-			recursor.runNested(field.classField.getName(), nested ->
-					field.bitField.readField(target, nested)
-			);
-		}
-		for (FunctionWrapper function : functions) {
-			recursor.runNested(function.classMethod.getName(), nested ->
-					function.bitField.readValue(nested, result -> functionValues[function.id] = result)
-			);
-		}
-		return functionValues;
-	}
-
-	private void checkReferenceMigration(
-			boolean wasReference, BitFieldWrapper bitField,
-			Object value, Supplier<String> fieldDescription
-	) {
-		if (!bitField.field.optional) {
-			if (wasReference && !bitField.isReference()) {
-				throw new InvalidBitValueException(
-						"Can't store legacy reference in non-reference field " + fieldDescription.get()
-				);
-			}
-			if (!wasReference && bitField.isReference()) {
-				throw new InvalidBitValueException(
-						"Can't store legacy non-reference " + value + " in " + fieldDescription.get()
-				);
-			}
-		}
-	}
-
-	void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, LegacyValues legacyValues) {
-		for (FieldWrapper field : fields) {
-			if (field.id >= legacyValues.values.length) continue;
-			checkReferenceMigration(
-					legacyValues.hadReferenceValues[field.id], field.bitField,
-					legacyValues.values[field.id], field.classField::toString
-			);
-			recursor.runNested(field.classField.getName(), nested ->
-					field.bitField.fixLegacyTypes(nested, legacyValues.values[field.id])
-			);
-		}
-		for (FunctionWrapper function : functions) {
-			if (function.id >= legacyValues.storedFunctionValues.length) continue;
-			checkReferenceMigration(
-					legacyValues.hadReferenceFunctions[function.id], function.bitField,
-					legacyValues.storedFunctionValues[function.id], function.classMethod::toString
-			);
-			recursor.runNested(function.classMethod.getName(), nested ->
-					function.bitField.fixLegacyTypes(nested, legacyValues.storedFunctionValues[function.id])
-			);
-		}
 	}
 
 	void shallowCopy(Object original, Object target) {

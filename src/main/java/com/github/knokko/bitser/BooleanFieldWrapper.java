@@ -2,9 +2,6 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.BackBooleanValue;
-import com.github.knokko.bitser.util.Recursor;
-
-import java.util.function.Consumer;
 
 @BitStruct(backwardCompatible = false)
 class BooleanFieldWrapper extends BitFieldWrapper {
@@ -51,19 +48,5 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to boolean for field " + field);
 		}
-	}
-
-	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("boolean-value", context -> {
-			context.output.prepareProperty("boolean-value", -1);
-			context.output.write((Boolean) value);
-			context.output.finishProperty();
-		});
-	}
-
-	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("boolean-value", context -> setValue.accept(context.input.read()));
 	}
 }

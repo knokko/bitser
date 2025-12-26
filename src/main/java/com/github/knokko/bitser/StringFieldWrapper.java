@@ -5,10 +5,8 @@ import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.StringField;
 import com.github.knokko.bitser.legacy.BackStringValue;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -72,24 +70,5 @@ class StringFieldWrapper extends BitFieldWrapper {
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to String for field " + field);
 		}
-	}
-
-	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("string", context -> {
-			if (context.integerDistribution != null) {
-				long length = ((String) value).getBytes(StandardCharsets.UTF_8).length;
-				context.integerDistribution.insert(field + " string length", length, lengthField);
-				context.integerDistribution.insert("string length", length, lengthField);
-			}
-			StringBitser.encode((String) value, lengthField, context.output);
-		});
-	}
-
-	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("string-value", context ->
-				setValue.accept(StringBitser.decode(lengthField, recursor.info.sizeLimit, context.input))
-		);
 	}
 }

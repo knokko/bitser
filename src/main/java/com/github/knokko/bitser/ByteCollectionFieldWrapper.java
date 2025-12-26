@@ -6,12 +6,10 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitInputStream;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import static java.lang.Byte.toUnsignedInt;
 import static java.lang.Double.doubleToRawLongBits;
@@ -42,23 +40,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (field.type == long[].class) return ArrayType.LONG;
 		if (field.type == double[].class) return ArrayType.DOUBLE;
 		throw new InvalidBitFieldException("Unexpected write-as-bytes field type " + field.type);
-	}
-
-	@Override
-	void writeElements(Object value, int size, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("byte-values", context -> {
-			context.output.prepareProperty("byte-values", -1);
-			if (value instanceof boolean[]) context.output.write(toByteArray((boolean[]) value));
-			else if (value instanceof byte[]) context.output.write((byte[]) value);
-			else if (value instanceof short[]) context.output.write(toByteArray((short[]) value));
-			else if (value instanceof char[]) context.output.write(toByteArray((char[]) value));
-			else if (value instanceof int[]) context.output.write(toByteArray((int[]) value));
-			else if (value instanceof float[]) context.output.write(toByteArray((float[]) value));
-			else if (value instanceof long[]) context.output.write(toByteArray((long[]) value));
-			else if (value instanceof double[]) context.output.write(toByteArray((double[]) value));
-			else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
-			context.output.finishProperty();
-		});
 	}
 
 	private byte[] toByteArray(boolean[] booleans) {
@@ -239,21 +220,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		return newArray;
 	}
 
-	@Override
-	void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) {
-		recursor.runFlat("bytes", context -> {
-			if (value instanceof boolean[]) backToBooleanArray((boolean[]) value, context.input);
-			else if (value instanceof byte[]) context.input.read((byte[]) value);
-			else if (value instanceof short[]) backToShortArray((short[]) value, context.input);
-			else if (value instanceof char[]) backToCharArray((char[]) value, context.input);
-			else if (value instanceof int[]) backToIntArray((int[]) value, context.input);
-			else if (value instanceof float[]) backToFloatArray((float[]) value, context.input);
-			else if (value instanceof long[]) backToLongArray((long[]) value, context.input);
-			else if (value instanceof double[]) backToDoubleArray((double[]) value, context.input);
-			else throw new InvalidBitFieldException("Can't decode " + value.getClass() + " from bytes");
-		});
-	}
-
 	void backToBooleanArray(boolean[] booleans, BitInputStream input) throws IOException {
 		int numBytes = booleans.length / 8;
 		if (booleans.length % 8 != 0) numBytes += 1;
@@ -353,28 +319,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			doubles[doubleIndex] = longBitsToDouble((byte56 << 56) | (byte48 << 48) | (byte40 << 40) | (byte32 << 32) |
 					(byte24 << 24) | (byte16 << 16) | (byte8 << 8) | byte0);
 		}
-	}
-
-	@Override
-	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object rawLegacyInstance, Consumer<Object> setValue) {
-		if (rawLegacyInstance == null) {
-			super.setLegacyValue(recursor, null, setValue);
-			return;
-		}
-
-		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) rawLegacyInstance;
-		if (field.type == legacyInstance.legacyArray.getClass()) {
-			super.setLegacyValue(recursor, legacyInstance.legacyArray, setValue);
-			return;
-		}
-
-		int size = Array.getLength(legacyInstance.legacyArray);
-		for (int index = 0; index < size; index++) {
-			Object legacyValue = Array.get(legacyInstance.legacyArray, index);
-			setFromLegacyValue(legacyInstance.newCollection, index, legacyValue);
-		}
-
-		setValue.accept(legacyInstance.newCollection);
 	}
 
 	private void setFromLegacyValue(Object newArray, int index, Object legacyValue) {

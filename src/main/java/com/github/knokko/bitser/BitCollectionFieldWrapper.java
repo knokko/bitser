@@ -1,17 +1,13 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.BackArrayValue;
-import com.github.knokko.bitser.legacy.LegacyCollectionInstance;
 import com.github.knokko.bitser.field.ClassField;
 import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.util.JobOutput;
 import com.github.knokko.bitser.util.Recursor;
 
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.function.Consumer;
 
 @BitStruct(backwardCompatible = false)
 class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
@@ -48,134 +44,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		} else {
 			for (Object element : (Collection<?>) value) {
 				valuesWrapper.registerLegacyClasses(element, recursor);
-			}
-		}
-	}
-
-	@Override
-	BitFieldWrapper getChildWrapper() {
-		return valuesWrapper;
-	}
-
-	@Override
-	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
-		super.collectReferenceLabels(recursor);
-		valuesWrapper.collectReferenceLabels(recursor);
-	}
-
-	@Override
-	void registerReferenceTargets(Object value, Recursor<ReferenceIdMapper, BitserCache> recursor) {
-		super.registerReferenceTargets(value, recursor);
-		if (value == null) return;
-		if (field.type.isArray()) {
-			int size = Array.getLength(value);
-			for (int index = 0; index < size; index++) {
-				Object element = Array.get(value, index);
-				valuesWrapper.registerReferenceTargets(element, recursor);
-			}
-		} else {
-			for (Object element : (Collection<?>) value) {
-				valuesWrapper.registerReferenceTargets(element, recursor);
-			}
-		}
-	}
-
-	@Override
-	void writeElements(Object value, int size, Recursor<WriteContext, WriteInfo> recursor) {
-		String nullErrorMessage = "Field " + field + " must not have null elements";
-		if (field.type.isArray()) {
-			if (valuesWrapper.field.optional) {
-				recursor.runFlat("optional", context -> {
-					context.output.prepareProperty("optional", -1);
-					for (int index = 0; index < size; index++) {
-						context.output.write(Array.get(value, index) != null);
-					}
-					context.output.finishProperty();
-				});
-			}
-			for (int index = 0; index < size; index++) {
-				Object element = Array.get(value, index);
-				if (element == null) {
-					if (valuesWrapper.field.optional) continue;
-					throw new InvalidBitValueException(nullErrorMessage);
-				}
-
-				if (recursor.info.usesContextInfo) {
-					final int rememberIndex = index;
-					recursor.runFlat("pushContext", context ->
-							context.output.pushContext("element", rememberIndex)
-					);
-					recursor.runNested("element " + index, nested ->
-							valuesWrapper.writeValue(element, nested)
-					);
-					recursor.runFlat("popContext", context ->
-							context.output.popContext("element", rememberIndex)
-					);
-				} else {
-					valuesWrapper.writeValue(element, recursor);
-				}
-			}
-			if (valuesWrapper.field.referenceTargetLabel != null) {
-				recursor.runFlat("referenceTargetLabel", context -> {
-					context.output.pushContext("reference-target-label", -1);
-					for (int index = 0; index < size; index++) {
-						Object element = Array.get(value, index);
-						if (element == null) continue;
-						context.idMapper.maybeEncodeUnstableId(
-								valuesWrapper.field.referenceTargetLabel, element, context.output, index
-						);
-					}
-					context.output.popContext("reference-target-label", -1);
-				});
-			}
-		} else {
-			if (valuesWrapper.field.optional) {
-				recursor.runFlat("optional", context -> {
-					context.output.prepareProperty("optional", -1);
-					for (Object element : (Collection<?>) value) {
-						context.output.write(element != null);
-					}
-					context.output.finishProperty();
-				});
-			}
-
-			int index = -1;
-			for (Object element : (Collection<?>) value) {
-				index += 1;
-				if (element == null) {
-					if (valuesWrapper.field.optional) continue;
-					throw new InvalidBitValueException(nullErrorMessage);
-				}
-
-				if (recursor.info.usesContextInfo) {
-					final int rememberIndex = index;
-					recursor.runFlat("pushContext", context ->
-							context.output.pushContext("element", rememberIndex)
-					);
-					recursor.runNested("element " + index, nested ->
-							valuesWrapper.writeValue(element, nested)
-					);
-					recursor.runFlat("popContext", context ->
-							context.output.popContext("element", rememberIndex)
-					);
-				} else {
-					valuesWrapper.writeValue(element, recursor);
-				}
-			}
-
-			if (valuesWrapper.field.referenceTargetLabel != null) {
-				recursor.runFlat("referenceTargetLabel", context -> {
-					context.output.pushContext("reference-target-label", -1);
-					int counter = -1;
-					for (Object element : (Collection<?>) value) {
-						counter += 1;
-						if (element == null) continue;
-						context.idMapper.maybeEncodeUnstableId(
-								valuesWrapper.field.referenceTargetLabel, element, context.output, counter
-						);
-					}
-					context.output.popContext("reference-target-label", -1);
-				});
 			}
 		}
 	}
@@ -353,122 +221,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 					(Collection<?>) modernCollection, (Object[]) modernArray, childNode)
 			);
 			return modernCollection;
-		}
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	void readElements(Object value, int size, Recursor<ReadContext, ReadInfo> recursor) {
-		JobOutput<boolean[]> hasValues = recursor.computeFlat("optional", context -> {
-			if (valuesWrapper.field.optional) {
-				boolean[] hadValues = new boolean[size];
-				for (int index = 0; index < size; index++) {
-					hadValues[index] = context.input.read();
-				}
-				return hadValues;
-			} else {
-				return null;
-			}
-		});
-
-		Object[] rememberElements = new Object[size];
-		recursor.runNested("elements", nested -> {
-			boolean[] hadValues = hasValues.get();
-
-			for (int index = 0; index < size; index++) {
-				if (hadValues != null && !hadValues[index]) {
-					if (value instanceof Collection<?>) {
-						nested.runFlat("add-null-element", context ->
-								((Collection<Object>) value).add(null)
-						);
-					} else {
-						Array.set(value, index, null);
-					}
-					continue;
-				}
-
-				final int rememberIndex = index;
-				valuesWrapper.readValue(nested, element -> {
-					rememberElements[rememberIndex] = element;
-					if (value instanceof Collection<?>) {
-						((Collection<Object>) value).add(element);
-					} else {
-						Array.set(value, rememberIndex, element);
-					}
-				});
-			}
-		});
-
-		if (valuesWrapper.field.referenceTargetLabel != null) {
-			recursor.runFlat("referenceTargetLabel", read -> {
-				boolean[] hadValues = hasValues.get();
-
-				for (int index = 0; index < size; index++) {
-					if (hadValues != null && !hadValues[index]) continue;
-					read.idLoader.register(
-							valuesWrapper.field.referenceTargetLabel, rememberElements[index],
-							read.input, recursor.info.bitser.cache
-					);
-				}
-			});
-		}
-	}
-
-	@Override
-	void setLegacyValue(Recursor<ReadContext, ReadInfo> recursor, Object rawLegacyInstance, Consumer<Object> setValue) {
-		if (rawLegacyInstance == null) {
-			super.setLegacyValue(recursor, null, setValue);
-			return;
-		}
-
-		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) rawLegacyInstance;
-		Object dummyArray = legacyInstance.newCollection.getClass().isArray() ? null :
-				Array.newInstance(valuesWrapper.field.type, 1);
-		int size = Array.getLength(legacyInstance.legacyArray);
-
-		if (size > 0) {
-			recursor.runNested("elements", nested -> {
-				for (int index = 0; index < size; index++) {
-					Object oldValue = Array.get(legacyInstance.legacyArray, index);
-					final int rememberIndex = index;
-					try {
-						if (legacyInstance.newCollection.getClass().isArray()) {
-							valuesWrapper.setLegacyValue(nested, oldValue, newValue ->
-									Array.set(legacyInstance.newCollection, rememberIndex, newValue)
-							);
-						} else {
-							valuesWrapper.setLegacyValue(nested, oldValue, newValue -> {
-								Array.set(dummyArray, 0, newValue);
-								//noinspection unchecked
-								((Collection<Object>) legacyInstance.newCollection).add(newValue);
-							});
-						}
-					} catch (IllegalArgumentException wrongType) {
-						throw new LegacyBitserException("Can't convert from legacy " + oldValue + " to " + valuesWrapper.field.type + " for field " + field);
-					}
-				}
-			});
-		}
-
-		super.setLegacyValue(recursor, legacyInstance.newCollection, setValue);
-	}
-
-	@Override
-	void fixLegacyTypes(Recursor<ReadContext, ReadInfo> recursor, Object value) {
-		if (value != null && !(value instanceof LegacyCollectionInstance)) {
-			throw new LegacyBitserException("Can't convert from legacy " + value + " to " + valuesWrapper.field.type + " for field " + field);
-		}
-		super.fixLegacyTypes(recursor, value);
-		if (value == null) return;
-		LegacyCollectionInstance legacyInstance = (LegacyCollectionInstance) value;
-		int size = Array.getLength(legacyInstance.legacyArray);
-
-		if (size > 0) {
-			recursor.runNested("elements", nested -> {
-				for (int index = 0; index < size; index++) {
-					valuesWrapper.fixLegacyTypes(nested, Array.get(legacyInstance.legacyArray, index));
-				}
-			});
 		}
 	}
 

@@ -19,11 +19,6 @@ abstract class ReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	boolean isReference() {
-		return true;
-	}
-
-	@Override
 	boolean deepEquals(Object a, Object b, BitserCache cache) {
 		return a == b;
 	}

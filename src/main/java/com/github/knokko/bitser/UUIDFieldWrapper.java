@@ -4,10 +4,8 @@ import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.StableReferenceFieldId;
 import com.github.knokko.bitser.legacy.BackUUIDValue;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import static com.github.knokko.bitser.IntegerBitser.decodeFullLong;
 import static com.github.knokko.bitser.IntegerBitser.encodeFullLong;
@@ -27,20 +25,6 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	private UUIDFieldWrapper() {
 		super();
 		this.isStableReferenceId = false;
-	}
-
-	@Override
-	void writeValue(Object rawValue, Recursor<WriteContext, WriteInfo> recursor) {
-		UUID value = (UUID) rawValue;
-
-		recursor.runFlat("uuid", context -> {
-			context.output.prepareProperty("most-significant-bits", -1);
-			encodeFullLong(value.getMostSignificantBits(), context.output);
-			context.output.finishProperty();
-			context.output.prepareProperty("least-significant-bits", -1);
-			encodeFullLong(value.getLeastSignificantBits(), context.output);
-			context.output.finishProperty();
-		});
 	}
 
 	@Override
@@ -78,12 +62,5 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to UUID for field " + field);
 		}
-	}
-
-	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("uuid-value", context ->
-			setValue.accept(new UUID(decodeFullLong(context.input), decodeFullLong(context.input)))
-		);
 	}
 }

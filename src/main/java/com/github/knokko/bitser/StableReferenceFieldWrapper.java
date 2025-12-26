@@ -15,24 +15,5 @@ class StableReferenceFieldWrapper extends ReferenceFieldWrapper {
 	private StableReferenceFieldWrapper() {
 		super();
 	}
-
-	@Override
-	void collectReferenceLabels(Recursor<LabelContext, LabelInfo> recursor) {
-		super.collectReferenceLabels(recursor);
-		recursor.runFlat("stable", labels -> labels.stable.add(label));
-	}
-
-	@Override
-	void writeValue(Object value, Recursor<WriteContext, WriteInfo> recursor) {
-		recursor.runFlat("stable reference", context ->
-				context.idMapper.encodeStableId(label, value, context.output, recursor.info.bitser.cache)
-		);
-	}
-
-	@Override
-	void readValue(Recursor<ReadContext, ReadInfo> recursor, Consumer<Object> setValue) {
-		recursor.runFlat("stable-reference", context ->
-				context.idLoader.getStable(label, setValue, context.input)
-		);
-	}
+	// TODO Delete this class
 }
