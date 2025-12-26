@@ -256,4 +256,8 @@ public class Bitser {
 		if (value == null) return 0;
 		return cache.getWrapper(value.getClass()).hashCode(value, cache);
 	}
+
+	// TODO Renaming: serializeSimple -> serialize, etc
+	// TODO Convert many classes to records
+	// TODO Play around with module-info.java and module-private visibility
 }

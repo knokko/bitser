@@ -1,6 +1,5 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
@@ -56,18 +55,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 	}
 
 	private LabelTargets get(ReferenceFieldWrapper referenceWrapper) {
-		if (referenceWrapper.stable) {
-			BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
-			if (valueInfo == null) {
-				assert referenceWrapper.field.type != null;
-				String className = referenceWrapper.field.type.getSimpleName();
-				throw new InvalidBitFieldException("Can't extract stable ID from " + className + " because it's not a BitStruct");
-			}
-			if (!valueInfo.hasStableId()) {
-				String className = valueInfo.constructor.getDeclaringClass().getSimpleName();
-				throw new InvalidBitFieldException(className + " doesn't have an @StableReferenceFieldId");
-			}
-		}
+		if (referenceWrapper.stable) cache.requireStableID(referenceWrapper.field.type);
 
 		LabelTargets targets = labels.get(referenceWrapper.label);
 		if (targets == null) {
@@ -121,7 +109,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 
 		void save(ReferenceFieldWrapper referenceWrapper, Object reference, BitOutputStream output) throws Throwable {
 			if (referenceWrapper.stable) {
-				BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(referenceWrapper.field.type);
+				BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(reference.getClass());
 				UUID id = valueInfo.getStableId(reference);
 				output.prepareProperty("stable-id", -1);
 				IntegerBitser.encodeFullLong(id.getMostSignificantBits(), output);

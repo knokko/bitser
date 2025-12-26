@@ -273,7 +273,7 @@ public class TestStableReferences {
 				InvalidBitFieldException.class,
 				() -> new Bitser(true).serializeSimple(new NonStructTarget(), new BitCountStream())
 		).getMessage();
-		assertContains(errorMessage, "Can't extract stable ID from");
+		assertContains(errorMessage, "UUID doesn't have an @StableReferenceFieldId");
 		assertContains(errorMessage, "NonStructTarget -> reference");
 	}
 
@@ -478,5 +478,53 @@ public class TestStableReferences {
 		).getMessage();
 		assertContains(errorMessage, "find @ReferenceFieldTarget with label item types");
 		assertContains(errorMessage, "Item -> type");
+	}
+
+	private static class AbstractStable {
+
+		@BitField(id = 0)
+		@StableReferenceFieldId
+		final UUID id = UUID.randomUUID();
+
+		@SuppressWarnings("unused")
+		private static final Class<?>[] BITSER_HIERARCHY = { StableSubClass.class };
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class StableSubClass extends AbstractStable {
+
+		@BitField(id = 0)
+		@IntegerField(expectUniform = true)
+		int x;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	static class AbstractTestRoot {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "abstract")
+		@ClassField(root = AbstractStable.class)
+		final AbstractStable target = new StableSubClass();
+
+		@BitField(id = 1)
+		@ReferenceField(stable = true, label = "abstract")
+		final AbstractStable reference = target;
+	}
+
+	@Test
+	public void testAbstractSuperClass() {
+		Bitser bitser = new Bitser(true);
+		AbstractTestRoot original = new AbstractTestRoot();
+		((StableSubClass) original.target).x = 5;
+
+		AbstractTestRoot simple = bitser.stupidDeepCopy(original);
+		assertEquals(5, ((StableSubClass) simple.target).x);
+		assertSame(simple.target, simple.reference);
+		assertEquals(original.target.id, simple.target.id);
+
+		AbstractTestRoot backward = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(5, ((StableSubClass) backward.target).x);
+		assertSame(backward.target, backward.reference);
+		assertEquals(original.target.id, backward.target.id);
 	}
 }
