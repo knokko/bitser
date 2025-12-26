@@ -11,7 +11,7 @@ public class LegacyLazyBytes {
 
 	/**
 	 * The bytes containing the data of the wrapped struct that was serialized. You should be able to deserialize it
-	 * using {@link com.github.knokko.bitser.Bitser#deserializeFromBytes}.
+	 * using {@link com.github.knokko.bitser.Bitser#deserializeFromBytesSimple}.
 	 */
 	public final byte[] bytes;
 

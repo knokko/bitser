@@ -22,8 +22,6 @@ class BitStructWrapper<T> {
 	final Constructor<T> constructor;
 	private final VirtualField stableIdField;
 
-	private Set<String> stableReferenceLabels, unstableReferenceLabels, referenceTargetLabels;
-
 	BitStructWrapper(Class<T> objectClass, BitStruct bitStruct) {
 		if (bitStruct == null) {
 			throw new InvalidBitFieldException("Class must have a BitStruct annotation: " + objectClass);
@@ -148,23 +146,4 @@ class BitStructWrapper<T> {
 		}
 		return code;
 	}
-
-//	<C> BitStructConnection<C> createConnection(
-//			Bitser bitser, C object, Consumer<BitStructConnection.ChangeListener> reportChanges
-//	) {
-//		List<BitFieldWrapper> fields = new ArrayList<>();
-//		Map<String, BitFieldWrapper> nameToChildMapping = new HashMap<>();
-//		for (SingleClassWrapper currentClass : classHierarchy) {
-//			for (SingleClassWrapper.FieldWrapper field : currentClass.fields) {
-//				fields.add(field.bitField);
-//				if (field.bitField instanceof StructFieldWrapper || List.class.isAssignableFrom(field.bitField.field.type)) {
-//					if (nameToChildMapping.containsKey(field.classField.getName())) {
-//						throw new InvalidBitFieldException("Class " + classHierarchy.get(0) + " has multiple nested fields named " + field.classField.getName());
-//					}
-//					nameToChildMapping.put(field.classField.getName(), field.bitField);
-//				}
-//			}
-//		}
-//		return new BitStructConnection<>(bitser, fields, nameToChildMapping, object, reportChanges);
-//	}
 }
