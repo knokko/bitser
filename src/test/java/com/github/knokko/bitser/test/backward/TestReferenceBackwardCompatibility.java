@@ -1124,4 +1124,29 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(1.0, nope.noTarget.rating);
 		assertNull(nope.noReference1);
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalReferenceArray {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "optional")
+		final UUID target = UUID.randomUUID();
+
+		@BitField(id = 1)
+		@NestedFieldSetting(path = "c", optional = true)
+		@ReferenceField(stable = false, label = "optional")
+		UUID[] references;
+	}
+
+	@Test
+	public void testOptionalReferenceArray() {
+		OptionalReferenceArray array = new OptionalReferenceArray();
+		array.references = new UUID[] { array.target, null, array.target };
+
+		OptionalReferenceArray loaded = new Bitser(true).stupidDeepCopy(array, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(3, loaded.references.length);
+		assertSame(loaded.target, loaded.references[0]);
+		assertNull(loaded.references[1]);
+		assertSame(loaded.target, loaded.references[2]);
+	}
 }

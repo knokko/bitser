@@ -2,17 +2,7 @@ package com.github.knokko.bitser;
 
 import java.lang.reflect.Array;
 
-class BackReadArrayReferenceJob {
-
-	final Object array;
-	final ReferenceFieldWrapper elementsWrapper;
-	final RecursionNode node;
-
-	BackReadArrayReferenceJob(Object array, ReferenceFieldWrapper elementsWrapper, RecursionNode node) {
-		this.array = array;
-		this.elementsWrapper = elementsWrapper;
-		this.node = node;
-	}
+record BackReadArrayReferenceJob(Object array, ReferenceFieldWrapper elementsWrapper, RecursionNode node) {
 
 	void resolve(BackDeserializer deserializer) throws Throwable {
 		int size = Array.getLength(array);

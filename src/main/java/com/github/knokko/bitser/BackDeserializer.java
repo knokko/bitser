@@ -63,18 +63,18 @@ class BackDeserializer {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				BackReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
-				input.pushContext(structJob.node, "(back-struct-job)");
+				input.pushContext(structJob.node(), "(back-struct-job)");
 				structJob.read(this);
-				input.popContext(structJob.node, "(back-struct-job)");
+				input.popContext(structJob.node(), "(back-struct-job)");
 			}
 			if (!arrayJobs.isEmpty()) {
 				BackReadArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
-					input.pushContext(job.node, "(array-job)");
+					input.pushContext(job.node(), "(array-job)");
 					job.read(this);
-					input.popContext(job.node, "(array-job)");
+					input.popContext(job.node(), "(array-job)");
 				} catch (Throwable failed) {
-					throw new RecursionException(job.node.generateTrace(null), failed);
+					throw new RecursionException(job.node().generateTrace(null), failed);
 				}
 			}
 		}
@@ -84,23 +84,23 @@ class BackDeserializer {
 
 		for (BackReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
-				input.pushContext(referenceJob.node, "(struct-reference-job)");
+				input.pushContext(referenceJob.node(), "(struct-reference-job)");
 				referenceJob.resolve(this);
-				input.popContext(referenceJob.node, "(struct-reference-job)");
+				input.popContext(referenceJob.node(), "(struct-reference-job)");
 			} catch (Throwable failed) {
-				String topContext = "field/function " + referenceJob.legacyValuesIndex;
-				throw new RecursionException(referenceJob.node.generateTrace(topContext), failed);
+				String topContext = "field/function " + referenceJob.legacyValuesIndex();
+				throw new RecursionException(referenceJob.node().generateTrace(topContext), failed);
 			}
 		}
 		structReferenceJobs.clear();
 
 		for (BackReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
 			try {
-				input.pushContext(referenceJob.node, "(array-reference-job)");
+				input.pushContext(referenceJob.node(), "(array-reference-job)");
 				referenceJob.resolve(this);
-				input.popContext(referenceJob.node, "(array-reference-job)");
+				input.popContext(referenceJob.node(), "(array-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursionException(referenceJob.node.generateTrace("elements"), failed);
+				throw new RecursionException(referenceJob.node().generateTrace("elements"), failed);
 			}
 		}
 		arrayReferenceJobs.clear();
@@ -115,7 +115,7 @@ class BackDeserializer {
 				try {
 					job.convert(this);
 				} catch (Throwable failed) {
-					throw new RecursionException(job.node.generateTrace("elements"), failed);
+					throw new RecursionException(job.node().generateTrace("elements"), failed);
 				}
 			}
 		}
@@ -124,7 +124,7 @@ class BackDeserializer {
 			try {
 				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursionException(job.node.generateTrace(null), failed);
+				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
 		}
 		convertStructReferenceJobs.clear();
@@ -133,7 +133,7 @@ class BackDeserializer {
 			try {
 				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursionException(job.node.generateTrace(null), failed);
+				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
 		}
 		convertStructFunctionReferenceJobs.clear();
@@ -142,7 +142,7 @@ class BackDeserializer {
 			try {
 				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursionException(job.node.generateTrace(null), failed);
+				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
 		}
 		convertArrayReferenceJobs.clear();
