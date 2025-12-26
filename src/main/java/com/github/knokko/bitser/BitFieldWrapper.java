@@ -2,7 +2,6 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.util.Recursor;
 
 import java.util.Objects;
 
