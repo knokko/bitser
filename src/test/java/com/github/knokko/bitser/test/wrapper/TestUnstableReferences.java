@@ -10,6 +10,7 @@ import com.github.knokko.bitser.Bitser;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 
 import static com.github.knokko.bitser.test.wrapper.TestHelper.assertContains;
@@ -445,5 +446,89 @@ public class TestUnstableReferences {
 		).getMessage();
 		assertContains(errorMessage, "RequiredReferenceList -> references");
 		assertContains(errorMessage, "must not have null elements");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class GenericTarget<T> {
+
+		@SuppressWarnings("unused")
+		T defaultValue;
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class GenericRoot {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "generic1")
+		GenericTarget<?> target;
+
+		@BitField(id = 1)
+		@ReferenceField(stable = false, label = "generic1")
+		GenericTarget<?> reference;
+
+		@BitField(id = 2)
+		@ReferenceFieldTarget(label = "generic2")
+		GenericTarget<?>[] targets;
+
+		@BitField(id = 3)
+		@ReferenceField(stable = false, label = "generic2")
+		GenericTarget<?>[] references;
+
+		@BitField(id = 4)
+		@ReferenceFieldTarget(label = "generic3")
+		ArrayList<GenericTarget<?>> targetList = new ArrayList<>();
+
+		@BitField(id = 5)
+		@ReferenceField(stable = false, label = "generic3")
+		ArrayList<GenericTarget<?>> referenceList = new ArrayList<>();
+
+		@BitField(id = 6)
+		@NestedFieldSetting(path = "k", fieldName = "TARGET")
+		@NestedFieldSetting(path = "v", fieldName = "TARGET")
+		HashMap<GenericTarget<?>, GenericTarget<?>> targetMap = new HashMap<>();
+
+		@BitField(id = 7)
+		@NestedFieldSetting(path = "k", fieldName = "REFERENCE")
+		@NestedFieldSetting(path = "v", fieldName = "REFERENCE")
+		HashMap<GenericTarget<?>, GenericTarget<?>> referenceMap = new HashMap<>();
+
+		@SuppressWarnings("unused")
+		@ReferenceFieldTarget(label = "generic4")
+		private static final boolean TARGET = false;
+
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "generic4")
+		private static final boolean REFERENCE = false;
+	}
+
+	@Test
+	public void testGenericTarget() {
+		Bitser bitser = new Bitser(false);
+		GenericRoot original = new GenericRoot();
+		original.target = new GenericTarget<String>();
+		original.reference = original.target;
+		original.targets = new GenericTarget[] { new GenericTarget<Integer>() };
+		original.references = new GenericTarget[] { original.targets[0] };
+		original.targetList.add(new GenericTarget<Double>());
+		original.referenceList.add(original.targetList.get(0));
+		original.targetMap.put(new GenericTarget<Long>(), new GenericTarget<Class<?>>());
+		original.referenceMap.put(
+				original.targetMap.keySet().iterator().next(),
+				original.targetMap.values().iterator().next()
+		);
+
+		GenericRoot loaded = bitser.stupidDeepCopy(original);
+		assertSame(loaded.target, loaded.reference);
+		assertSame(loaded.targets[0], loaded.references[0]);
+		assertSame(loaded.targetList.get(0), loaded.referenceList.get(0));
+		assertSame(loaded.targetMap.keySet().iterator().next(), loaded.referenceMap.keySet().iterator().next());
+		assertSame(loaded.targetMap.values().iterator().next(), loaded.referenceMap.values().iterator().next());
+
+		GenericRoot backward = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertSame(backward.target, backward.reference);
+		assertSame(backward.targets[0], backward.references[0]);
+		assertSame(backward.targetList.get(0), backward.referenceList.get(0));
+		assertSame(backward.targetMap.keySet().iterator().next(), backward.referenceMap.keySet().iterator().next());
+		assertSame(backward.targetMap.values().iterator().next(), backward.referenceMap.values().iterator().next());
 	}
 }

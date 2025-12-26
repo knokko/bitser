@@ -127,14 +127,18 @@ class WrapperFactory {
 					maybeRootAnnotations(rootAnnotations, path),
 					null
 			);
-		} else if (actualTypeArgument instanceof ParameterizedType) {
-			ParameterizedType parType = (ParameterizedType) actualTypeArgument;
+		} else if (actualTypeArgument instanceof ParameterizedType parType) {
 			Type rawChildType = parType.getRawType();
-			if (rawChildType instanceof Class<?>) {
-				return new ChildType((Class<?>) rawChildType, new VirtualField.NoAnnotations(), parType);
+			if (rawChildType instanceof Class<?> rawChildClass) {
+				VirtualField.AnnotationHolder childAnnotations;
+				if (rawChildClass.isArray() || Collection.class.isAssignableFrom(rawChildClass)) {
+					childAnnotations = new VirtualField.NoAnnotations();
+				} else {
+					childAnnotations = maybeRootAnnotations(rootAnnotations, path);
+				}
+				return new ChildType(rawChildClass, childAnnotations, parType);
 			} else throw new InvalidBitFieldException("Unexpected raw actual type argument for " + field);
-		} else if (actualTypeArgument instanceof GenericArrayType) {
-			GenericArrayType arrayType = (GenericArrayType) actualTypeArgument;
+		} else if (actualTypeArgument instanceof GenericArrayType arrayType) {
 			Type elementType = arrayType.getGenericComponentType();
 			if (elementType instanceof ParameterizedType) {
 				return new ChildType(Array.newInstance(
@@ -257,8 +261,7 @@ class WrapperFactory {
 				if (typeArguments.length != 1) {
 					throw new UnexpectedBitserException("Expected exactly 1 type argument for " + field);
 				}
-				if (typeArguments[0] instanceof Class<?>) {
-					Class<?> valueClass = (Class<?>) typeArguments[0];
+				if (typeArguments[0] instanceof Class<?> valueClass) {
 					if (!valueClass.isAnnotationPresent(BitStruct.class)) {
 						throw new InvalidBitFieldException("Generic type of " + field + " must be a BitStruct");
 					}
@@ -279,8 +282,7 @@ class WrapperFactory {
 	}
 
 	private static Type[] getActualTypeArguments(VirtualField field, Type genericType, int expectedAmount) {
-		if (genericType instanceof ParameterizedType) {
-			ParameterizedType parGenericType = (ParameterizedType) genericType;
+		if (genericType instanceof ParameterizedType parGenericType) {
 
 			Type[] actualTypeArguments = parGenericType.getActualTypeArguments();
 			if (actualTypeArguments.length != expectedAmount) {
@@ -289,11 +291,10 @@ class WrapperFactory {
 				);
 			}
 			return actualTypeArguments;
-		} else if (genericType instanceof GenericArrayType) {
+		} else if (genericType instanceof GenericArrayType genericArrayType) {
 			if (expectedAmount != 1) {
 				throw new InvalidBitFieldException("Expected " + expectedAmount + " type parameters on field " + field);
 			}
-			GenericArrayType genericArrayType = (GenericArrayType) genericType;
 			return new Type[] { genericArrayType.getGenericComponentType() };
 		} else throw new InvalidBitFieldException("Unexpected generic type " + genericType + " for " + field);
 	}

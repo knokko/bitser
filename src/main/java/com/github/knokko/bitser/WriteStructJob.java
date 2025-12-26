@@ -3,17 +3,7 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.exceptions.RecursionException;
 
-class WriteStructJob {
-
-	final Object structObject;
-	final BitStructWrapper<?> structInfo;
-	final RecursionNode node;
-
-	WriteStructJob(Object structObject, BitStructWrapper<?> structInfo, RecursionNode node) {
-		this.structObject = structObject;
-		this.structInfo = structInfo;
-		this.node = node;
-	}
+record WriteStructJob(Object structObject, BitStructWrapper<?> structInfo, RecursionNode node) {
 
 	private void writeField(
 			Serializer serializer, BitFieldWrapper fieldWrapper,
