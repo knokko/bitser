@@ -426,4 +426,49 @@ public class TestBitPostInit {
 		);
 		assertEquals(12, loaded.c);
 	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class WithoutPostInit {}
+
+	@BitStruct(backwardCompatible = true)
+	private static class WithPostInit implements BitPostInit {
+
+		boolean calledPostInit = false;
+
+		@Override
+		public void postInit(Context context) {
+			assertTrue(context.backwardCompatible);
+			this.calledPostInit = true;
+		}
+	}
+
+	@Test
+	public void testLegacyClassDoesNotHavePostInit() {
+		Bitser bitser = new Bitser(false);
+		assertTrue(bitser.fromBytes(
+				WithPostInit.class,
+				bitser.toBytes(new WithoutPostInit(), Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		).calledPostInit);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OuterWithoutPostInit {}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OuterWithPostInit {
+
+		@BitField(id = 0)
+		final WithPostInit inner = new WithPostInit();
+	}
+
+	@Test
+	public void testPostInitWithoutLegacyClass() {
+		Bitser bitser = new Bitser(false);
+		assertTrue(bitser.fromBytes(
+				OuterWithPostInit.class,
+				bitser.toBytes(new OuterWithoutPostInit(), Bitser.BACKWARD_COMPATIBLE),
+				Bitser.BACKWARD_COMPATIBLE
+		).inner.calledPostInit);
+	}
 }
