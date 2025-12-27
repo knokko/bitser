@@ -65,7 +65,7 @@ public class TestIntegerField {
 
 		Bitser bitser = new Bitser(true);
 		BitCountStream counter = new BitCountStream();
-		bitser.serializeSimple(instance, counter);
+		bitser.serialize(instance, counter);
 
 		assertEquals(16, counter.getCounter());
 	}

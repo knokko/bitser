@@ -167,7 +167,7 @@ public class TestBitCollectionField {
 	public void testInvalidShortArray() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeToBytesSimple(new InvalidShortArray())
+				() -> new Bitser(true).toBytes(new InvalidShortArray())
 		).getMessage();
 		assertContains(errorMessage, "can't be optional");
 	}
@@ -207,7 +207,7 @@ public class TestBitCollectionField {
 		longs.set = null;
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(longs, new BitOutputStream(new ByteArrayOutputStream()))
+				() -> new Bitser(true).serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 	}
@@ -220,7 +220,7 @@ public class TestBitCollectionField {
 		longs.set.add(34L);
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(longs, new BitOutputStream(new ByteArrayOutputStream()))
+				() -> new Bitser(true).serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
 		).getMessage();
 		assertContains(errorMessage, "must not have null elements");
 	}
@@ -248,7 +248,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testMissingGenerics() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new MissingGenerics(), new BitCountStream())
+				() -> new Bitser(true).serialize(new MissingGenerics(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected generic type");
 	}
@@ -264,7 +264,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testUnknownGenerics() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new UnknownGenerics(), new BitCountStream())
+				() -> new Bitser(true).serialize(new UnknownGenerics(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected generic type");
 	}
@@ -280,7 +280,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testAbstractList() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new WithAbstractList(), new BitCountStream())
+				() -> new Bitser(true).serialize(new WithAbstractList(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Field type must not be abstract or an interface");
 		assertContains(errorMessage, "WithAbstractList.list");
@@ -417,19 +417,19 @@ public class TestBitCollectionField {
 		// Without limit
 		RecursionException exception = assertThrows(
 				RecursionException.class,
-				() -> bitser.deserializeFromBytesSimple(Strings.class, byteOutput.toByteArray())
+				() -> bitser.fromBytes(Strings.class, byteOutput.toByteArray())
 		);
 		assertInstanceOf(OutOfMemoryError.class, exception.getCause());
 
 		// With limit: String[]
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytesSimple(
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.fromBytes(
 				Strings.class, byteOutput.toByteArray(), new CollectionSizeLimit(1000)
 		)).getMessage();
 		assertContains(errorMessage, "-> array");
 		assertContains(errorMessage, "2147483647 exceeds the size limit of 1000");
 
 		// With limit: ArrayList<String>
-		errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytesSimple(
+		errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.fromBytes(
 				StringList.class, byteOutput.toByteArray(), new CollectionSizeLimit(1000)
 		)).getMessage();
 		assertContains(errorMessage, "-> strings");

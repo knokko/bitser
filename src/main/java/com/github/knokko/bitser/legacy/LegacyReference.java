@@ -1,12 +1,6 @@
 package com.github.knokko.bitser.legacy;
 
-public class LegacyReference {
-
-	public final Object reference;
-
-	public LegacyReference(Object reference) {
-		this.reference = reference;
-	}
+public record LegacyReference(Object reference) {
 
 	@Override
 	public String toString() {

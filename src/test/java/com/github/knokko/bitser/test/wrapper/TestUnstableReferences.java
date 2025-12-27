@@ -251,7 +251,7 @@ public class TestUnstableReferences {
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
+				() -> new Bitser(false).serialize(root, new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
@@ -269,7 +269,7 @@ public class TestUnstableReferences {
 	public void testMissingTargetLabel() {
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serializeSimple(new MissingTargetLabel(), new BitCountStream())
+				() -> new Bitser(false).serialize(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
@@ -296,7 +296,7 @@ public class TestUnstableReferences {
 	public void testFieldThatIsBothReferenceAndTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new BothReferenceAndTarget(), new BitCountStream())
+				() -> new Bitser(true).serialize(new BothReferenceAndTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is both a reference field and a reference target");
 	}
@@ -314,7 +314,7 @@ public class TestUnstableReferences {
 	public void testPrimitiveTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new WithPrimitiveTarget(), new BitCountStream())
+				() -> new Bitser(true).serialize(new WithPrimitiveTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is primitive, which is forbidden");
 	}
@@ -328,7 +328,7 @@ public class TestUnstableReferences {
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serializeSimple(root, new BitCountStream())
+				() -> new Bitser(false).serialize(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple unstable targets have identity");
 		assertContains(errorMessage, "ItemRoot -> types");
@@ -395,11 +395,11 @@ public class TestUnstableReferences {
 		withRoot.types.add(itemType);
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytesSimple(primaryRoot, withRoot);
+		byte[] bytes = bitser.toBytes(primaryRoot, withRoot);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(ItemRoot.class, bytes)
+				() -> bitser.fromBytes(ItemRoot.class, bytes)
 		).getMessage();
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
 		assertContains(errorMessage, "-> type");
@@ -415,11 +415,11 @@ public class TestUnstableReferences {
 		with.types.add(itemType);
 
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytesSimple(item, with);
+		byte[] bytes = bitser.toBytes(item, with);
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(Item.class, bytes)
+				() -> bitser.fromBytes(Item.class, bytes)
 		).getMessage();
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
 		assertContains(errorMessage, "-> type");
@@ -442,7 +442,7 @@ public class TestUnstableReferences {
 	public void testForbidNullReferences() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeToBytesSimple(new RequiredReferenceList())
+				() -> new Bitser(true).toBytes(new RequiredReferenceList())
 		).getMessage();
 		assertContains(errorMessage, "RequiredReferenceList -> references");
 		assertContains(errorMessage, "must not have null elements");

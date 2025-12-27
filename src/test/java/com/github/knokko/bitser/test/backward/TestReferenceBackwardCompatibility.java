@@ -142,7 +142,7 @@ public class TestReferenceBackwardCompatibility {
 		assertArrayEquals(new String[] { "ok" }, loaded.stringTargets);
 		assertSame(loaded.stringTargets[0], loaded.stringReference);
 
-		NewShallow newer = bitser.deserializeFromBytesSimple(NewShallow.class, bitser.serializeToBytesSimple(
+		NewShallow newer = bitser.fromBytes(NewShallow.class, bitser.toBytes(
 				original, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(1, newer.a);
@@ -221,7 +221,7 @@ public class TestReferenceBackwardCompatibility {
 			LegacyStructInstance legacyDummy = (LegacyStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
 			LegacyClassValues legacyValues = legacyDummy.hierarchy[0];
 			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hasFieldValues);
-			int x = (int) ((LegacyIntValue) legacyValues.fieldValues[2]).value;
+			int x = (int) ((LegacyIntValue) legacyValues.fieldValues[2]).value();
 			//noinspection SuspiciousNameCombination
 			best = new NewDummy(x, x);
 		}
@@ -233,8 +233,8 @@ public class TestReferenceBackwardCompatibility {
 		ReferenceMethodOld before = new ReferenceMethodOld();
 		before.dummies.add(new Dummy(5));
 
-		ReferenceMethodNew after = bitser.deserializeFromBytesSimple(
-				ReferenceMethodNew.class, bitser.serializeToBytesSimple(
+		ReferenceMethodNew after = bitser.fromBytes(
+				ReferenceMethodNew.class, bitser.toBytes(
 						before, Bitser.BACKWARD_COMPATIBLE, new WithParameter("best", 0)
 				), Bitser.BACKWARD_COMPATIBLE
 		);
@@ -259,8 +259,8 @@ public class TestReferenceBackwardCompatibility {
 		ReferenceMethodOldCorrupted before = new ReferenceMethodOldCorrupted();
 		before.dummies.add(new Dummy(5));
 
-		ReferenceMethodNewCorrupted after = bitser.deserializeFromBytesSimple(
-				ReferenceMethodNewCorrupted.class, bitser.serializeToBytesSimple(
+		ReferenceMethodNewCorrupted after = bitser.fromBytes(
+				ReferenceMethodNewCorrupted.class, bitser.toBytes(
 						before, Bitser.BACKWARD_COMPATIBLE, new WithParameter("best", 0)
 				), Bitser.BACKWARD_COMPATIBLE
 		);
@@ -361,8 +361,8 @@ public class TestReferenceBackwardCompatibility {
 		before.unstableReferences.add(new ArrayList<>(1));
 		before.unstableReferences.get(0).add(before.targets.get(1));
 
-		NewMixedReferenceList after = bitser.deserializeFromBytesSimple(
-				NewMixedReferenceList.class, bitser.serializeToBytesSimple(
+		NewMixedReferenceList after = bitser.fromBytes(
+				NewMixedReferenceList.class, bitser.toBytes(
 						before, Bitser.BACKWARD_COMPATIBLE
 				), Bitser.BACKWARD_COMPATIBLE
 		);
@@ -507,7 +507,7 @@ public class TestReferenceBackwardCompatibility {
 		oldRoot.friends.add(new FriendWrapper(new Dummy(31), oldRoot.targets[0].dummy));
 		oldRoot.targets[1] = new OldTargetWrapper(new StableDummy(99), oldRoot.friends.get(0).friend);
 
-		NewNestedRoot newRoot = bitser.deserializeFromBytesSimple(NewNestedRoot.class, bitser.serializeToBytesSimple(
+		NewNestedRoot newRoot = bitser.fromBytes(NewNestedRoot.class, bitser.toBytes(
 				oldRoot, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(4.5, newRoot.stableRoot.rating);
@@ -556,8 +556,8 @@ public class TestReferenceBackwardCompatibility {
 		unstable.target = new Dummy(75);
 		unstable.reference = unstable.target;
 
-		SimpleStable stable = bitser.deserializeFromBytesSimple(
-				SimpleStable.class, bitser.serializeToBytesSimple(
+		SimpleStable stable = bitser.fromBytes(
+				SimpleStable.class, bitser.toBytes(
 						unstable, Bitser.BACKWARD_COMPATIBLE
 				), Bitser.BACKWARD_COMPATIBLE
 		);
@@ -584,8 +584,8 @@ public class TestReferenceBackwardCompatibility {
 		stable.target = new StableDummy(75.75);
 		stable.reference = stable.target;
 
-		SimpleUnstable2 loaded = bitser.deserializeFromBytesSimple(
-				SimpleUnstable2.class, bitser.serializeToBytesSimple(
+		SimpleUnstable2 loaded = bitser.fromBytes(
+				SimpleUnstable2.class, bitser.toBytes(
 						stable, Bitser.BACKWARD_COMPATIBLE
 				), Bitser.BACKWARD_COMPATIBLE
 		);
@@ -612,9 +612,9 @@ public class TestReferenceBackwardCompatibility {
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						SimpleNonReference.class,
-						bitser.serializeToBytesSimple(unstable, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(unstable, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -630,9 +630,9 @@ public class TestReferenceBackwardCompatibility {
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						SimpleUnstable.class,
-						bitser.serializeToBytesSimple(simple, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(simple, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -681,9 +681,9 @@ public class TestReferenceBackwardCompatibility {
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						NonReferenceFunction.class,
-						bitser.serializeToBytesSimple(unstable, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(unstable, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -698,9 +698,9 @@ public class TestReferenceBackwardCompatibility {
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						ReferenceFunction.class,
-						bitser.serializeToBytesSimple(simple, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(simple, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -730,9 +730,9 @@ public class TestReferenceBackwardCompatibility {
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						OptionalUnstable.class,
-						bitser.serializeToBytesSimple(simple, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(simple, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -760,9 +760,9 @@ public class TestReferenceBackwardCompatibility {
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						OptionalNonReference.class,
-						bitser.serializeToBytesSimple(unstable, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(unstable, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -784,10 +784,10 @@ public class TestReferenceBackwardCompatibility {
 		oldSubject.friends.add(new FriendWrapper(new Dummy(7), oldWith.targets[0].dummy));
 		oldSubject.targets = new OldTargetWrapper[] { new OldTargetWrapper(new StableDummy(8), oldWith.friendRoot) };
 
-		byte[] oldSubjectBytes = bitser.serializeToBytesSimple(oldSubject, oldWith, Bitser.BACKWARD_COMPATIBLE);
-		byte[] oldWithBytes = bitser.serializeToBytesSimple(oldWith, Bitser.BACKWARD_COMPATIBLE);
+		byte[] oldSubjectBytes = bitser.toBytes(oldSubject, oldWith, Bitser.BACKWARD_COMPATIBLE);
+		byte[] oldWithBytes = bitser.toBytes(oldWith, Bitser.BACKWARD_COMPATIBLE);
 
-		NewNestedRoot newWith = bitser.deserializeFromBytesSimple(NewNestedRoot.class, oldWithBytes, Bitser.BACKWARD_COMPATIBLE);
+		NewNestedRoot newWith = bitser.fromBytes(NewNestedRoot.class, oldWithBytes, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(1.0, newWith.stableRoot.rating);
 		assertEquals(2, newWith.friendRoot.x);
 		assertEquals(3.0, newWith.targets.get(0).dummy.rating);
@@ -795,7 +795,7 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(4, newWith.friends.iterator().next().friend.x);
 		assertSame(newWith.stableRoot, newWith.friends.iterator().next().cross);
 
-		NewNestedRoot newSubject = bitser.deserializeFromBytesSimple(NewNestedRoot.class, oldSubjectBytes, Bitser.BACKWARD_COMPATIBLE, newWith);
+		NewNestedRoot newSubject = bitser.fromBytes(NewNestedRoot.class, oldSubjectBytes, Bitser.BACKWARD_COMPATIBLE, newWith);
 		assertEquals(5.0, newSubject.stableRoot.rating);
 		assertEquals(6, newSubject.friendRoot.x);
 		assertEquals(7, newSubject.friends.iterator().next().friend.x);
@@ -803,7 +803,7 @@ public class TestReferenceBackwardCompatibility {
 		assertSame(newWith.targets.get(0).dummy, newSubject.friends.iterator().next().cross);
 		assertSame(newWith.friendRoot, newSubject.targets.get(0).friend);
 
-		NewNestedRoot back = bitser.deserializeFromBytesSimple(NewNestedRoot.class, bitser.serializeToBytesSimple(
+		NewNestedRoot back = bitser.fromBytes(NewNestedRoot.class, bitser.toBytes(
 				newSubject, Bitser.BACKWARD_COMPATIBLE, newWith
 		), newWith, Bitser.BACKWARD_COMPATIBLE);
 		assertSame(newWith.targets.get(0).dummy, back.friends.iterator().next().cross);
@@ -825,10 +825,10 @@ public class TestReferenceBackwardCompatibility {
 		oldSubject.unstableReferences.get(0).add(oldWith.targets[0].dummy);
 		oldSubject.targets.add(new StableDummy(8));
 
-		byte[] oldSubjectBytes = bitser.serializeToBytesSimple(oldSubject, oldWith, Bitser.BACKWARD_COMPATIBLE);
-		byte[] oldWithBytes = bitser.serializeToBytesSimple(oldWith, Bitser.BACKWARD_COMPATIBLE);
+		byte[] oldSubjectBytes = bitser.toBytes(oldSubject, oldWith, Bitser.BACKWARD_COMPATIBLE);
+		byte[] oldWithBytes = bitser.toBytes(oldWith, Bitser.BACKWARD_COMPATIBLE);
 
-		NewNestedRoot newWith = bitser.deserializeFromBytesSimple(NewNestedRoot.class, oldWithBytes, Bitser.BACKWARD_COMPATIBLE);
+		NewNestedRoot newWith = bitser.fromBytes(NewNestedRoot.class, oldWithBytes, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(1.0, newWith.stableRoot.rating);
 		assertEquals(2, newWith.friendRoot.x);
 		assertEquals(3.0, newWith.targets.get(0).dummy.rating);
@@ -836,7 +836,7 @@ public class TestReferenceBackwardCompatibility {
 		assertEquals(4, newWith.friends.iterator().next().friend.x);
 		assertSame(newWith.stableRoot, newWith.friends.iterator().next().cross);
 
-		NewMixedReferenceList newSubject = bitser.deserializeFromBytesSimple(
+		NewMixedReferenceList newSubject = bitser.fromBytes(
 				NewMixedReferenceList.class, oldSubjectBytes, Bitser.BACKWARD_COMPATIBLE, newWith
 		);
 		assertNotNull(newSubject.targets);
@@ -844,9 +844,9 @@ public class TestReferenceBackwardCompatibility {
 		assertSame(newWith.targets.get(0).dummy, newSubject.stableReferences.get(0));
 		assertSame(newWith.targets.get(0).dummy, newSubject.unstableReferences[0][0]);
 
-		NewMixedReferenceList back = bitser.deserializeFromBytesSimple(
+		NewMixedReferenceList back = bitser.fromBytes(
 				NewMixedReferenceList.class,
-				bitser.serializeToBytesSimple(newSubject, Bitser.BACKWARD_COMPATIBLE, newWith),
+				bitser.toBytes(newSubject, Bitser.BACKWARD_COMPATIBLE, newWith),
 				newWith,
 				Bitser.BACKWARD_COMPATIBLE
 		);
@@ -1045,18 +1045,18 @@ public class TestReferenceBackwardCompatibility {
 	public void testRenameReferenceLabels() {
 		Bitser bitser = new Bitser(false);
 		BeforeRename before = new BeforeRename();
-		AfterRename notBackward = bitser.deserializeFromBytesSimple(
+		AfterRename notBackward = bitser.fromBytes(
 				AfterRename.class,
-				bitser.serializeToBytesSimple(before)
+				bitser.toBytes(before)
 		);
 
 		assertEquals(4.5, notBackward.target.rating);
 		assertSame(notBackward.target, notBackward.unstable);
 		assertSame(notBackward.target, notBackward.stable);
 
-		AfterRename backward = bitser.deserializeFromBytesSimple(
+		AfterRename backward = bitser.fromBytes(
 				AfterRename.class,
-				bitser.serializeToBytesSimple(before, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(before, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(4.5, backward.target.rating);
@@ -1100,9 +1100,9 @@ public class TestReferenceBackwardCompatibility {
 		simple.noTarget = new StableDummy(-2.5);
 
 		Bitser bitser = new Bitser(true);
-		IsTargetNow target = bitser.deserializeFromBytesSimple(
+		IsTargetNow target = bitser.fromBytes(
 				IsTargetNow.class,
-				bitser.serializeToBytesSimple(simple, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(simple, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(-2.5, target.target.rating);
@@ -1116,9 +1116,9 @@ public class TestReferenceBackwardCompatibility {
 		target.target = new StableDummy(1.0);
 
 		Bitser bitser = new Bitser(false);
-		NoTargetYet nope = bitser.deserializeFromBytesSimple(
+		NoTargetYet nope = bitser.fromBytes(
 				NoTargetYet.class,
-				bitser.serializeToBytesSimple(target, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(target, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(1.0, nope.noTarget.rating);

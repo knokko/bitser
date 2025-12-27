@@ -96,7 +96,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		if (legacyValue instanceof LegacyIntValue) {
-			long longValue = ((LegacyIntValue) legacyValue).value;
+			long longValue = ((LegacyIntValue) legacyValue).value();
 			if (longValue < intField.minValue || longValue > intField.maxValue) {
 				throw new LegacyBitserException("Legacy value " + longValue + " is out of range for field " + field);
 			}

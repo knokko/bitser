@@ -90,7 +90,7 @@ public class TestBitEnum {
 	@Test
 	public void testNonEnumClass() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeSimple(new NonEnumStruct(), new BitCountStream())
+				() -> new Bitser(false).serialize(new NonEnumStruct(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "BitEnum can only be used on enums");
 	}
@@ -121,9 +121,9 @@ public class TestBitEnum {
 	@Test
 	public void testDeletedEnumConstantName() {
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytesSimple(new SeasonStruct());
+		byte[] bytes = bitser.toBytes(new SeasonStruct());
 
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytesSimple(
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.fromBytes(
 				MissingSeasonStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum constant AUTUMN");
@@ -157,9 +157,9 @@ public class TestBitEnum {
 	@Test
 	public void testDeletedEnumConstantOrdinal() {
 		Bitser bitser = new Bitser(false);
-		byte[] bytes = bitser.serializeToBytesSimple(new DirectionStruct());
+		byte[] bytes = bitser.toBytes(new DirectionStruct());
 
-		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.deserializeFromBytesSimple(
+		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.fromBytes(
 				MissingDirectionStruct.class, bytes
 		)).getMessage();
 		assertContains(errorMessage, "Missing enum ordinal 3");
@@ -181,8 +181,8 @@ public class TestBitEnum {
 		OverruleSeason overrule = new OverruleSeason();
 		overrule.season = Season.SUMMER;
 
-		DirectionStruct direction = bitser.deserializeFromBytesSimple(
-				DirectionStruct.class, bitser.serializeToBytesSimple(overrule)
+		DirectionStruct direction = bitser.fromBytes(
+				DirectionStruct.class, bitser.toBytes(overrule)
 		);
 		assertEquals(Direction.LEFT, direction.direction);
 	}
@@ -215,7 +215,7 @@ public class TestBitEnum {
 		original.weakAgainst = Element.FIRE;
 		original.strongAgainst = Element.EARTH;
 
-		MixedBoss mixed = bitser.deserializeFromBytesSimple(MixedBoss.class, bitser.serializeToBytesSimple(original));
+		MixedBoss mixed = bitser.fromBytes(MixedBoss.class, bitser.toBytes(original));
 		assertEquals(ReverseElement.AIR, mixed.weakAgainst);
 		assertEquals(ReverseElement.EARTH, mixed.strongAgainst);
 	}

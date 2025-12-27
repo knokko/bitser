@@ -32,7 +32,7 @@ public class TestIntegerDistributionTracker {
 		example.lonely = -12;
 
 		IntegerDistributionTracker distribution = new IntegerDistributionTracker();
-		bitser.serializeToBytesSimple(example, distribution);
+		bitser.toBytes(example, distribution);
 
 		List<String> fields = distribution.getSortedFields();
 		assertEquals(4, fields.size());

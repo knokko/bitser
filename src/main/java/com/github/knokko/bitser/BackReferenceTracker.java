@@ -53,7 +53,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 	void processStableLegacyIDs() {
 		for (LabelTargets targets : labels.values()) {
 			for (Object rawLegacyTarget : targets.idsToLegacyOrWith) {
-				Object legacyTarget = ((LegacyReference) rawLegacyTarget).reference;
+				Object legacyTarget = ((LegacyReference) rawLegacyTarget).reference();
 				if (legacyTarget instanceof LegacyStructInstance) {
 					UUID stableID = ((LegacyStructInstance) legacyTarget).stableID;
 					if (stableID != null) {

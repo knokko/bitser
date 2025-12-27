@@ -104,7 +104,7 @@ public class TestByteCollectionField {
 		Bitser bitser = new Bitser(true);
 		IntArray nullArray = new IntArray(null);
 		String errorMessage = assertThrows(
-				InvalidBitValueException.class, () -> bitser.serializeToBytesSimple(nullArray)
+				InvalidBitValueException.class, () -> bitser.toBytes(nullArray)
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 

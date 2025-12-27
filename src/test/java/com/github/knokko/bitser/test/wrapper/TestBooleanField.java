@@ -46,7 +46,7 @@ public class TestBooleanField {
 	@Test
 	public void testInvalidOptional() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeToBytesSimple(new Invalid())
+				() -> new Bitser(true).toBytes(new Invalid())
 		).getMessage();
 		assertContains(errorMessage, "can't be optional");
 	}

@@ -151,9 +151,9 @@ public class IntegerBitser {
 			IntegerField.Properties sizeField, CollectionSizeLimit sizeLimit, String description, BitInputStream input
 	) throws IOException {
 		int length = (int) decodeInteger(sizeField, input);
-		if (sizeLimit != null && length > sizeLimit.maxSize) {
+		if (sizeLimit != null && length > sizeLimit.maxSize()) {
 			throw new InvalidBitValueException(
-					description + " " + length + " exceeds the size limit of " + sizeLimit.maxSize
+					description + " " + length + " exceeds the size limit of " + sizeLimit.maxSize()
 			);
 		}
 		return length;
@@ -163,9 +163,9 @@ public class IntegerBitser {
 			CollectionSizeLimit sizeLimit, String description, BitInputStream input
 	) throws IOException {
 		int length = (int) decodeVariableIntegerUsingTerminatorBits(0L, Integer.MAX_VALUE, input);
-		if (sizeLimit != null && length > sizeLimit.maxSize) {
+		if (sizeLimit != null && length > sizeLimit.maxSize()) {
 			throw new InvalidBitValueException(
-					description + " " + length + " exceeds the size limit of " + sizeLimit.maxSize
+					description + " " + length + " exceeds the size limit of " + sizeLimit.maxSize()
 			);
 		}
 		return length;

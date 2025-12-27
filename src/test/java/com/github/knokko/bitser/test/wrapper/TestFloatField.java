@@ -51,12 +51,12 @@ public class TestFloatField {
 		this.optional = null;
 		this.required = 1.4;
 
-		byte[] bytes = bitser.serializeToBytesSimple(this);
+		byte[] bytes = bitser.toBytes(this);
 
 		// This should fit in 2 bytes
 		assertEquals(2, bytes.length);
 
-		TestFloatField loaded = bitser.deserializeFromBytesSimple(TestFloatField.class, bytes);
+		TestFloatField loaded = bitser.fromBytes(TestFloatField.class, bytes);
 		assertNull(loaded.optional);
 		assertEquals(1.4, loaded.required, 0.001);
 	}

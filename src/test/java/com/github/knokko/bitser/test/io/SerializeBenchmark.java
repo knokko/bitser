@@ -349,14 +349,14 @@ public class SerializeBenchmark {
 		SampleProfiler profiler = new SampleProfiler(storage);
 
 		long startWrite = System.nanoTime();
-		byte[] bytes = bitser.serializeToBytesSimple(root);
+		byte[] bytes = bitser.toBytes(root);
 		long writeTime = System.nanoTime() - startWrite;
 
 		System.out.println("Needed " + (writeTime / 1000_000) + " ms to write " + bytes.length + " bytes");
 
 		//profiler.start();
 		long startRead = System.nanoTime();
-		bitser.deserializeFromBytesSimple(RootStruct.class, bytes);
+		bitser.fromBytes(RootStruct.class, bytes);
 		long readTime = System.nanoTime() - startRead;
 		//profiler.stop();
 		System.out.println("Needed " + (readTime / 1000_000) + " ms");
@@ -413,13 +413,13 @@ public class SerializeBenchmark {
 		System.out.println("Needed " + (handwrittenReadTime3 / 1000_000) + " ms to read handwritten (3)");
 
 		long startBackWrite = System.nanoTime();
-		byte[] backBytes = bitser.serializeToBytesSimple(root, Bitser.BACKWARD_COMPATIBLE);
+		byte[] backBytes = bitser.toBytes(root, Bitser.BACKWARD_COMPATIBLE);
 		long writeBackTime = System.nanoTime() - startBackWrite;
 		System.out.println("Needed " + (writeBackTime / 1000_000) + " ms to write new backward " + backBytes.length + " bytes");
 
 		profiler.start();
 		long startBackRead = System.nanoTime();
-		bitser.deserializeFromBytesSimple(RootStruct.class, backBytes, Bitser.BACKWARD_COMPATIBLE);
+		bitser.fromBytes(RootStruct.class, backBytes, Bitser.BACKWARD_COMPATIBLE);
 		long readBackTime = System.nanoTime() - startBackRead;
 		profiler.stop();
 		System.out.println("Needed " + (readBackTime / 1000_000) + " ms to read new backward");

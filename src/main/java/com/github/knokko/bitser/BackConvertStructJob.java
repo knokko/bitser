@@ -53,7 +53,7 @@ record BackConvertStructJob(
 					if (modernField.bitField instanceof ReferenceFieldWrapper) {
 						if (legacyFieldValue instanceof LegacyReference) {
 							deserializer.convertStructReferenceJobs.add(new BackConvertStructReferenceJob(
-									modernObject, modernField.classField, ((LegacyReference) legacyFieldValue).reference,
+									modernObject, modernField.classField, ((LegacyReference) legacyFieldValue).reference(),
 									new RecursionNode(node, modernField.classField.getName())
 							));
 						} else if (legacyFieldValue instanceof WithReference) {
@@ -109,7 +109,7 @@ record BackConvertStructJob(
 						if (legacyFunctionValue instanceof LegacyReference) {
 							deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
 									currentModernFunctionValues, functionID,
-									((LegacyReference) legacyFunctionValue).reference,
+									((LegacyReference) legacyFunctionValue).reference(),
 									new RecursionNode(node, "legacy function " + functionID)
 							));
 						} else {
@@ -129,7 +129,7 @@ record BackConvertStructJob(
 								if (legacyFunctionValue instanceof LegacyReference) {
 									deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
 											currentModernFunctionValues, modernFunction.id,
-											((LegacyReference) legacyFunctionValue).reference,
+											((LegacyReference) legacyFunctionValue).reference(),
 											new RecursionNode(node, modernFunction.classMethod.getName())
 									));
 								} else {

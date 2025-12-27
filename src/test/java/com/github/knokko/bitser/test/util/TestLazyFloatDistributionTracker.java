@@ -45,7 +45,7 @@ public class TestLazyFloatDistributionTracker {
 		assertEquals(3.0, entries.get(0).commonValues[0], 0.001);
 
 		FloatDistributionTracker tracker2 = new FloatDistributionTracker();
-		bitser.serializeToBytesSimple(copied, Bitser.FORBID_LAZY_SAVING, tracker2);
+		bitser.toBytes(copied, Bitser.FORBID_LAZY_SAVING, tracker2);
 		entries = tracker2.optimize(field, 1, new double[] { 0.1 });
 		assertEquals(3.0, entries.get(0).commonValues[0], 0.001);
 	}

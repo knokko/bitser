@@ -58,7 +58,7 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		if (legacyValue instanceof LegacyUUIDValue) {
-			return ((LegacyUUIDValue) legacyValue).value;
+			return ((LegacyUUIDValue) legacyValue).value();
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to UUID for field " + field);
 		}

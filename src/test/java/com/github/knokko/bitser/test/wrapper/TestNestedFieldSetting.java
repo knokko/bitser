@@ -174,7 +174,7 @@ public class TestNestedFieldSetting {
 		// 4 bits to store the size of the inner list
 		// 2 bits to store the boolean values
 		BitCountStream counter = new BitCountStream();
-		new Bitser(true).serializeSimple(sizes, counter);
+		new Bitser(true).serialize(sizes, counter);
 		assertEquals(7, counter.getCounter());
 	}
 
@@ -312,7 +312,7 @@ public class TestNestedFieldSetting {
 	public void testDuplicateNestedFieldSettings1() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new DuplicateNestedFieldSettings1(), new BitCountStream())
+				() -> new Bitser(true).serialize(new DuplicateNestedFieldSettings1(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple NestedFieldSetting's for path ");
 	}
@@ -331,7 +331,7 @@ public class TestNestedFieldSetting {
 	public void testDuplicateNestedFieldSettings2() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new DuplicateNestedFieldSettings2(), new BitCountStream())
+				() -> new Bitser(true).serialize(new DuplicateNestedFieldSettings2(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple NestedFieldSetting's for path cc");
 	}
@@ -348,7 +348,7 @@ public class TestNestedFieldSetting {
 	public void testForbidOptionalBitFields() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serializeSimple(new OptionalBitField(), new BitCountStream())
+				() -> new Bitser(true).serialize(new OptionalBitField(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "optional BitField is not allowed on collection field");
 		assertContains(errorMessage, "use @NestedFieldSetting instead");
@@ -362,7 +362,7 @@ public class TestNestedFieldSetting {
 
 		String error1 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
+				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error1, "must not have null elements");
 
@@ -381,14 +381,14 @@ public class TestNestedFieldSetting {
 
 		String error2 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
+				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error2, "must not have null elements");
 
 		alternating.nested = null;
 		String error3 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
+				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error3, "must not be null");
 	}
@@ -403,14 +403,14 @@ public class TestNestedFieldSetting {
 
 		String error1 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
+				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error1, "must not have null elements");
 
 		alternating.nested = null;
 		String error2 = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(alternating, new BitCountStream())
+				() -> new Bitser(true).serialize(alternating, new BitCountStream())
 		).getMessage();
 		assertContains(error2, "must not be null");
 	}

@@ -60,16 +60,16 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 	protected Object constructCollectionWithSize(int size) {
 		if (field.type == null) {
 			if (arrayType == null) return new Object[size];
-			switch (arrayType) {
-				case BOOLEAN: return new boolean[size];
-				case BYTE: return new byte[size];
-				case SHORT: return new short[size];
-				case CHAR: return new char[size];
-				case INT: return new int[size];
-				case FLOAT: return new float[size];
-				case LONG: return new long[size];
-				case DOUBLE: return new double[size];
-			}
+			return switch (arrayType) {
+				case BOOLEAN -> new boolean[size];
+				case BYTE -> new byte[size];
+				case SHORT -> new short[size];
+				case CHAR -> new char[size];
+				case INT -> new int[size];
+				case FLOAT -> new float[size];
+				case LONG -> new long[size];
+				case DOUBLE -> new double[size];
+			};
 		}
 		if (field.type.isArray()) {
 			return Array.newInstance(field.type.getComponentType(), size);

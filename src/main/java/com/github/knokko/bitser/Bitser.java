@@ -52,18 +52,18 @@ public class Bitser {
 		}
 	}
 
-	public void serializeSimple(
+	public void serialize(
 			Object object, BitOutputStream output, Object... withAndOptions
 	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
 		try {
-			rawSerializeSimple(object, output, withAndOptions);
+			rawSerialize(object, output, withAndOptions);
 		} catch (RecursionException failure) {
 			rethrowRecursorException(failure);
 			throw failure;
 		}
 	}
 
-	private void rawSerializeSimple(Object object, BitOutputStream output, Object... withAndOptions) {
+	private void rawSerialize(Object object, BitOutputStream output, Object... withAndOptions) {
 		boolean backwardCompatible = false;
 		boolean forbidLazySaving = false;
 		IntegerDistributionTracker integerDistribution = null;
@@ -79,12 +79,11 @@ public class Bitser {
 			if (withObject instanceof FloatDistributionTracker) {
 				floatDistribution = (FloatDistributionTracker) withObject;
 			}
-			if (withObject instanceof WithParameter) {
-				WithParameter parameter = (WithParameter) withObject;
-				if (withParameters.containsKey(parameter.key)) {
-					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
+			if (withObject instanceof WithParameter parameter) {
+				if (withParameters.containsKey(parameter.key())) {
+					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key());
 				}
-				withParameters.put(parameter.key, parameter.value);
+				withParameters.put(parameter.key(), parameter.value());
 			}
 		}
 
@@ -93,9 +92,10 @@ public class Bitser {
 			new UsedStructCollector(cache, legacy, object.getClass()).collect();
 
 			try {
-				output.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
-				serializeSimple(legacy, output, new WithParameter("legacy-classes", legacy));
-				output.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
+				RecursionNode legacyMarker = new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>");
+				output.pushContext(legacyMarker, null);
+				serialize(legacy, output, new WithParameter("legacy-classes", legacy));
+				output.popContext(legacyMarker, null);
 			} catch (IOException io) {
 				throw new RuntimeException(io);
 			}
@@ -117,7 +117,7 @@ public class Bitser {
 		serializer.run();
 	}
 
-	public byte[] serializeToBytesSimple(Object object, Object... withAndOptions) {
+	public byte[] toBytes(Object object, Object... withAndOptions) {
 		DebugBits debug = null;
 		for (Object option : withAndOptions) {
 			if (option instanceof DebugBits) debug = (DebugBits) option;
@@ -126,9 +126,9 @@ public class Bitser {
 		try {
 			ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 			BitOutputStream bitOutput = debug != null ?
-					new DebugBitOutputStream(byteOutput, debug.writer, debug.flushAggressively) :
+					new DebugBitOutputStream(byteOutput, debug.writer(), debug.flushAggressively()) :
 					new BitOutputStream(byteOutput);
-			serializeSimple(object, bitOutput, withAndOptions);
+			serialize(object, bitOutput, withAndOptions);
 			bitOutput.finish();
 			return byteOutput.toByteArray();
 		} catch (IOException shouldNotHappen) {
@@ -136,18 +136,20 @@ public class Bitser {
 		}
 	}
 
-	public <T> T deserializeSimple(
+	public <T> T deserialize(
 			Class<T> objectClass, BitInputStream input, Object... withAndOptions
 	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
 		try {
-			return rawDeserializeSimple(objectClass, input, withAndOptions);
+			return rawDeserialize(objectClass, input, withAndOptions);
 		} catch (RecursionException failure) {
 			rethrowRecursorException(failure);
 			throw failure;
 		}
 	}
 
-	private <T> T rawDeserializeSimple(Class<T> objectClass, BitInputStream input, Object... withAndOptions) throws IOException {
+	private <T> T rawDeserialize(
+			Class<T> objectClass, BitInputStream input, Object... withAndOptions
+	) throws IOException {
 		CollectionSizeLimit sizeLimit = null;
 		boolean backwardCompatible = false;
 		Map<String, Object> withParameters = new HashMap<>();
@@ -163,12 +165,11 @@ public class Bitser {
 				sizeLimit = (CollectionSizeLimit) maybeWithObject;
 				continue;
 			}
-			if (maybeWithObject instanceof WithParameter) {
-				WithParameter parameter = (WithParameter) maybeWithObject;
-				if (withParameters.containsKey(parameter.key)) {
-					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key);
+			if (maybeWithObject instanceof WithParameter parameter) {
+				if (withParameters.containsKey(parameter.key())) {
+					throw new IllegalArgumentException("Duplicate with parameter " + parameter.key());
 				}
-				withParameters.put(parameter.key, parameter.value);
+				withParameters.put(parameter.key(), parameter.value());
 				continue;
 			}
 			if (maybeWithObject == null || maybeWithObject instanceof DebugBits) continue;
@@ -187,7 +188,7 @@ public class Bitser {
 		LegacyClasses legacy = null;
 		if (backwardCompatible) {
 			input.pushContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
-			legacy = deserializeSimple(LegacyClasses.class, input, sizeLimit);
+			legacy = deserialize(LegacyClasses.class, input, sizeLimit);
 			input.popContext(new RecursionNode("<<<<<<<<<<<<<<<<<<<< LEGACY >>>>>>>>>>>>>>>>>"), null);
 		}
 
@@ -210,7 +211,7 @@ public class Bitser {
 		}
 	}
 
-	public <T> T deserializeFromBytesSimple(
+	public <T> T fromBytes(
 			Class<T> objectClass, byte[] bytes, Object... withAndOptions
 	) throws BitserException, RecursionException, IllegalArgumentException {
 		DebugBits debug = null;
@@ -220,9 +221,9 @@ public class Bitser {
 		try {
 			ByteArrayInputStream byteInput = new ByteArrayInputStream(bytes);
 			BitInputStream bitInput = debug != null ?
-					new DebugBitInputStream(byteInput, debug.writer, debug.flushAggressively) :
+					new DebugBitInputStream(byteInput, debug.writer(), debug.flushAggressively()) :
 					new BitInputStream(byteInput);
-			T result = deserializeSimple(objectClass, bitInput, withAndOptions);
+			T result = deserialize(objectClass, bitInput, withAndOptions);
 			bitInput.close();
 			return result;
 		} catch (IOException shouldNotHappen) {
@@ -239,7 +240,7 @@ public class Bitser {
 			T object, Object... with
 	) throws BitserException, RecursionException, IllegalArgumentException {
 		//noinspection unchecked
-		return (T) deserializeFromBytesSimple(object.getClass(), serializeToBytesSimple(object, with), with);
+		return (T) fromBytes(object.getClass(), toBytes(object, with), with);
 	}
 
 	public boolean deepEquals(Object a, Object b) {
@@ -256,8 +257,4 @@ public class Bitser {
 		if (value == null) return 0;
 		return cache.getWrapper(value.getClass()).hashCode(value, cache);
 	}
-
-	// TODO Renaming: serializeSimple -> serialize, etc
-	// TODO Convert many classes to records
-	// TODO Play around with module-info.java and module-private visibility
 }

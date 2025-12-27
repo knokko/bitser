@@ -1,12 +1,6 @@
 package com.github.knokko.bitser.legacy;
 
-public class LegacyEnumOrdinal {
-
-	public final int ordinal;
-
-	public LegacyEnumOrdinal(int ordinal) {
-		this.ordinal = ordinal;
-	}
+public record LegacyEnumOrdinal(int ordinal) {
 
 	@Override
 	public String toString() {

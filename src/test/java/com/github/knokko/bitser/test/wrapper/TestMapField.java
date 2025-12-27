@@ -69,7 +69,7 @@ public class TestMapField {
 		// 4 bits for the key
 		// 4 bits for the value
 		BitCountStream counter = new BitCountStream();
-		bitser.serializeSimple(intMap, counter);
+		bitser.serialize(intMap, counter);
 		assertEquals(10, counter.getCounter());
 	}
 
@@ -268,7 +268,7 @@ public class TestMapField {
 	public void testWriteAsBytesMap() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeSimple(new WriteAsBytesMap(), new BitCountStream())
+				() -> new Bitser(false).serialize(new WriteAsBytesMap(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "writeAsBytes is not allowed on Maps");
 	}
@@ -280,7 +280,7 @@ public class TestMapField {
 
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(false).serializeSimple(valueMap, new BitCountStream())
+				() -> new Bitser(false).serialize(valueMap, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not have null keys");
 	}
@@ -292,7 +292,7 @@ public class TestMapField {
 
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(keyMap, new BitCountStream())
+				() -> new Bitser(true).serialize(keyMap, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not have null values");
 	}
@@ -301,7 +301,7 @@ public class TestMapField {
 	public void testNullMapsAreForbiddenByDefault() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serializeSimple(new IntMap(), new BitCountStream())
+				() -> new Bitser(true).serialize(new IntMap(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 	}
@@ -318,7 +318,7 @@ public class TestMapField {
 	public void testBadOptionalMap() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeSimple(new BadOptionalMap(), new BitCountStream())
+				() -> new Bitser(false).serialize(new BadOptionalMap(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "optional BitField is not allowed");
 		assertContains(errorMessage, "use @NestedFieldSetting instead");

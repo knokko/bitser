@@ -147,9 +147,9 @@ public class TestBitDebugStream {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
 		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
 
-		byte[] contentBytes = new Bitser(false).serializeToBytesSimple(generate(), debugOption);
+		byte[] contentBytes = new Bitser(false).toBytes(generate(), debugOption);
 
-		check(new Bitser(true).deserializeFromBytesSimple(RootStruct.class, contentBytes, debugOption));
+		check(new Bitser(true).fromBytes(RootStruct.class, contentBytes, debugOption));
 
 		Scanner actualScanner = new Scanner(new ByteArrayInputStream(debugBytes.toByteArray()));
 		Scanner expectedScanner = new Scanner(Objects.requireNonNull(
@@ -167,11 +167,11 @@ public class TestBitDebugStream {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
 		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
 
-		byte[] contentBytes = new Bitser(false).serializeToBytesSimple(
+		byte[] contentBytes = new Bitser(false).toBytes(
 				generate(), debugOption, Bitser.BACKWARD_COMPATIBLE
 		);
 
-		check(new Bitser(true).deserializeFromBytesSimple(
+		check(new Bitser(true).fromBytes(
 				RootStruct.class, contentBytes, debugOption, Bitser.BACKWARD_COMPATIBLE
 		));
 
