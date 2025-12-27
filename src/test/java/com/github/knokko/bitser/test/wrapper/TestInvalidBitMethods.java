@@ -28,7 +28,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidStaticBitMethods() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new StaticBitMethod())
+				InvalidBitFieldException.class, () -> new Bitser(false).toBytes(new StaticBitMethod())
 		).getMessage();
 		assertContains(errorMessage, "must not be static");
 		assertContains(errorMessage, "StaticBitMethod.test");
@@ -47,7 +47,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidMultipleParameters() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new MultipleParameters())
+				InvalidBitFieldException.class, () -> new Bitser(false).toBytes(new MultipleParameters())
 		).getMessage();
 		assertContains(errorMessage, "at most 1 parameter");
 		assertContains(errorMessage, "MultipleParameters.test");
@@ -66,7 +66,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidWrongParameterType() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new WrongParameter())
+				InvalidBitFieldException.class, () -> new Bitser(false).toBytes(new WrongParameter())
 		).getMessage();
 		assertContains(errorMessage, "parameter type must be FunctionContext");
 		assertContains(errorMessage, "WrongParameter.wrong");
@@ -85,7 +85,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testIDsAreRequired() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new WithoutID())
+				InvalidBitFieldException.class, () -> new Bitser(false).toBytes(new WithoutID())
 		).getMessage();
 		assertContains(errorMessage, "method IDs must be non-negative");
 		assertContains(errorMessage, "WithoutID.missing");
@@ -110,7 +110,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testForbidDuplicateIDs() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).serializeToBytesSimple(new DuplicateID())
+				InvalidBitFieldException.class, () -> new Bitser(false).toBytes(new DuplicateID())
 		).getMessage();
 		assertContains(errorMessage, "multiple @BitField methods with id 1");
 		assertContains(errorMessage, "DuplicateID");
@@ -129,7 +129,7 @@ public class TestInvalidBitMethods {
 	@Test
 	public void testPropagateErrors() {
 		RecursionException exception = assertThrows(
-				RecursionException.class, () -> new Bitser(false).serializeToBytesSimple(new ThrowsError())
+				RecursionException.class, () -> new Bitser(false).toBytes(new ThrowsError())
 		);
 		assertEquals("nothing personal", exception.getCause().getMessage());
 		assertContains(exception.debugInfoStack, "-> throwsError");
@@ -149,7 +149,7 @@ public class TestInvalidBitMethods {
 	public void testPropagateUncheckedExceptions() {
 		RecursionException exception = assertThrows(
 				RecursionException.class,
-				() -> new Bitser(false).serializeToBytesSimple(new ThrowsUncheckedException())
+				() -> new Bitser(false).toBytes(new ThrowsUncheckedException())
 		);
 		assertInstanceOf(UnsupportedOperationException.class, exception.getCause());
 		assertContains(exception.debugInfoStack, "-> throwsError");
@@ -169,7 +169,7 @@ public class TestInvalidBitMethods {
 	public void testPropagateCheckedExceptions() {
 		RecursionException exception = assertThrows(
 				RecursionException.class,
-				() -> new Bitser(true).serializeToBytesSimple(new ThrowsCheckedException())
+				() -> new Bitser(true).toBytes(new ThrowsCheckedException())
 		);
 		Exception cause = (Exception) exception.getCause();
 		assertContains(cause.getMessage(), "nope: ");

@@ -1,12 +1,6 @@
 package com.github.knokko.bitser.legacy;
 
-public class LegacyEnumName {
-
-	public final String name;
-
-	public LegacyEnumName(String name) {
-		this.name = name;
-	}
+public record LegacyEnumName(String name) {
 
 	@Override
 	public String toString() {

@@ -174,7 +174,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
 					" to collection/array for field " + field);
 		}
-		Object legacyArray = ((LegacyArrayValue) legacyValue).array;
+		Object legacyArray = ((LegacyArrayValue) legacyValue).array();
 		int length = Array.getLength(legacyArray);
 
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);

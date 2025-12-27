@@ -66,7 +66,7 @@ class StringFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		if (legacyValue instanceof LegacyStringValue) {
-			return ((LegacyStringValue) legacyValue).value;
+			return ((LegacyStringValue) legacyValue).value();
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue + " to String for field " + field);
 		}

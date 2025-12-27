@@ -45,7 +45,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 
 			byte[] bytes = lazy.bytes;
 			if (bytes == null || serializer.forbidLazySaving) {
-				bytes = serializer.bitser.serializeToBytesSimple(lazy.get(), options.toArray());
+				bytes = serializer.bitser.toBytes(lazy.get(), options.toArray());
 			}
 			serializer.output.prepareProperty("lazy-bytes-length", -1);
 			encodeUnknownLength(bytes.length, serializer.output);
@@ -87,7 +87,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 	Object convert(BackDeserializer deserializer, Object rawLegacyInstance, RecursionNode parentNode, String fieldName) {
 		if (rawLegacyInstance instanceof LegacyLazyBytes) {
 			return new SimpleLazyBits<>(
-					((LegacyLazyBytes) rawLegacyInstance).bytes,
+					((LegacyLazyBytes) rawLegacyInstance).bytes(),
 					deserializer.bitser,
 					true,
 					valueClass

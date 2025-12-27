@@ -64,11 +64,11 @@ class FloatFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		if (legacyValue instanceof LegacyIntValue) {
-			long longValue = ((LegacyIntValue) legacyValue).value;
+			long longValue = ((LegacyIntValue) legacyValue).value();
 			if (isFloat) return (float) longValue;
 			return (double) longValue;
 		} else if (legacyValue instanceof LegacyFloatValue) {
-			double doubleValue = ((LegacyFloatValue) legacyValue).value;
+			double doubleValue = ((LegacyFloatValue) legacyValue).value();
 			if (isFloat) return (float) doubleValue;
 			return doubleValue;
 		} else {

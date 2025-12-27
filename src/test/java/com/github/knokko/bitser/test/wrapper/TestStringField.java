@@ -29,7 +29,7 @@ public class TestStringField {
 	@Test
 	public void testOptionalStrings() {
 		Bitser bitser = new Bitser(false);
-		assertThrows(InvalidBitValueException.class, () -> bitser.serializeToBytesSimple(this));
+		assertThrows(InvalidBitValueException.class, () -> bitser.toBytes(this));
 		this.b = "abcde";
 
 		TestStringField loaded = bitser.stupidDeepCopy(this);
@@ -57,7 +57,7 @@ public class TestStringField {
 		IntegerBitser.encodeUnknownLength(Integer.MAX_VALUE, bitOutput);
 		bitOutput.finish();
 
-		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.deserializeFromBytesSimple(
+		String errorMessage = assertThrows(InvalidBitValueException.class, () -> bitser.fromBytes(
 				TestStringField.class, byteOutput.toByteArray(), new CollectionSizeLimit(1234)
 		)).getMessage();
 		assertContains(errorMessage, "2147483647");

@@ -183,7 +183,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 					" to map for field " + field);
 		}
 		LegacyMapValue legacyMap = (LegacyMapValue) legacyValue;
-		int size = legacyMap.keys.length;
+		int size = legacyMap.keys().length;
 
 		Map<?, ?> modernMap = (Map<?, ?>) constructCollectionWithSize(field.type, size);
 		Object modernKeys = Array.newInstance(keysWrapper.field.type, size);
@@ -192,21 +192,21 @@ class MapFieldWrapper extends BitFieldWrapper {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (keysWrapper instanceof ReferenceFieldWrapper) {
 			deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
-					legacyMap.keys, modernKeys, (ReferenceFieldWrapper) keysWrapper, childNode
+					legacyMap.keys(), modernKeys, (ReferenceFieldWrapper) keysWrapper, childNode
 			));
 		} else {
 			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
-					legacyMap.keys, modernKeys, keysWrapper, childNode
+					legacyMap.keys(), modernKeys, keysWrapper, childNode
 			));
 		}
 
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
 			deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
-					legacyMap.values, modernValues, (ReferenceFieldWrapper) valuesWrapper, childNode
+					legacyMap.values(), modernValues, (ReferenceFieldWrapper) valuesWrapper, childNode
 			));
 		} else {
 			deserializer.convertArrayJobs.add(new BackConvertArrayJob(
-					legacyMap.values, modernValues, valuesWrapper, childNode
+					legacyMap.values(), modernValues, valuesWrapper, childNode
 			));
 		}
 

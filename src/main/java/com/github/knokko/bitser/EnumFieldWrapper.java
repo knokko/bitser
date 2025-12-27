@@ -128,12 +128,12 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		if (legacyValue instanceof LegacyEnumName) {
 			try {
-				return getConstantByName(((LegacyEnumName) legacyValue).name);
+				return getConstantByName(((LegacyEnumName) legacyValue).name());
 			} catch (NoSuchFieldException fieldNoLongerExists) {
 				throw new LegacyBitserException("Missing legacy " + legacyValue + " in " + field);
 			}
 		} else if (legacyValue instanceof LegacyEnumOrdinal) {
-			int ordinal = ((LegacyEnumOrdinal) legacyValue).ordinal;
+			int ordinal = ((LegacyEnumOrdinal) legacyValue).ordinal();
 			Object[] constants = field.type.getEnumConstants();
 			if (ordinal >= constants.length) {
 				throw new LegacyBitserException("Missing legacy ordinal " + ordinal + " in " + field);

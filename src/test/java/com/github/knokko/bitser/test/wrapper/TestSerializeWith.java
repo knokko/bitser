@@ -72,7 +72,7 @@ public class TestSerializeWith {
 		assertSame(targets.stable.get(0), loaded.stable.get(0));
 
 		BitCountStream counter = new BitCountStream();
-		bitser.serializeSimple(references, counter, targets);
+		bitser.serialize(references, counter, targets);
 
 		// 2 bits for stable size
 		// 128 bits for stable id
@@ -95,7 +95,7 @@ public class TestSerializeWith {
 		assertSame(targets.unstable.get(0), loaded.unstable.get(0));
 
 		BitCountStream counter = new BitCountStream();
-		bitser.serializeSimple(references, counter, targets);
+		bitser.serialize(references, counter, targets);
 
 		// 2 bits for stable size
 		// 2 bits for unstable size

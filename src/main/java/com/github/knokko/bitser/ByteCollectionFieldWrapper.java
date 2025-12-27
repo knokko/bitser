@@ -205,7 +205,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			);
 		}
 
-		Object legacyArray = ((LegacyArrayValue) rawLegacyValue).array;
+		Object legacyArray = ((LegacyArrayValue) rawLegacyValue).array();
 		if (field.type == legacyArray.getClass()) {
 			return legacyArray;
 		}
@@ -335,8 +335,8 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		if (legacyValue instanceof LegacyBooleanValue) return ((LegacyBooleanValue) legacyValue).value;
 		Number legacyNumber;
 		if (legacyValue instanceof Character) legacyNumber = (int) ((char) legacyValue);
-		else if (legacyValue instanceof LegacyFloatValue) legacyNumber = ((LegacyFloatValue) legacyValue).value;
-		else if (legacyValue instanceof LegacyIntValue) legacyNumber = ((LegacyIntValue) legacyValue).value;
+		else if (legacyValue instanceof LegacyFloatValue) legacyNumber = ((LegacyFloatValue) legacyValue).value();
+		else if (legacyValue instanceof LegacyIntValue) legacyNumber = ((LegacyIntValue) legacyValue).value();
 		else legacyNumber = (Number) legacyValue;
 		if (field.type == byte[].class) return legacyNumber.byteValue();
 		if (field.type == short[].class) return legacyNumber.shortValue();

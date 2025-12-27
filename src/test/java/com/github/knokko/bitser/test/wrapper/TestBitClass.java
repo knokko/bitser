@@ -159,6 +159,6 @@ public class TestBitClass {
 	public void testInvalidEntity() {
 		World world = new World();
 		world.entities.add(new Invalid());
-		assertThrows(InvalidBitValueException.class, () -> new Bitser(false).serializeToBytesSimple(world));
+		assertThrows(InvalidBitValueException.class, () -> new Bitser(false).toBytes(world));
 	}
 }

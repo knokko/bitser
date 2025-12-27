@@ -128,7 +128,7 @@ public class TestInheritanceBackwardCompatibility {
 		OldZoo oldZoo = new OldZoo();
 		oldZoo.animals = new OldAnimal[] { fish1, bird, fish2 };
 
-		NewZoo newZoo = bitser.deserializeFromBytesSimple(NewZoo.class, bitser.serializeToBytesSimple(
+		NewZoo newZoo = bitser.fromBytes(NewZoo.class, bitser.toBytes(
 				oldZoo, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(3, newZoo.animals.length);
@@ -147,7 +147,7 @@ public class TestInheritanceBackwardCompatibility {
 		assertTrue(newFish2.canJump);
 		assertEquals(0.75f, newFish2.swimSpeed);
 
-		OldZoo back = bitser.deserializeFromBytesSimple(OldZoo.class, bitser.serializeToBytesSimple(
+		OldZoo back = bitser.fromBytes(OldZoo.class, bitser.toBytes(
 				newZoo, Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(3, back.animals.length);
@@ -169,9 +169,9 @@ public class TestInheritanceBackwardCompatibility {
 		newZoo.animals[0] = new NewReptile();
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(
+				() -> bitser.fromBytes(
 						OldZoo.class,
-						bitser.serializeToBytesSimple(newZoo, Bitser.BACKWARD_COMPATIBLE),
+						bitser.toBytes(newZoo, Bitser.BACKWARD_COMPATIBLE),
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -222,9 +222,9 @@ public class TestInheritanceBackwardCompatibility {
 		OldZoo oldZoo = new OldZoo();
 		oldZoo.animals = new OldAnimal[] { oldBird };
 
-		byte[] bytes = bitser.serializeToBytesSimple(oldZoo, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.toBytes(oldZoo, Bitser.BACKWARD_COMPATIBLE);
 
-		FewerOptionsZoo newZoo = bitser.deserializeFromBytesSimple(
+		FewerOptionsZoo newZoo = bitser.fromBytes(
 				FewerOptionsZoo.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		);
 		FewerOptionsBird newBird = (FewerOptionsBird) newZoo.animals[0];
@@ -238,9 +238,9 @@ public class TestInheritanceBackwardCompatibility {
 		OldZoo oldZoo = new OldZoo();
 		oldZoo.animals = new OldAnimal[] { new OldFish() };
 
-		byte[] bytes = bitser.serializeToBytesSimple(oldZoo, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.toBytes(oldZoo, Bitser.BACKWARD_COMPATIBLE);
 
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.fromBytes(
 				FewerOptionsZoo.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "-> animals -> elements");
@@ -292,8 +292,8 @@ public class TestInheritanceBackwardCompatibility {
 		IncompatibleZoo zoo = new IncompatibleZoo();
 		zoo.animals = new IncompatibleAnimal[] { new IncompatibleBird() };
 
-		byte[] bytes = bitser.serializeToBytesSimple(zoo, Bitser.BACKWARD_COMPATIBLE);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+		byte[] bytes = bitser.toBytes(zoo, Bitser.BACKWARD_COMPATIBLE);
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.fromBytes(
 				OldZoo.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "hierarchy size changed from 4 to 3");
@@ -307,8 +307,8 @@ public class TestInheritanceBackwardCompatibility {
 		OldZoo zoo = new OldZoo();
 		zoo.animals = new OldAnimal[] { new OldBird() };
 
-		byte[] bytes = bitser.serializeToBytesSimple(zoo, Bitser.BACKWARD_COMPATIBLE);
-		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.deserializeFromBytesSimple(
+		byte[] bytes = bitser.toBytes(zoo, Bitser.BACKWARD_COMPATIBLE);
+		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.fromBytes(
 				IncompatibleZoo.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "hierarchy size changed from 3 to 4");

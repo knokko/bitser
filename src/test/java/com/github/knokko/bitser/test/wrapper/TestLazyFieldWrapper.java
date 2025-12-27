@@ -87,9 +87,9 @@ public class TestLazyFieldWrapper {
 		assertEquals("test", incompatible.lazy.get().words.get(1));
 
 		SimpleOuterStruct compatible = bitser.stupidDeepCopy(input, Bitser.BACKWARD_COMPATIBLE);
-		DifferentOuterStruct different2 = bitser.deserializeFromBytesSimple(
+		DifferentOuterStruct different2 = bitser.fromBytes(
 				DifferentOuterStruct.class,
-				bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(input, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(123, compatible.prefix);
@@ -97,9 +97,9 @@ public class TestLazyFieldWrapper {
 		assertEquals("simple", compatible.lazy.get().words.get(0));
 		assertEquals("test", compatible.lazy.get().words.get(1));
 
-		DifferentOuterStruct different1 = bitser.deserializeFromBytesSimple(
+		DifferentOuterStruct different1 = bitser.fromBytes(
 				DifferentOuterStruct.class,
-				bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(input, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 		assertEquals(123L, different1.prefix);
@@ -119,7 +119,7 @@ public class TestLazyFieldWrapper {
 	public void testNull() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(false).serializeToBytesSimple(new SimpleOuterStruct())
+				() -> new Bitser(false).toBytes(new SimpleOuterStruct())
 		).getMessage();
 		assertContains(errorMessage, "-> lazy");
 		assertContains(errorMessage, "must not be null");
@@ -174,9 +174,9 @@ public class TestLazyFieldWrapper {
 
 		Bitser bitser = new Bitser(true);
 
-		NotLazy output = bitser.deserializeFromBytesSimple(
+		NotLazy output = bitser.fromBytes(
 				NotLazy.class,
-				bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(input, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 
@@ -191,9 +191,9 @@ public class TestLazyFieldWrapper {
 
 		Bitser bitser = new Bitser(true);
 
-		SimpleOuterStruct output = bitser.deserializeFromBytesSimple(
+		SimpleOuterStruct output = bitser.fromBytes(
 				SimpleOuterStruct.class,
-				bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE),
+				bitser.toBytes(input, Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		);
 
@@ -226,11 +226,11 @@ public class TestLazyFieldWrapper {
 		input.lazy.get().words.add("not anymore");
 
 		Bitser bitser = new Bitser(true);
-		byte[] bytes = bitser.serializeToBytesSimple(input, Bitser.BACKWARD_COMPATIBLE);
+		byte[] bytes = bitser.toBytes(input, Bitser.BACKWARD_COMPATIBLE);
 
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
-				() -> bitser.deserializeFromBytesSimple(StringStruct1.class, bytes, Bitser.BACKWARD_COMPATIBLE)
+				() -> bitser.fromBytes(StringStruct1.class, bytes, Bitser.BACKWARD_COMPATIBLE)
 		).getMessage();
 		assertContains(errorMessage, "LegacyLazyBytes");
 		assertContains(errorMessage, "java.lang.String");
@@ -242,8 +242,8 @@ public class TestLazyFieldWrapper {
 		Bitser bitser = new Bitser(false);
 		OptionalOuterStruct optional = new OptionalOuterStruct();
 		optional.suffix = 456;
-		byte[] bytes = bitser.serializeToBytesSimple(optional, Bitser.BACKWARD_COMPATIBLE);
-		StringStruct0 stringStruct = bitser.deserializeFromBytesSimple(
+		byte[] bytes = bitser.toBytes(optional, Bitser.BACKWARD_COMPATIBLE);
+		StringStruct0 stringStruct = bitser.fromBytes(
 				StringStruct0.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		);
 		assertNull(stringStruct.test);
@@ -266,8 +266,8 @@ public class TestLazyFieldWrapper {
 		Bitser bitser = new Bitser(false);
 		OptionalOuterStruct optional = new OptionalOuterStruct();
 		optional.suffix = 123;
-		byte[] bytes = bitser.serializeToBytesSimple(optional, Bitser.BACKWARD_COMPATIBLE);
-		NonLazyOptional nonLazy = bitser.deserializeFromBytesSimple(
+		byte[] bytes = bitser.toBytes(optional, Bitser.BACKWARD_COMPATIBLE);
+		NonLazyOptional nonLazy = bitser.fromBytes(
 				NonLazyOptional.class, bytes, Bitser.BACKWARD_COMPATIBLE
 		);
 		assertNull(nonLazy.inner);
@@ -396,7 +396,7 @@ public class TestLazyFieldWrapper {
 	public void testUnknownGenericType() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeToBytesSimple(new UnknownGenericType())
+				() -> new Bitser(false).toBytes(new UnknownGenericType())
 		).getMessage();
 		assertContains(errorMessage, "SimpleLazyBits<?>");
 		assertContains(errorMessage, "TestLazyFieldWrapper$UnknownGenericType.lazyMystery");
@@ -406,7 +406,7 @@ public class TestLazyFieldWrapper {
 	public void testIntegerGenericType() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeToBytesSimple(new IntGenericType())
+				() -> new Bitser(false).toBytes(new IntGenericType())
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
 		assertContains(errorMessage, "TestLazyFieldWrapper$IntGenericType.lazyInt");
@@ -416,7 +416,7 @@ public class TestLazyFieldWrapper {
 	public void testListGenericType() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeToBytesSimple(new ListGenericType())
+				() -> new Bitser(false).toBytes(new ListGenericType())
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
 		assertContains(errorMessage, "TestLazyFieldWrapper$ListGenericType.lazyList");

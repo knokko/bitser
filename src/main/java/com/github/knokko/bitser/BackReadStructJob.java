@@ -35,7 +35,7 @@ record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyI
 					if (fieldOrFunction.bitField instanceof UUIDFieldWrapper &&
 							((UUIDFieldWrapper) fieldOrFunction.bitField).isStableReferenceId
 					) {
-						legacyObject.stableID = ((LegacyUUIDValue) value).value;
+						legacyObject.stableID = ((LegacyUUIDValue) value).value();
 					}
 
 					if (fieldOrFunction.bitField.field.referenceTargetLabel != null) {

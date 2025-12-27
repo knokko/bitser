@@ -32,7 +32,7 @@ public class TestFloatDistributionTracker {
 		example.lonely = -12.5;
 
 		FloatDistributionTracker distribution = new FloatDistributionTracker();
-		bitser.serializeToBytesSimple(example, distribution);
+		bitser.toBytes(example, distribution);
 
 		List<String> sortedFields = distribution.getSortedFields();
 		assertEquals(2, sortedFields.size());

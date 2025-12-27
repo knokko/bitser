@@ -130,7 +130,7 @@ public class TestBitStruct {
 	@Test
 	public void testNoAnnotationsError() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeSimple(new NoAnnotations(), new BitCountStream())
+				() -> new Bitser(false).serialize(new NoAnnotations(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Missing annotations for");
 	}
@@ -189,7 +189,7 @@ public class TestBitStruct {
 	public void testNoBitStructInheritance() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serializeSimple(new SubWandCooldowns(), new BitCountStream())
+				() -> new Bitser(false).serialize(new SubWandCooldowns(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "SubWandCooldowns is not a BitStruct");
 	}

@@ -16,7 +16,7 @@ record BackConvertArrayReferenceJob(
 			if (legacyElement == null) continue;
 
 			if (legacyElement instanceof LegacyReference) {
-				Object modernElement = deserializer.references.getModern(((LegacyReference) legacyElement).reference);
+				Object modernElement = deserializer.references.getModern(((LegacyReference) legacyElement).reference());
 				Array.set(modernArray, index, modernElement);
 			} else {
 				Array.set(modernArray, index, ((WithReference) legacyElement).reference);
