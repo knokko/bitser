@@ -6,7 +6,9 @@ import com.github.knokko.bitser.legacy.LegacyReference;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.RecursionException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.max;
@@ -147,6 +149,24 @@ record BackConvertStructJob(
 						} catch (Throwable failed) {
 							throw new RecursionException(node.generateTrace(modernFunction.classMethod.getName()), failed);
 						}
+					}
+				}
+			}
+
+			for (var field : modernClass.fields) {
+				if (field.id >= legacyValues.hasFieldValues.length || !legacyValues.hasFieldValues[field.id]) {
+					try {
+						if (field.classField.get(modernObject) instanceof BitPostInit postInit) {
+							var context = new BitPostInit.Context(
+									deserializer.bitser, true, null,
+									null, null, deserializer.withParameters
+							);
+							deserializer.postInitJobs.add(new PostInitJob(
+									postInit, context, new RecursionNode(node, field.classField.getName())
+							));
+						}
+					} catch (Throwable failed) {
+						throw new RecursionException(node.generateTrace(field.classField.getName()), failed);
 					}
 				}
 			}
