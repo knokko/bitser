@@ -10,11 +10,35 @@ import java.util.*;
 
 import static java.lang.Math.min;
 
+/**
+ * A {@link DistributionTracker} for {@link IntegerField}s. You can use it like this: {@code
+ * var distribution = new IntegerDistributionTracker();
+ * bitser.boBytes(someStruct, distribution);
+ * distribution.optimize(new PrintWriter(System.out), 5, 2, 5);
+ * }
+ */
 public class IntegerDistributionTracker extends DistributionTracker<Long> {
 
+	/**
+	 * An entry of the list returned by {@link #optimize(String, int)}. Each entry predicts how many bits
+	 * would have been needed to serialize all the values, if a specific {@link IntegerField} configuration were used.
+	 */
 	public static class Entry {
+
+		/**
+		 * The {@link IntegerField#digitSize()} that was used
+		 */
 		public int digitSize;
+
+		/**
+		 * The {@link IntegerField#commonValues()} that were used
+		 */
 		public long[] commonValues;
+
+		/**
+		 * The number of bits that would be needed to serialize all the values of the corresponding integer
+		 * field, if this {@link IntegerField} configuration would be used.
+		 */
 		public int spentBits;
 
 		@Override
@@ -36,6 +60,14 @@ public class IntegerDistributionTracker extends DistributionTracker<Long> {
 		return countBits(fieldData, (IntegerField.Properties) fieldData.properties);
 	}
 
+	/**
+	 * Prints recommendations to optimize the top-{@code maxFields} {@link IntegerField}s
+	 * @param writer The writer to which the recommendations are printed, e.g. {@code new PrintWriter(System.out)}
+	 * @param maxFields The maximum number of fields for which recommendations will be printed.
+	 * @param maxCommonValues The maximum length of {@link IntegerField#commonValues()} that will be attempted
+	 * @param maxSuggestions The maximum number of suggestions that will be printed per field. Only the best
+	 *                       {@code maxSuggestions} suggestions will be printed.
+	 */
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	public void optimize(PrintWriter writer, int maxFields, int maxCommonValues, int maxSuggestions) {
 		int remainingFields = maxFields;
@@ -68,6 +100,11 @@ public class IntegerDistributionTracker extends DistributionTracker<Long> {
 		writer.flush();
 	}
 
+	/**
+	 * Computes recommendations to optimize {@code field}
+	 * @param field The field/description to be optimized, should be an element of {@link #getSortedFields()}
+	 * @param maxCommonValues The maximum length of {@link IntegerField#commonValues()} that will be attempted
+	 */
 	public List<Entry> optimize(String field, int maxCommonValues) {
 		List<Entry> entries = new ArrayList<>((1 + maxCommonValues) * 7);
 

@@ -8,4 +8,8 @@ public abstract class BitserException extends RuntimeException {
 	BitserException(String message) {
 		super(message);
 	}
+
+	BitserException(String message, Throwable cause) {
+		super(message, cause);
+	}
 }
