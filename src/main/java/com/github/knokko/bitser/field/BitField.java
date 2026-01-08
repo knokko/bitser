@@ -25,6 +25,55 @@ import java.lang.annotation.Target;
  * <p>
  *     Fields without any bitser annotations will be ignored by bitser.
  * </p>
+ *
+ * <h3>Backward compatibility</h3>
+ * <h4>IDs</h4>
+ * <p>
+ *     For backward-compatible structs, this annotation is <b>required</b> on all fields that should be serialized, and
+ *     you must assign each serializable field an ID, e.g.
+ *     {@code @BitField(id=0) @IntegerField(expectUniform=false) private int x;}.
+ * </p>
+ * <p>
+ *     Bitser will assume that the field with id X on the original serialized struct represents the field with id X
+ *     on the new deserialized struct. This means that you can freely rename fields of backward-compatible structs, but
+ *     that you must <b>not</b> change the IDs of fields, since that could lead to data loss or incompatibilities.
+ * </p>
+ * <p>
+ *     When the original serialized struct has a field with id X, but the new deserialized struct does not, the value
+ *     of that field will be discarded. Note however that the new deserialized struct can still see it if it implements
+ *     {@link com.github.knokko.bitser.BitPostInit}.
+ * </p>
+ * <p>
+ *     When the new deserialized struct has a field with id X, but the old serialized struct does not, the new field
+ *     will be initialized only by the default/zero-parameter constructor of the new deserialized struct. Also in this
+ *     case, the new the struct can implement {@link com.github.knokko.bitser.BitPostInit} to assign a better value to
+ *     the new field.
+ * </p>
+ *
+ * <h4>Optional</h4>
+ * <p>
+ *     When a field of the old serialized struct is optional, but the corresponding field of the new deserialized
+ *     struct is not, an exception may or may not be thrown:
+ * </p>
+ * <ul>
+ *     <li>
+ *         If the serialized field <i>value</i> is null,
+ *         a {@link com.github.knokko.bitser.exceptions.LegacyBitserException} will be thrown, since the new field does
+ *         <b>not</b> accept null.
+ *     </li>
+ *     <li>
+ *         If the serialized field <i>value</i> is <b>not</b> null, the new struct will be deserialized as usual.
+ *     </li>
+ * </ul>
+ * <p>
+ *     This means that you can remove the {@link #optional()} from a field, but only if the values weren't actually
+ *     null.
+ * </p>
+ * <p>
+ *     When a field of the new deserialized struct is optional, but the corresponding field of the old serialized struct
+ *     is not, the new struct will be deserialized as usual, since all valid values of the original field are also
+ *     valid for the new field.
+ * </p>
  */
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

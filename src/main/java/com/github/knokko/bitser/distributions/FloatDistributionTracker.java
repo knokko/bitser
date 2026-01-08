@@ -14,12 +14,40 @@ import java.util.List;
 
 import static java.lang.Math.min;
 
+/**
+ * A {@link DistributionTracker} for {@link FloatField}s. You can use it like this: {@code
+ * var distribution = new FloatDistributionTracker();
+ * bitser.boBytes(someStruct, distribution);
+ * distribution.optimize(new PrintWriter(System.out), 5, 2, 5, new double[] { 0.01, 0.1 });
+ * }
+ */
 public class FloatDistributionTracker extends DistributionTracker<Double> {
 
+	/**
+	 * An entry of the list returned by {@link #optimize(String, int, double[])}. Each entry predicts how many bits
+	 * would have been needed to serialize all the values, if a specific {@link FloatField} configuration were used.
+	 */
 	public static class Entry {
+
+		/**
+		 * The digit size of {@link FloatField#expectedIntegerMultiple()}
+		 */
 		public int digitSize;
+
+		/**
+		 * The {@link FloatField#expectMultipleOf()}
+		 */
 		public double expectMultipleOf;
+
+		/**
+		 * The {@link FloatField#commonValues()}
+		 */
 		public double[] commonValues;
+
+		/**
+		 * The number of bits that would be needed to serialize all the values of the corresponding floating-point
+		 * field, if this {@link FloatField} configuration would be used.
+		 */
 		public int spentBits;
 
 		@Override
@@ -56,6 +84,18 @@ public class FloatDistributionTracker extends DistributionTracker<Double> {
 		return bitCounter.getCounter();
 	}
 
+	/**
+	 * Prints recommendations to optimize the top-{@code maxFields} {@link FloatField}s
+	 * @param writer The writer to which the recommendations are printed, e.g. {@code new PrintWriter(System.out)}
+	 * @param maxFields The maximum number of fields for which recommendations will be printed.
+	 * @param maxCommonValues The maximum length of {@link FloatField#commonValues()} that will be attempted
+	 * @param maxSuggestions The maximum number of suggestions that will be printed per field. Only the best
+	 *                       {@code maxSuggestions} suggestions will be printed.
+	 * @param expectMultipleOfCandidates The candidate elements for {@link FloatField#expectMultipleOf()} that will be
+	 *                                   attempted. Typical options are e.g. {@code [0.001, 0.01, 0.1, 1.0]}, but the
+	 *                                   best value depends on the distribution. You can try to find it with trial &
+	 *                                   error.
+	 */
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	public void optimize(
 			PrintWriter writer, int maxFields, int maxCommonValues,
@@ -90,6 +130,15 @@ public class FloatDistributionTracker extends DistributionTracker<Double> {
 		writer.flush();
 	}
 
+	/**
+	 * Computes recommendations to optimize {@code field}
+	 * @param field The field/description to be optimized, should be an element of {@link #getSortedFields()}
+	 * @param maxCommonValues The maximum length of {@link FloatField#commonValues()} that will be attempted
+	 * @param expectMultipleOfCandidates The candidate elements for {@link FloatField#expectMultipleOf()} that will be
+	 *                                   attempted. Typical options are e.g. {@code [0.001, 0.01, 0.1, 1.0]}, but the
+	 *                                   best value depends on the distribution. You can try to find it with trial &
+	 *                                   error.
+	 */
 	public List<Entry> optimize(String field, int maxCommonValues, double[] expectMultipleOfCandidates) {
 		List<Entry> entries = new ArrayList<>((1 + maxCommonValues) * 7);
 
