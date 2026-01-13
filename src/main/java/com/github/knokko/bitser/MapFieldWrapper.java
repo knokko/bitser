@@ -115,7 +115,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 		Object[] keys = new Object[size];
 		Object[] values = new Object[size];
-		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type, size);
+		Map<?, ?> map = (Map<?, ?>) constructCollectionWithSize(field.type, keysWrapper.field.type, size);
 		if (size == 0) return map;
 
 		if (keysWrapper instanceof ReferenceFieldWrapper) {
@@ -178,14 +178,13 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (!(legacyValue instanceof LegacyMapValue)) {
+		if (!(legacyValue instanceof LegacyMapValue legacyMap)) {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
 					" to map for field " + field);
 		}
-		LegacyMapValue legacyMap = (LegacyMapValue) legacyValue;
 		int size = legacyMap.keys().length;
 
-		Map<?, ?> modernMap = (Map<?, ?>) constructCollectionWithSize(field.type, size);
+		Map<?, ?> modernMap = (Map<?, ?>) constructCollectionWithSize(field.type, keysWrapper.field.type, size);
 		Object modernKeys = Array.newInstance(keysWrapper.field.type, size);
 		Object modernValues = Array.newInstance(valuesWrapper.field.type, size);
 

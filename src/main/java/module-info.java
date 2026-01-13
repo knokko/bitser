@@ -1,5 +1,4 @@
 module bitser {
-	requires bitser;
 	exports com.github.knokko.bitser.distributions;
 	exports com.github.knokko.bitser.exceptions;
 	exports com.github.knokko.bitser.field;

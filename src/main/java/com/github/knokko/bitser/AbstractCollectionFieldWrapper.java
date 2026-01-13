@@ -12,16 +12,22 @@ import static java.lang.Math.min;
 
 abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 
-	static Object constructCollectionWithSize(Class<?> fieldType, int size) {
+	static Object constructCollectionWithSize(Class<?> fieldType, Class<?> keysType, int size) {
 		try {
-			return fieldType.getConstructor(int.class).newInstance(size);
-		} catch (NoSuchMethodException noIntConstructor) {
 			try {
-				return fieldType.getConstructor().newInstance();
-			} catch (Exception unexpected) {
-				throw new InvalidBitFieldException(
-						"Failed to find constructor of " + fieldType + ": bitser requires either a constructor with " +
-								"no arguments, or a constructor with exactly 1 argument whose type is int");
+				return fieldType.getConstructor(int.class).newInstance(size);
+			} catch (NoSuchMethodException noIntConstructor) {
+				try {
+					return fieldType.getConstructor().newInstance();
+				} catch (NoSuchMethodException noEmptyConstructor) {
+					try {
+						return fieldType.getConstructor(Class.class).newInstance(keysType);
+					} catch (NoSuchMethodException unexpected) {
+						throw new InvalidBitFieldException(
+								"Failed to find constructor of " + fieldType + ": bitser requires either a constructor " +
+										"with no arguments, or a constructor with exactly 1 argument whose type is int");
+					}
+				}
 			}
 		} catch (Exception constructorFailed) {
 			throw new InvalidBitFieldException("Failed to instantiate " + fieldType + ": " + constructorFailed.getMessage());
@@ -74,7 +80,7 @@ abstract class AbstractCollectionFieldWrapper extends BitFieldWrapper {
 		if (field.type.isArray()) {
 			return Array.newInstance(field.type.getComponentType(), size);
 		} else {
-			return constructCollectionWithSize(field.type, size);
+			return constructCollectionWithSize(field.type, null, size);
 		}
 	}
 
