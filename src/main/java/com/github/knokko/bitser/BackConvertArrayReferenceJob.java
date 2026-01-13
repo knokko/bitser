@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.legacy.LegacyReference;
 
 import java.lang.reflect.Array;
@@ -18,8 +19,10 @@ record BackConvertArrayReferenceJob(
 			if (legacyElement instanceof LegacyReference) {
 				Object modernElement = deserializer.references.getModern(((LegacyReference) legacyElement).reference());
 				Array.set(modernArray, index, modernElement);
-			} else {
+			} else if (legacyElement instanceof WithReference) {
 				Array.set(modernArray, index, ((WithReference) legacyElement).reference);
+			} else {
+				throw new LegacyBitserException("Can't convert from legacy " + legacyElement + " to reference");
 			}
 		}
 	}
