@@ -2,10 +2,7 @@ package com.github.knokko.bitser.test.backward;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
-import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.field.FloatField;
-import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.field.NestedFieldSetting;
+import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.Bitser;
 import org.junit.jupiter.api.Test;
 
@@ -569,5 +566,59 @@ public class TestCollectionBackwardCompatibility {
 		assertContains(errorMessage, "convert from legacy ");
 		assertContains(errorMessage, "int[]");
 		assertContains(errorMessage, "IntArray.integers");
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class StructList {
+
+		@BitField(id = 0)
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		final ArrayList<JustID> theList = new ArrayList<>();
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ReferenceList {
+
+		@BitField(id = 0)
+		@ReferenceField(stable = false, label = "references")
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+		final ArrayList<JustID> theList = new ArrayList<>();
+
+		@BitField(id = 1)
+		@ReferenceFieldTarget(label = "references")
+		final ArrayList<JustID> theTargets = new ArrayList<>();
+	}
+
+	@Test
+	public void testInvalidStructListToReferenceList() {
+		Bitser bitser = new Bitser(true);
+
+		StructList structList = new StructList();
+		structList.theList.add(new JustID());
+		byte[] structBytes = bitser.toBytes(structList, Bitser.BACKWARD_COMPATIBLE);
+
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.fromBytes(ReferenceList.class, structBytes, Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "ReferenceList -> theList");
+		assertContains(errorMessage, "from legacy BackStructInstance to reference");
+	}
+
+	@Test
+	public void testInvalidReferenceListToStructList() {
+		Bitser bitser = new Bitser(false);
+
+		ReferenceList referenceList = new ReferenceList();
+		referenceList.theTargets.add(new JustID());
+		referenceList.theList.add(referenceList.theTargets.get(0));
+		byte[] referenceBytes = bitser.toBytes(referenceList, Bitser.BACKWARD_COMPATIBLE);
+
+		String errorMessage = assertThrows(
+				LegacyBitserException.class,
+				() -> bitser.fromBytes(StructList.class, referenceBytes, Bitser.BACKWARD_COMPATIBLE)
+		).getMessage();
+		assertContains(errorMessage, "StructList -> theList");
+		assertContains(errorMessage, "from legacy reference to BackStructInstance");
 	}
 }
