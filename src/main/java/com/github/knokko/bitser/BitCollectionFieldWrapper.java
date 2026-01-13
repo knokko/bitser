@@ -127,7 +127,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			deserializer.input.finishProperty();
 
 			Object[] array = new Object[size];
-			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, size);
+			Collection<?> collection = (Collection<?>) constructCollectionWithSize(field.type, valuesWrapper.field.type, size);
 			if (size == 0) return collection;
 
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {

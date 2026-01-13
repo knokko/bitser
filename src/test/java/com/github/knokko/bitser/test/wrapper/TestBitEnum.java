@@ -5,9 +5,12 @@ import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.EnumField;
+import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.Bitser;
 import org.junit.jupiter.api.Test;
+
+import java.util.EnumMap;
 
 import static com.github.knokko.bitser.test.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -218,5 +221,33 @@ public class TestBitEnum {
 		MixedBoss mixed = bitser.fromBytes(MixedBoss.class, bitser.toBytes(original));
 		assertEquals(ReverseElement.AIR, mixed.weakAgainst);
 		assertEquals(ReverseElement.EARTH, mixed.strongAgainst);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class ContainsEnumMap {
+
+		@BitField(id = 0)
+		final EnumMap<Season, String> nicerNames = new EnumMap<>(Season.class);
+
+		@BitField(id = 1)
+		@IntegerField(expectUniform = false)
+		int okay;
+	}
+
+	@Test
+	public void testEnumMap() {
+		Bitser bitser = new Bitser(false);
+
+		ContainsEnumMap original = new ContainsEnumMap();
+		original.nicerNames.put(Season.AUTUMN, "leafs");
+		original.okay = 12;
+
+		ContainsEnumMap simple = bitser.stupidDeepCopy(original);
+		assertEquals(original.nicerNames, simple.nicerNames);
+		assertEquals(12, simple.okay);
+
+		ContainsEnumMap backward = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(original.nicerNames, backward.nicerNames);
+		assertEquals(12, backward.okay);
 	}
 }
