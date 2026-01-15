@@ -16,7 +16,9 @@ import java.lang.annotation.Target;
  * <p>
  *     If you annotate your field using only {@code @FloatField()}, the full 32 or 64 bits will be stored (depending
  *     on whether it's a {@code float} or {@code double}). To make this more compact, you can try
- *     {@link #expectMultipleOf()} and {@link #commonValues()}.
+ *     {@link #expectMultipleOf()} and {@link #commonValues()}. You can use
+ *     {@link com.github.knokko.bitser.distributions.FloatDistributionTracker} to figure out the most effective
+ *     settings.
  * </p>
  *
  * <h3>Backward compatibility</h3>
