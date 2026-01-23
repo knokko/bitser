@@ -54,4 +54,11 @@ abstract class BitFieldWrapper {
 	int hashCode(Object value, BitserCache cache) {
 		return Objects.hashCode(value);
 	}
+
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		return original;
+	}
 }

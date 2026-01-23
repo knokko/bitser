@@ -148,8 +148,7 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 					allowed[0], ((LegacyLazyBytes) legacyValue).bytes(), Bitser.BACKWARD_COMPATIBLE
 			);
 		}
-		if (legacyValue instanceof LegacyStructInstance) {
-			LegacyStructInstance legacyObject = (LegacyStructInstance) legacyValue;
+		if (legacyValue instanceof LegacyStructInstance legacyObject) {
 			if (legacyObject.allowedClassIndex >= allowed.length) throw new LegacyBitserException(
 					"Encountered unknown subclass while loading " + field
 			);
@@ -179,5 +178,17 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	int hashCode(Object value, BitserCache cache) {
 		if (value == null) return 17;
 		return cache.getWrapper(value.getClass()).hashCode(value, cache);
+	}
+
+	@Override
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		var wrapper = machine.bitser.cache.getWrapper(original.getClass());
+		Object copied = wrapper.createEmptyInstance();
+		var childNode = new RecursionNode(parentNode, fieldName);
+		machine.structJobs.add(new DeepCopyStructJob(wrapper, original, copied, childNode));
+		return copied;
 	}
 }

@@ -58,4 +58,12 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
 		throw new UnexpectedBitserException("Reference fields should get special treatment");
 	}
+
+	@Override
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		throw new UnexpectedBitserException("Reference fields should get special treatment");
+	}
 }
