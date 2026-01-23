@@ -54,7 +54,7 @@ public class Bitser {
 
 	public void serialize(
 			Object object, BitOutputStream output, Object... withAndOptions
-	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
+	) throws IOException, BitserException, IllegalArgumentException {
 		try {
 			rawSerialize(object, output, withAndOptions);
 		} catch (RecursionException failure) {
@@ -138,7 +138,7 @@ public class Bitser {
 
 	public <T> T deserialize(
 			Class<T> objectClass, BitInputStream input, Object... withAndOptions
-	) throws IOException, BitserException, RecursionException, IllegalArgumentException {
+	) throws IOException, BitserException, IllegalArgumentException {
 		try {
 			return rawDeserialize(objectClass, input, withAndOptions);
 		} catch (RecursionException failure) {
@@ -213,7 +213,7 @@ public class Bitser {
 
 	public <T> T fromBytes(
 			Class<T> objectClass, byte[] bytes, Object... withAndOptions
-	) throws BitserException, RecursionException, IllegalArgumentException {
+	) throws BitserException, IllegalArgumentException {
 		DebugBits debug = null;
 		for (Object option : withAndOptions) {
 			if (option instanceof DebugBits) debug = (DebugBits) option;
@@ -238,7 +238,7 @@ public class Bitser {
 
 	public <T> T stupidDeepCopy(
 			T object, Object... with
-	) throws BitserException, RecursionException, IllegalArgumentException {
+	) throws BitserException, IllegalArgumentException {
 		//noinspection unchecked
 		return (T) fromBytes(object.getClass(), toBytes(object, with), with);
 	}
@@ -256,5 +256,38 @@ public class Bitser {
 		// TODO Recursive -> iterative
 		if (value == null) return 0;
 		return cache.getWrapper(value.getClass()).hashCode(value, cache);
+	}
+
+	/**
+	 * Creates a <i>deep</i> (nested) copy of {@code original} and its children.
+	 * <ul>
+	 *     <li>The {@code original} must be a {@link BitStruct}</li>
+	 *     <li>Only the fields annotated with {@code @BitField} will be copied.</li>
+	 *     <li>
+	 *         References to targets <i>within</i> {@code original} will be set to the corresponding copied target.
+	 *     </li>
+	 *     <li>
+	 *         References to targets <i>outside</i> {@code original} (e.g. 'with' objects) will <b>not</b> be copied:
+	 *         the copied reference will have the same identity as the original reference.
+	 *     </li>
+	 * </ul>
+	 * @param original The struct to be copied
+	 * @param withParameters The with parameters that should be passed to {@link BitPostInit.Context} and
+	 *                       {@link com.github.knokko.bitser.field.FunctionContext}. These parameters are completely
+	 *                       optional. If no (child) struct implements {@link BitPostInit}, nor has any methods
+	 *                       annotated with {@code @BitField}, the {@code withParameters} are useless/ignored.
+	 * @return A deep copy of {@code original}
+	 * @param <T> The type of {@code original}
+	 */
+	public <T> T deepCopy(T original, WithParameter...withParameters) {
+		Map<String, Object> withMapping = new HashMap<>();
+		for (var parameter : withParameters) {
+			withMapping.put(parameter.key(), parameter.value());
+		}
+
+		DeepCopyMachine machine = new DeepCopyMachine(original, this, withMapping);
+		machine.run();
+		//noinspection unchecked
+		return (T) machine.destinationRoot;
 	}
 }

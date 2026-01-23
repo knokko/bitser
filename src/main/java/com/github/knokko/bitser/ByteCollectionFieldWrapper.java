@@ -9,6 +9,8 @@ import com.github.knokko.bitser.io.BitInputStream;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 import static java.lang.Byte.toUnsignedInt;
@@ -363,5 +365,26 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			code = 37 * code + Array.get(value, index).hashCode();
 		}
 		return code;
+	}
+
+	@Override
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		if (original == null) return null;
+
+		if (original instanceof Collection<?> originalCollection) {
+			@SuppressWarnings("unchecked")
+			var newCollection = (Collection<Object>) constructCollectionWithSize(originalCollection.size());
+			newCollection.addAll(originalCollection);
+			return newCollection;
+		} else {
+			int size = Array.getLength(original);
+			var newArray = constructCollectionWithSize(size);
+			//noinspection SuspiciousSystemArraycopy
+			System.arraycopy(original, 0, newArray, 0, size);
+			return newArray;
+		}
 	}
 }
