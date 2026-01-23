@@ -252,4 +252,42 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 		return code;
 	}
+
+	@Override
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		var childNode = new RecursionNode(parentNode, fieldName);
+		if (original instanceof Collection<?> originalCollection) {
+			Object[] sourceArray = originalCollection.toArray();
+			Object[] destinationArray = new Object[sourceArray.length];
+			var newCollection = (Collection<?>) constructCollectionWithSize(sourceArray.length);
+
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				machine.arrayReferenceJobs.add(new DeepCopyArrayReferenceJob(
+						destinationArray, sourceArray, childNode
+				));
+			} else {
+				machine.arrayJobs.add(new DeepCopyArrayJob(
+						sourceArray, destinationArray, valuesWrapper, childNode, "elements")
+				);
+			}
+
+			machine.populateJobs.add(new PopulateCollectionJob(newCollection, destinationArray, childNode));
+			return newCollection;
+		} else {
+			Object destinationArray = constructCollectionWithSize(Array.getLength(original));
+			if (valuesWrapper instanceof ReferenceFieldWrapper) {
+				machine.arrayReferenceJobs.add(new DeepCopyArrayReferenceJob(
+						destinationArray, original, childNode
+				));
+			} else {
+				machine.arrayJobs.add(new DeepCopyArrayJob(
+						original, destinationArray, valuesWrapper, childNode, "elements")
+				);
+			}
+			return destinationArray;
+		}
+	}
 }

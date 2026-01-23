@@ -65,4 +65,8 @@ public final class SimpleLazyBits<T> {
 		}
 		return value;
 	}
+
+	SimpleLazyBits<?> deepCopy(Bitser bitser) {
+		return new SimpleLazyBits<>(bitser.toBytes(get()), bitser, false, get().getClass());
+	}
 }

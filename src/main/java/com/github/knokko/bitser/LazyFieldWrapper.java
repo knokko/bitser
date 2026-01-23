@@ -35,8 +35,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
-		if (value instanceof SimpleLazyBits) {
-			SimpleLazyBits<?> lazy = (SimpleLazyBits<?>) value;
+		if (value instanceof SimpleLazyBits<?> lazy) {
 			List<Object> options = new ArrayList<>();
 			if (serializer.backwardCompatible) options.add(Bitser.BACKWARD_COMPATIBLE);
 			if (serializer.forbidLazySaving) options.add(Bitser.FORBID_LAZY_SAVING);
@@ -92,8 +91,7 @@ class LazyFieldWrapper extends BitFieldWrapper {
 					true,
 					valueClass
 			);
-		} else if (rawLegacyInstance instanceof LegacyStructInstance) {
-			LegacyStructInstance legacyObject = (LegacyStructInstance) rawLegacyInstance;
+		} else if (rawLegacyInstance instanceof LegacyStructInstance legacyObject) {
 			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(valueClass);
 			Object modernObject = modernInfo.createEmptyInstance();
 			deserializer.convertStructJobs.add(new BackConvertStructJob(
@@ -104,5 +102,13 @@ class LazyFieldWrapper extends BitFieldWrapper {
 		} else {
 			throw new LegacyBitserException("Can't convert from legacy " + rawLegacyInstance + " to lazy for field " + field);
 		}
+	}
+
+	@Override
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		return ((SimpleLazyBits<?>) original).deepCopy(machine.bitser);
 	}
 }

@@ -243,4 +243,45 @@ class MapFieldWrapper extends BitFieldWrapper {
 
 		return code;
 	}
+
+	@Override
+	Object deepCopy(
+			Object original, DeepCopyMachine machine,
+			RecursionNode parentNode, String fieldName
+	) {
+		if (original == null) return null;
+
+		var originalMap = (Map<?, ?>)  original;
+		var childNode = new RecursionNode(parentNode, fieldName);
+		Object[] sourceKeys = originalMap.keySet().toArray();
+		Object[] sourceValues = originalMap.values().toArray();
+		Object[] destinationKeys = new Object[sourceKeys.length];
+		Object[] destinationValues = new Object[destinationKeys.length];
+
+		if (keysWrapper instanceof ReferenceFieldWrapper) {
+			machine.arrayReferenceJobs.add(new DeepCopyArrayReferenceJob(
+					destinationKeys, sourceKeys, childNode
+			));
+		} else {
+			machine.arrayJobs.add(new DeepCopyArrayJob(
+					sourceKeys, destinationKeys, keysWrapper, childNode, "keys"
+			));
+		}
+
+		if (valuesWrapper instanceof ReferenceFieldWrapper) {
+			machine.arrayReferenceJobs.add(new DeepCopyArrayReferenceJob(
+					destinationValues, sourceValues, childNode
+			));
+		} else {
+			machine.arrayJobs.add(new DeepCopyArrayJob(
+					sourceValues, destinationValues, valuesWrapper, childNode, "values"
+			));
+		}
+
+		var newMap = (Map<?, ?>) constructCollectionWithSize(
+				field.type, keysWrapper.field.type, sourceKeys.length
+		);
+		machine.populateJobs.add(new PopulateMapJob(newMap, destinationKeys, destinationValues, childNode));
+		return newMap;
+	}
 }
