@@ -66,4 +66,9 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	) {
 		throw new UnexpectedBitserException("Reference fields should get special treatment");
 	}
+
+	@Override
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
+		throw new UnexpectedBitserException("Reference fields should be skipped");
+	}
 }

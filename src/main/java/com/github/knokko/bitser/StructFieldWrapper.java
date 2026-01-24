@@ -10,6 +10,7 @@ import com.github.knokko.bitser.field.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.security.interfaces.RSAKey;
 import java.util.Arrays;
 
 import static com.github.knokko.bitser.IntegerBitser.decodeUniformInteger;
@@ -190,5 +191,11 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 		var childNode = new RecursionNode(parentNode, fieldName);
 		machine.structJobs.add(new DeepCopyStructJob(wrapper, original, copied, childNode));
 		return copied;
+	}
+
+	@Override
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
+		var wrapper = collector.bitser.cache.getWrapper(value.getClass());
+		collector.structJobs.add(new CollectFromStructJob(value, wrapper, new RecursionNode(parentNode, fieldName)));
 	}
 }

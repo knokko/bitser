@@ -111,4 +111,14 @@ class LazyFieldWrapper extends BitFieldWrapper {
 	) {
 		return ((SimpleLazyBits<?>) original).deepCopy(machine.bitser);
 	}
+
+	@Override
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
+		var wrapper = collector.bitser.cache.getWrapper(valueClass);
+		var wrappedValue = ((SimpleLazyBits<?>) value).get();
+		collector.register(wrappedValue);
+		collector.structJobs.add(new CollectFromStructJob(
+				wrappedValue, wrapper, new RecursionNode(parentNode, fieldName))
+		);
+	}
 }

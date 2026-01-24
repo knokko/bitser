@@ -284,4 +284,16 @@ class MapFieldWrapper extends BitFieldWrapper {
 		machine.populateJobs.add(new PopulateMapJob(newMap, destinationKeys, destinationValues, childNode));
 		return newMap;
 	}
+
+	@Override
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
+		var childNode = new RecursionNode(parentNode, fieldName);
+		var map = (Map<?, ?>) value;
+		collector.arrayJobs.add(new CollectFromArrayJob(
+				map.keySet().toArray(), keysWrapper, childNode, "keys"
+		));
+		collector.arrayJobs.add(new CollectFromArrayJob(
+				map.values().toArray(), valuesWrapper, childNode, "values"
+		));
+	}
 }

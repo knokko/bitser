@@ -290,4 +290,63 @@ public class Bitser {
 		//noinspection unchecked
 		return (T) machine.destinationRoot;
 	}
+
+	/**
+	 * <p>
+	 *     Collects all instances of the keys of {@code destination} that occur inside {@code rootStruct} or any of its
+	 *     children.
+	 * </p>
+	 * <p>
+	 *     For instance, to find all instances of {@code ExampleClass} or {@code ExampleInterface}, you should create
+	 *     a Map that maps {@code ExampleClass} to an empty collection, and maps {@code ExampleInterface} to
+	 *     <i>another</i> empty collection. Bitser will add any instances of {@code ExampleClass} and
+	 *     {@code ExampleInterface} to their respective collections, before this method returns.
+	 * </p>
+	 *
+	 * <h3>Recommendations</h3>
+	 * <p>
+	 *     The concrete types of these collections are not very important. {@code ArrayList} is the most standard
+	 *     choice, but you could also use e.g. {@code HashSet} to automatically eliminate duplicates.
+	 * </p>
+	 * <p>
+	 *     It is recommended to put <i>empty</i> collections, but this is not required. If the collections are
+	 *     non-empty, bitser will simply <i>add</i> the instances that it found to the non-empty collection.
+	 * </p>
+	 * <p>
+	 *     If you put the same collection instance at two different classes/keys, that collection will contain the
+	 *     instances of both classes after this method returns.
+	 * </p>
+	 *
+	 * <h3>References</h3>
+	 * <p>
+	 *     This method will <b>skip</b> all reference fields that it encounters, which avoids duplicates and potentially
+	 *     endless loops. The reference <b>targets</b> are treated just like any other field, so they can still be
+	 *     collected. So, if there are 5 references to the same target, the target will be searched (and possibly
+	 *     collected) exactly once.
+	 * </p>
+	 * @param rootStruct The struct object in which bitser should search for instances of the desired classes
+	 * @param destination The map that should contain a key for each class of interest
+	 * @param withParameters The with parameters that should be passed to
+	 *                       {@link com.github.knokko.bitser.field.FunctionContext}. These parameters are completely
+	 *                       optional, and only useful if there are any methods annotated with {@code @BitField} and
+	 *                       a parameter of type {@code FunctionContext}.
+	 */
+	public void collectInstances(
+			Object rootStruct,
+			Map<Class<?>, Collection<Object>> destination,
+			WithParameter...withParameters
+	) {
+		Map<String, Object> withMapping = new HashMap<>();
+		for (var parameter : withParameters) {
+			withMapping.put(parameter.key(), parameter.value());
+		}
+
+		for (var destinationClass : destination.keySet()) {
+			if (destinationClass.isPrimitive()) {
+				throw new IllegalArgumentException("Don't use primitive classes: use their boxed/wrapper type instead");
+			}
+		}
+
+		new InstanceCollector(rootStruct, destination, this, withMapping).run();
+	}
 }
