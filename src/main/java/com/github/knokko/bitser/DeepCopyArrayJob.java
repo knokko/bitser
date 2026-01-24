@@ -13,7 +13,7 @@ record DeepCopyArrayJob(
 			if (originalElement == null) continue;
 			Object copiedElement = elementsWrapper.deepCopy(originalElement, machine, node, description);
 			Array.set(destination, index, copiedElement);
-			if (elementsWrapper.field.referenceTargetLabel != null && originalElement != null) {
+			if (elementsWrapper.field.referenceTargetLabel != null) {
 				machine.references.register(originalElement, copiedElement);
 			}
 		}

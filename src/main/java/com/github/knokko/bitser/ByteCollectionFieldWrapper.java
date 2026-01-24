@@ -387,4 +387,19 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			return newArray;
 		}
 	}
+
+	@Override
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
+		if (value instanceof Collection<?> collection) {
+			for (Object element : collection) {
+				if (element != null) collector.register(element);
+			}
+		} else {
+			int length = Array.getLength(value);
+			for (int index = 0; index < length; index++) {
+				Object element = Array.get(value, index);
+				if (element != null) collector.register(element);
+			}
+		}
+	}
 }

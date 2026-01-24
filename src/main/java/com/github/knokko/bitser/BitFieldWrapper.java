@@ -61,4 +61,6 @@ abstract class BitFieldWrapper {
 	) {
 		return original;
 	}
+
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {}
 }

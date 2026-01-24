@@ -290,4 +290,16 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			return destinationArray;
 		}
 	}
+
+	@Override
+	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
+		var childNode = new RecursionNode(parentNode, fieldName);
+		if (value instanceof Collection<?> collection) {
+			collector.arrayJobs.add(new CollectFromArrayJob(
+					collection.toArray(), valuesWrapper, childNode, "elements"
+			));
+		} else {
+			collector.arrayJobs.add(new CollectFromArrayJob(value, valuesWrapper, childNode, "elements"));
+		}
+	}
 }
