@@ -5,8 +5,8 @@ import java.util.Map;
 class PopulateMapJob extends PopulateJob {
 
 	final Map<?, ?> map;
-	final Object[] keys;
-	final Object[] values;
+	Object[] keys;
+	Object[] values;
 
 	PopulateMapJob(Map<?, ?> map, Object[] keys, Object[] values, RecursionNode node) {
 		super(node);

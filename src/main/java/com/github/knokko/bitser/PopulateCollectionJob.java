@@ -6,7 +6,7 @@ import java.util.Collections;
 class PopulateCollectionJob extends PopulateJob {
 
 	final Collection<?> collection;
-	final Object[] elements;
+	Object[] elements;
 
 	PopulateCollectionJob(Collection<?> collection, Object[] elements, RecursionNode node) {
 		super(node);

@@ -10,8 +10,13 @@ class Populator {
 		while (true) {
 			boolean changedAnything = false;
 			for (PopulateJob job : criticalJobs) {
-				if (job instanceof PopulateCollectionJob) {
-					PopulateCollectionJob collectionJob = (PopulateCollectionJob) job;
+				if (job instanceof PopulateCollectionJob collectionJob) {
+					int newSize = collectionJob.collection.size();
+					collectionJob.elements = new Object[newSize];
+					int elementIndex = 0;
+					for (Object element : collectionJob.collection) {
+						collectionJob.elements[elementIndex++] = element;
+					}
 					for (Object expectedElement : collectionJob.elements) {
 						if (!collectionJob.collection.contains(expectedElement)) {
 							changedAnything = true;
@@ -24,8 +29,16 @@ class Populator {
 						Collections.addAll((Collection<Object>) collectionJob.collection, collectionJob.elements);
 						break;
 					}
-				} else if (job instanceof PopulateMapJob) {
-					PopulateMapJob mapJob = (PopulateMapJob) job;
+				} else if (job instanceof PopulateMapJob mapJob) {
+					int newSize = mapJob.map.size();
+					mapJob.keys = new Object[newSize];
+					mapJob.values = new Object[newSize];
+					int entryIndex = 0;
+					for (var entry : mapJob.map.entrySet()) {
+						mapJob.keys[entryIndex] = entry.getKey();
+						mapJob.values[entryIndex] = entry.getValue();
+						entryIndex += 1;
+					}
 					for (int index = 0; index < mapJob.keys.length; index++) {
 						if (mapJob.map.get(mapJob.keys[index]) != mapJob.values[index]) {
 							changedAnything = true;

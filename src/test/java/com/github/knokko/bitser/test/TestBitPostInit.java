@@ -16,10 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.github.knokko.bitser.test.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -470,5 +467,118 @@ public class TestBitPostInit {
 				bitser.toBytes(new OuterWithoutPostInit(), Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
 		).inner.calledPostInit);
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class InnerStruct implements BitPostInit {
+
+		@IntegerField(expectUniform = false)
+		int value;
+
+		@SuppressWarnings("unused")
+		InnerStruct() {
+			this.value = -5;
+		}
+
+		InnerStruct(int value) {
+			this.value = value;
+		}
+
+		@Override
+		public int hashCode() {
+			return value;
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			return other instanceof InnerStruct && this.value == ((InnerStruct) other).value;
+		}
+
+		@Override
+		public String toString() {
+			return "Inner(" + value + ")";
+		}
+
+		@Override
+		public void postInit(Context context) {
+			if (value == 70) value += 1;
+		}
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class OuterMapStruct implements BitPostInit {
+
+		@BitField
+		final HashMap<InnerStruct, InnerStruct> map = new HashMap<>();
+
+		@Override
+		public void postInit(Context context) {
+			InnerStruct valueOf5 = map.get(new InnerStruct(5));
+			assertEquals(10, valueOf5.value);
+			valueOf5.value += 1;
+
+			assertEquals(30, map.remove(new InnerStruct(25)).value);
+			assertEquals(20, Objects.requireNonNull(
+					map.put(new InnerStruct(15), new InnerStruct(16))
+			).value);
+			map.put(new InnerStruct(55), new InnerStruct(55));
+			map.keySet().forEach(key -> {
+				if (key.value == 60) {
+					assertEquals(71, map.get(key).value);
+					key.value += 1;
+				}
+			});
+		}
+	}
+
+	@Test
+	public void testMapModificationDuringPostInit() {
+		OuterMapStruct original = new OuterMapStruct();
+		original.map.put(new InnerStruct(5), new InnerStruct(10));
+		original.map.put(new InnerStruct(15), new InnerStruct(20));
+		original.map.put(new InnerStruct(25), new InnerStruct(30));
+		original.map.put(new InnerStruct(60), new InnerStruct(70));
+
+		OuterMapStruct copied = new Bitser(true).stupidDeepCopy(original);
+		assertEquals(4, copied.map.size());
+		assertEquals(new InnerStruct(11), copied.map.get(new InnerStruct(5)));
+		assertEquals(new InnerStruct(16), copied.map.get(new InnerStruct(15)));
+		assertEquals(new InnerStruct(55), copied.map.get(new InnerStruct(55)));
+		assertEquals(new InnerStruct(71), copied.map.get(new InnerStruct(61)));
+	}
+
+	@BitStruct(backwardCompatible = false)
+	private static class OuterSetStruct implements BitPostInit {
+
+		@BitField
+		final HashSet<InnerStruct> set = new HashSet<>();
+
+		@Override
+		public void postInit(Context context) {
+			assertEquals(4, set.size());
+			assertTrue(set.remove(new InnerStruct(25)));
+			assertTrue(set.contains(new InnerStruct(20)));
+			set.add(new InnerStruct(33));
+
+			for (var element : set) {
+				if (element.value == 10) element.value += 1;
+			}
+		}
+	}
+
+	@Test
+	public void testSetModificationDuringPostInit() {
+		OuterSetStruct original = new OuterSetStruct();
+		original.set.add(new InnerStruct(10));
+		original.set.add(new InnerStruct(20));
+		original.set.add(new InnerStruct(25));
+		original.set.add(new InnerStruct(70));
+
+		OuterSetStruct copied = new Bitser(false).stupidDeepCopy(original);
+		assertEquals(4, copied.set.size());
+		assertTrue(copied.set.contains(new InnerStruct(11)));
+		assertTrue(copied.set.contains(new InnerStruct(20)));
+		assertTrue(copied.set.contains(new InnerStruct(33)));
+		assertTrue(copied.set.contains(new InnerStruct(71)));
 	}
 }
