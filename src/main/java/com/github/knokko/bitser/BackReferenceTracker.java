@@ -5,6 +5,7 @@ import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.legacy.LegacyReference;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
+import com.github.knokko.bitser.legacy.WithReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -113,7 +114,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 				UUID id = maybeWrapper.getStableId(target);
 				Object withSameID = stable.put(id, new WithReference(target));
 				if (withSameID != null) {
-					if (((WithReference) withSameID).reference == target) {
+					if (((WithReference) withSameID).reference() == target) {
 						throw new ReferenceBitserException("Multiple stable targets have identity " + target);
 					} else {
 						throw new ReferenceBitserException(

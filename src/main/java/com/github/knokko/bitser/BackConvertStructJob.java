@@ -5,10 +5,9 @@ import com.github.knokko.bitser.legacy.LegacyClassValues;
 import com.github.knokko.bitser.legacy.LegacyReference;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.RecursionException;
+import com.github.knokko.bitser.legacy.WithReference;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.max;
@@ -59,7 +58,7 @@ record BackConvertStructJob(
 									new RecursionNode(node, modernField.classField.getName())
 							));
 						} else if (legacyFieldValue instanceof WithReference) {
-							modernField.classField.set(modernObject, ((WithReference) legacyFieldValue).reference);
+							modernField.classField.set(modernObject, ((WithReference) legacyFieldValue).reference());
 						} else {
 							throw new LegacyBitserException(
 									"Can't store legacy " + legacyFieldValue +
