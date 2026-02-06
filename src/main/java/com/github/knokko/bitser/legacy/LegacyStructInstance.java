@@ -16,6 +16,6 @@ public class LegacyStructInstance {
 
 	@Override
 	public String toString() {
-		return "BackStructInstance";
+		return "LegacyStructInstance";
 	}
 }

@@ -7,15 +7,69 @@ import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.exceptions.RecursionException;
 import com.github.knokko.bitser.legacy.WithReference;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-
-import static java.lang.Math.max;
 
 record BackConvertStructJob(
 		Object modernObject, BitStructWrapper<?> modernInfo,
 		LegacyStructInstance legacyObject, RecursionNode node
 ) {
+
+	private void convert(
+			BackDeserializer deserializer, BitFieldWrapper field,
+			boolean[] hasLegacyValues, Object[] legacyValues, Object[] modernValues,
+			int id, String debugName, Object debugObject,
+			Object modernObject, Field modernField
+	) throws Exception {
+		if (id >= hasLegacyValues.length || !hasLegacyValues[id]) {
+			if (modernField != null) {
+				if (modernField.get(modernObject) instanceof BitPostInit postInit) {
+					var context = new BitPostInit.Context(
+							deserializer.bitser, true,
+							null, null, deserializer.withParameters
+					);
+					deserializer.postInitJobs.add(new PostInitJob(
+							postInit, context, new RecursionNode(node, debugName)
+					));
+				}
+			}
+			return;
+		}
+		Object legacyValue = legacyValues[id];
+		if (legacyValue == null) {
+			if (field.field.optional) return;
+			throw new LegacyBitserException(
+					"Can't store legacy null in " + debugName + " for field " + field
+			);
+		}
+
+		if (field instanceof ReferenceFieldWrapper) {
+			if (legacyValue instanceof LegacyReference) {
+				deserializer.convertStructReferenceJobs.add(new BackConvertStructReferenceJob(
+						modernObject, modernField,
+						modernValues, id,
+						((LegacyReference) legacyValue).reference(),
+						new RecursionNode(node, debugName)
+				));
+			} else if (legacyValue instanceof WithReference) {
+				modernValues[id] = ((WithReference) legacyValue).reference();
+			} else {
+				throw new LegacyBitserException(
+						"Can't store legacy " + legacyValue + " in reference " + debugObject
+				);
+			}
+		} else {
+			Object modernFieldValue = field.convert(
+					deserializer, legacyValue, node, debugName
+			);
+			if (field.field.referenceTargetLabel != null) {
+				deserializer.references.registerModern(legacyValue, modernFieldValue);
+			}
+			modernValues[id] = modernFieldValue;
+
+		}
+	}
 
 	void convert(BackDeserializer deserializer) {
 		if (legacyObject.hierarchy.length != modernInfo.classHierarchy.size()) {
@@ -26,53 +80,44 @@ record BackConvertStructJob(
 			throw new RecursionException(node.generateTrace(null), legacyException);
 		}
 
-		Map<Class<?>, Object[]> legacyFieldValues = new HashMap<>();
-		Map<Class<?>, Object[]> legacyFunctionValues = new HashMap<>();
-		Map<Class<?>, Object[]> modernFunctionValues = new HashMap<>();
+		Map<Class<?>, Object[]> allModernValues = new HashMap<>();
+		Map<Class<?>, Object[]> allLegacyValues = new HashMap<>();
 
 		for (int hierarchyIndex = 0; hierarchyIndex < modernInfo.classHierarchy.size(); hierarchyIndex++) {
 			SingleClassWrapper modernClass = modernInfo.classHierarchy.get(hierarchyIndex);
 			LegacyClassValues legacyValues = legacyObject.hierarchy[hierarchyIndex];
+			Object[] modernValues = new Object[legacyValues.values.length];
 
-			for (SingleClassWrapper.FieldWrapper modernField : modernClass.fields) {
-				String fieldName = modernField.classField.getName();
+			for (var modernFunction : modernClass.functions) {
+				String functionName = modernFunction.classMethod().getName();
 				try {
-					if (modernField.id >= legacyValues.hasFieldValues.length ||
-							!legacyValues.hasFieldValues[modernField.id]
-					) continue;
+					convert(
+							deserializer, modernFunction.bitField(),
+							legacyValues.hasValues, legacyValues.values, modernValues,
+							modernFunction.id(), functionName, modernFunction.classMethod(),
+							null, null
+					);
+				} catch (Throwable failed) {
+					throw new RecursionException(node.generateTrace(functionName), failed);
+				}
+			}
 
-					Object legacyFieldValue = legacyValues.fieldValues[modernField.id];
-					if (legacyFieldValue == null) {
-						if (modernField.bitField.field.optional) {
-							modernField.classField.set(modernObject, null);
-							continue;
-						} else throw new LegacyBitserException(
-								"Can't store legacy null in " + fieldName + " for field " + modernField
+			for (var modernField : modernClass.fields) {
+				String fieldName = modernField.classField().getName();
+				try {
+					if (!modernField.readsMethodResult()) {
+						convert(
+								deserializer, modernField.bitField(),
+								legacyValues.hasValues, legacyValues.values, modernValues,
+								modernField.id(), fieldName, modernField.classField(),
+								modernObject, modernField.classField()
 						);
 					}
-
-					if (modernField.bitField instanceof ReferenceFieldWrapper) {
-						if (legacyFieldValue instanceof LegacyReference) {
-							deserializer.convertStructReferenceJobs.add(new BackConvertStructReferenceJob(
-									modernObject, modernField.classField, ((LegacyReference) legacyFieldValue).reference(),
-									new RecursionNode(node, modernField.classField.getName())
-							));
-						} else if (legacyFieldValue instanceof WithReference) {
-							modernField.classField.set(modernObject, ((WithReference) legacyFieldValue).reference());
-						} else {
-							throw new LegacyBitserException(
-									"Can't store legacy " + legacyFieldValue +
-											" in reference field " + modernField.classField
-							);
-						}
-					} else {
-						Object modernFieldValue = modernField.bitField.convert(
-								deserializer, legacyFieldValue, node, fieldName
-						);
-						modernField.classField.set(modernObject, modernFieldValue);
-						if (modernField.bitField.field.referenceTargetLabel != null) {
-							deserializer.references.registerModern(legacyFieldValue, modernFieldValue);
-						}
+					if (modernField.id() < legacyValues.hasValues.length && legacyValues.hasValues[modernField.id()]) {
+						deserializer.methodReferenceToFieldJobs.add(new ReadStructMethodReferenceToFieldJob(
+								modernValues, modernField.id(), modernObject,
+								modernField.classField(), new RecursionNode(node, fieldName)
+						));
 					}
 				} catch (Throwable failed) {
 					throw new RecursionException(node.generateTrace(fieldName), failed);
@@ -80,101 +125,15 @@ record BackConvertStructJob(
 			}
 
 			if (modernObject instanceof BitPostInit) {
-				int largestModernFunctionID = -1;
-				for (SingleClassWrapper.FunctionWrapper candidateFunction : modernClass.functions) {
-					largestModernFunctionID = max(largestModernFunctionID, candidateFunction.id);
-				}
-				SingleClassWrapper.FunctionWrapper[] modernFunctions = new SingleClassWrapper.FunctionWrapper[
-						1 + largestModernFunctionID
-						];
-				for (SingleClassWrapper.FunctionWrapper modernFunction : modernClass.functions) {
-					modernFunctions[modernFunction.id] = modernFunction;
-				}
-
-				Object[] currentModernFunctionValues = new Object[
-						max(modernFunctions.length, legacyValues.functionValues.length)
-						];
-
-				legacyFieldValues.put(modernClass.myClass, legacyValues.fieldValues);
-				legacyFunctionValues.put(modernClass.myClass, legacyValues.functionValues);
-				modernFunctionValues.put(modernClass.myClass, currentModernFunctionValues);
-
-				for (int functionID = 0; functionID < legacyValues.functionValues.length; functionID++) {
-					if (!legacyValues.hasFunctionValues[functionID]) continue;
-					Object legacyFunctionValue = legacyValues.functionValues[functionID];
-
-					SingleClassWrapper.FunctionWrapper modernFunction = null;
-					if (functionID < modernFunctions.length) modernFunction = modernFunctions[functionID];
-
-					if (modernFunction == null) {
-						if (legacyFunctionValue instanceof LegacyReference) {
-							deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
-									currentModernFunctionValues, functionID,
-									((LegacyReference) legacyFunctionValue).reference(),
-									new RecursionNode(node, "legacy function " + functionID)
-							));
-						} else {
-							currentModernFunctionValues[functionID] = legacyFunctionValue;
-						}
-					} else {
-						try {
-							if (legacyFunctionValue == null) {
-								if (modernFunction.bitField.field.optional) continue;
-								else throw new LegacyBitserException(
-										"Can't store legacy null for " + modernFunction.classMethod.getName() +
-												" for function " + modernFunction
-								);
-							}
-
-							if (modernFunction.bitField instanceof ReferenceFieldWrapper) {
-								if (legacyFunctionValue instanceof LegacyReference) {
-									deserializer.convertStructFunctionReferenceJobs.add(new BackConvertStructFunctionReferenceJob(
-											currentModernFunctionValues, modernFunction.id,
-											((LegacyReference) legacyFunctionValue).reference(),
-											new RecursionNode(node, modernFunction.classMethod.getName())
-									));
-								} else {
-									throw new LegacyBitserException(
-											"Can't store legacy " + legacyFunctionValue +
-													" as result of reference function " + modernFunction.classMethod
-									);
-								}
-							} else {
-								Object modernFunctionValue = modernFunction.bitField.convert(
-										deserializer, legacyFunctionValue, node, modernFunction.classMethod.getName()
-								);
-								currentModernFunctionValues[modernFunction.id] = modernFunctionValue;
-							}
-						} catch (Throwable failed) {
-							throw new RecursionException(node.generateTrace(modernFunction.classMethod.getName()), failed);
-						}
-					}
-				}
-			}
-
-			for (var field : modernClass.fields) {
-				if (field.id >= legacyValues.hasFieldValues.length || !legacyValues.hasFieldValues[field.id]) {
-					try {
-						if (field.classField.get(modernObject) instanceof BitPostInit postInit) {
-							var context = new BitPostInit.Context(
-									deserializer.bitser, true, null,
-									null, null, deserializer.withParameters
-							);
-							deserializer.postInitJobs.add(new PostInitJob(
-									postInit, context, new RecursionNode(node, field.classField.getName())
-							));
-						}
-					} catch (Throwable failed) {
-						throw new RecursionException(node.generateTrace(field.classField.getName()), failed);
-					}
-				}
+				allLegacyValues.put(modernClass.myClass, legacyValues.values);
+				allModernValues.put(modernClass.myClass, modernValues);
 			}
 		}
 
 		if (modernObject instanceof BitPostInit) {
-			BitPostInit.Context context = new BitPostInit.Context(
-					deserializer.bitser, true, modernFunctionValues,
-					legacyFieldValues, legacyFunctionValues, deserializer.withParameters
+			var context = new BitPostInit.Context(
+					deserializer.bitser, true, allModernValues,
+					allLegacyValues, deserializer.withParameters
 			);
 			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) modernObject, context, node));
 		}

@@ -42,4 +42,37 @@ public @interface BitField {
 	 * Whether this field is allowed to be {@code null}
 	 */
 	boolean optional() default false;
+
+	/**
+	 * <p>
+	 *     Whether this field should read its value from a <b>method</b> that is annotated with
+	 *     {@code @BitField(id = sameId)}.
+	 * </p>
+	 *
+	 * <p>
+	 *     This is {@code false} by default, and should almost always be {@code false}.
+	 *     Choosing {@code true} is only allowed if:
+	 * </p>
+	 *
+	 * <ul>
+	 *     <li>This {@code @BitField} annotation is put on a <b>field</b>, and</li>
+	 *     <li>the {@link #id()} is non-negative, and</li>
+	 *     <li>
+	 *         the struct containing this field has a <b>method</b> that is annotated with
+	 *         {@code @BitField(id = sameIdAsThisField)}.
+	 *     </li>
+	 * </ul>
+	 *
+	 * <p>
+	 *     When this property is {@code true}, this field will never be serialized. When this field is
+	 *     <b>de</b>serialized, it will take the result of the method that is annotated with
+	 *     {@code @BitField(id = sameIdAsThisField)}.
+	 * </p>
+	 *
+	 * <p>
+	 *     You can use this to e.g. derive the value of a field from other fields, and it allows you to control the
+	 *     serialized values using <i>with</i> parameters.
+	 * </p>
+	 */
+	boolean readsMethodResult() default false;
 }

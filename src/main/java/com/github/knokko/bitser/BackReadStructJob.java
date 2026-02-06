@@ -14,6 +14,7 @@ record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyI
 			boolean[] hasValues, Object[] values
 	) {
 		for (LegacyField fieldOrFunction : fieldsOrFunctions) {
+			if (fieldOrFunction.readsMethodResult) continue;
 			String fieldOrFunctionName = namePrefix + fieldOrFunction.id;
 			try {
 				hasValues[fieldOrFunction.id] = true;
@@ -57,11 +58,11 @@ record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyI
 
 			readFieldsOrFunctions(
 					deserializer, legacyClass.fields, "field ",
-					legacyClassInstance.hasFieldValues, legacyClassInstance.fieldValues
+					legacyClassInstance.hasValues, legacyClassInstance.values
 			);
 			readFieldsOrFunctions(
 					deserializer, legacyClass.functions, "function ",
-					legacyClassInstance.hasFunctionValues, legacyClassInstance.functionValues
+					legacyClassInstance.hasValues, legacyClassInstance.values
 			);
 		}
 	}

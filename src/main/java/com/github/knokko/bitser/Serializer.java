@@ -70,6 +70,7 @@ class Serializer {
 		}
 
 		references.handleWithJobs();
+		references.refreshStableIDs();
 
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {

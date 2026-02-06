@@ -27,6 +27,7 @@ class BackDeserializer {
 	final ArrayList<BackConvertStructReferenceJob> convertStructReferenceJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructFunctionReferenceJob> convertStructFunctionReferenceJobs = new ArrayList<>();
 	final ArrayList<BackConvertArrayReferenceJob> convertArrayReferenceJobs = new ArrayList<>();
+	final ArrayList<ReadStructMethodReferenceToFieldJob> methodReferenceToFieldJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
 
@@ -146,6 +147,15 @@ class BackDeserializer {
 			}
 		}
 		convertArrayReferenceJobs.clear();
+
+		for (var referenceJob : methodReferenceToFieldJobs) {
+			try {
+				referenceJob.resolve();
+			} catch (Throwable failed) {
+				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
+			}
+		}
+		methodReferenceToFieldJobs.clear();
 
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}

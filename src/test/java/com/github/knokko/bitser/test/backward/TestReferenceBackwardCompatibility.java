@@ -56,7 +56,7 @@ public class TestReferenceBackwardCompatibility {
 
 		@Override
 		public void postInit(Context context) {
-			Object[] legacyValues = context.legacyFieldValues.get(NewDummy.class);
+			Object[] legacyValues = context.legacyValues.get(NewDummy.class);
 			if (legacyValues.length <= 1 || legacyValues[1] == null) {//noinspection SuspiciousNameCombination
 				this.y = this.x;
 			}
@@ -165,7 +165,7 @@ public class TestReferenceBackwardCompatibility {
 		final ArrayList<Dummy> dummies = new ArrayList<>();
 
 		@SuppressWarnings("unused")
-		@BitField(id = 0)
+		@BitField(id = 1)
 		@ReferenceField(stable = false, label = "dummy")
 		Dummy best(FunctionContext context) {
 			return dummies.get((int) context.withParameters.get("best"));
@@ -180,7 +180,7 @@ public class TestReferenceBackwardCompatibility {
 		final ArrayList<Dummy> dummies = new ArrayList<>();
 
 		@SuppressWarnings("unused")
-		@BitField(id = 0)
+		@BitField(id = 1)
 		Dummy best(FunctionContext context) {
 			return dummies.get((int) context.withParameters.get("best"));
 		}
@@ -200,8 +200,8 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			assertInstanceOf(LegacyReference.class, context.legacyFunctionValues.get(ReferenceMethodNew.class)[0]);
-			best = (NewDummy) context.functionValues.get(ReferenceMethodNew.class)[0];
+			assertInstanceOf(LegacyReference.class, context.legacyValues.get(ReferenceMethodNew.class)[0]);
+			best = (NewDummy) context.values.get(ReferenceMethodNew.class)[0];
 		}
 	}
 
@@ -218,10 +218,10 @@ public class TestReferenceBackwardCompatibility {
 		@Override
 		public void postInit(Context context) {
 			if (best != null) return;
-			LegacyStructInstance legacyDummy = (LegacyStructInstance) context.legacyFunctionValues.get(ReferenceMethodNewCorrupted.class)[0];
+			LegacyStructInstance legacyDummy = (LegacyStructInstance) context.legacyValues.get(ReferenceMethodNewCorrupted.class)[0];
 			LegacyClassValues legacyValues = legacyDummy.hierarchy[0];
-			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hasFieldValues);
-			int x = (int) ((LegacyIntValue) legacyValues.fieldValues[2]).value();
+			assertArrayEquals(new boolean[] { false, false, true }, legacyValues.hasValues);
+			int x = (int) ((LegacyIntValue) legacyValues.values[2]).value();
 			//noinspection SuspiciousNameCombination
 			best = new NewDummy(x, x);
 		}

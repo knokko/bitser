@@ -67,11 +67,11 @@ class BitStructWrapper<T> {
 
 		for (SingleClassWrapper currentClass : classHierarchy) {
 			for (SingleClassWrapper.FieldWrapper field : currentClass.fields) {
-				if (field.bitField instanceof UUIDFieldWrapper && ((UUIDFieldWrapper) field.bitField).isStableReferenceId) {
+				if (field.bitField() instanceof UUIDFieldWrapper && ((UUIDFieldWrapper) field.bitField()).isStableReferenceId) {
 					if (stableIdField != null) throw new InvalidBitFieldException(
 							"Bit struct " + objectClass + " has multiple stable ID fields, but at most 1 is allowed"
 					);
-					stableIdField = field.bitField.field;
+					stableIdField = field.bitField().field;
 				}
 			}
 		}

@@ -4,10 +4,13 @@ import java.lang.reflect.Field;
 
 record BackConvertStructReferenceJob(
 		Object modernObject, Field modernField,
+		Object[] modernValues, int id,
 		Object legacyReference, RecursionNode node
 ) {
 
 	void convert(BackDeserializer deserializer) throws Throwable {
-		modernField.set(modernObject, deserializer.references.getModern(legacyReference));
+		Object modernReference = deserializer.references.getModern(legacyReference);
+		modernValues[id] = modernReference;
+		if (modernField != null) modernField.set(modernObject, modernReference);
 	}
 }

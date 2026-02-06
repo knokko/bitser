@@ -1,5 +1,6 @@
 package com.github.knokko.bitser.test.wrapper;
 
+import com.github.knokko.bitser.BitPostInit;
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
@@ -7,6 +8,8 @@ import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.Bitser;
+import com.github.knokko.bitser.legacy.LegacyReference;
+import com.github.knokko.bitser.options.WithParameter;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -18,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUnstableReferences {
 
-	@BitStruct(backwardCompatible = false)
+	@BitStruct(backwardCompatible = true)
 	private static class ItemType {
 
-		@StringField
+		@BitField(id = 0)
 		final String name;
 
 		@SuppressWarnings("unused")
@@ -530,5 +533,162 @@ public class TestUnstableReferences {
 		assertSame(backward.targetList.get(0), backward.referenceList.get(0));
 		assertSame(backward.targetMap.keySet().iterator().next(), backward.referenceMap.keySet().iterator().next());
 		assertSame(backward.targetMap.values().iterator().next(), backward.referenceMap.values().iterator().next());
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class FunctionReferenceTarget {
+
+		private ItemType type1, type2;
+
+		@BitField(id = 0)
+		@ReferenceField(stable = false, label = "item types")
+		private ItemType typeA;
+
+		@BitField(id = 1)
+		@ReferenceField(stable = false, label = "item types")
+		private ItemType typeB;
+
+		@BitField(id = 3)
+		@ReferenceField(stable = false, label = "item types")
+		private ItemType typeC;
+
+		@BitField(id = 2)
+		@ReferenceFieldTarget(label = "item types")
+		ItemType[] getTargets() {
+			return new ItemType[] { type1, type2 };
+		}
+	}
+
+	@Test
+	public void testFunctionReferenceTarget() {
+		var original = new FunctionReferenceTarget();
+		original.type1 = new ItemType("Sword");
+		original.type2 = new ItemType("Shield");
+		original.typeA = original.type2;
+		original.typeB = original.type1;
+		original.typeC = original.type2;
+
+		var bitser = new Bitser(false);
+		var simple = bitser.stupidDeepCopy(original);
+		assertEquals("Shield", simple.typeA.name);
+		assertEquals("Sword", simple.typeB.name);
+		assertSame(simple.typeA, simple.typeC);
+
+		var backward = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals("Shield", backward.typeA.name);
+		assertEquals("Sword", backward.typeB.name);
+		assertSame(backward.typeA, backward.typeC);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class FunctionReference1 {
+
+		@BitField(id = 2, readsMethodResult = true)
+		private ItemType reference;
+
+		@BitField(id = 5)
+		@ReferenceFieldTarget(label = "item types")
+		private ItemType typeA;
+
+		@BitField(id = 6)
+		@ReferenceFieldTarget(label = "item types")
+		private ItemType typeB;
+
+		@BitField(id = 2)
+		@ReferenceField(stable = false, label = "item types")
+		ItemType getReference(FunctionContext context) {
+			if (context.withParameters.containsKey("a")) return typeA;
+			else return typeB;
+		}
+	}
+
+	@Test
+	public void testFunctionReference1() {
+		var original = new FunctionReference1();
+		original.typeA = new ItemType("Shield");
+		original.typeB = new ItemType("Sword");
+
+		var bitser = new Bitser(false);
+		var simpleA = bitser.stupidDeepCopy(original, new WithParameter("a", null));
+		assertEquals("Shield", simpleA.typeA.name);
+		assertEquals("Sword", simpleA.typeB.name);
+		assertSame(simpleA.typeA, simpleA.reference);
+
+		var simpleB = bitser.stupidDeepCopy(original);
+		assertEquals("Shield", simpleB.typeA.name);
+		assertEquals("Sword", simpleB.typeB.name);
+		assertSame(simpleB.typeB, simpleB.reference);
+
+		var backwardA = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE, new WithParameter("a", null));
+		assertEquals("Shield", backwardA.typeA.name);
+		assertEquals("Sword", backwardA.typeB.name);
+		assertSame(backwardA.typeA, backwardA.reference);
+
+		var backwardB = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals("Shield", backwardB.typeA.name);
+		assertEquals("Sword", backwardB.typeB.name);
+		assertSame(backwardB.typeB, backwardB.reference);
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class FunctionReference2 implements BitPostInit {
+
+		private ItemType reference;
+
+		@BitField(id = 5)
+		@ReferenceFieldTarget(label = "item types")
+		private ItemType typeA;
+
+		@BitField(id = 6)
+		@ReferenceFieldTarget(label = "item types")
+		private ItemType typeB;
+
+		@BitField(id = 2)
+		@ReferenceField(stable = false, label = "item types")
+		ItemType getReference(FunctionContext context) {
+			if (context.withParameters.containsKey("a")) return typeA;
+			else return typeB;
+		}
+
+		@Override
+		public void postInit(Context context) {
+			this.reference = (ItemType) context.values.get(FunctionReference2.class)[2];
+			assertNotNull(this.reference);
+			assertTrue(this.reference == this.typeA || this.reference == this.typeB);
+			if (context.backwardCompatible) {
+				var legacy = context.legacyValues.get(FunctionReference2.class);
+				var legacyReference = ((LegacyReference) legacy[2]).reference();
+				assertNotNull(legacyReference);
+				assertTrue(legacyReference == legacy[5] || legacyReference == legacy[6]);
+			}
+		}
+	}
+
+	@Test
+	public void testFunctionReference2() {
+		var original = new FunctionReference2();
+		original.typeA = new ItemType("Shield");
+		original.typeB = new ItemType("Sword");
+
+		var bitser = new Bitser(false);
+		var simpleA = bitser.stupidDeepCopy(original, new WithParameter("a", null));
+		assertEquals("Shield", simpleA.typeA.name);
+		assertEquals("Sword", simpleA.typeB.name);
+		assertSame(simpleA.typeA, simpleA.reference);
+
+		var simpleB = bitser.stupidDeepCopy(original);
+		assertEquals("Shield", simpleB.typeA.name);
+		assertEquals("Sword", simpleB.typeB.name);
+		assertSame(simpleB.typeB, simpleB.reference);
+
+		var backwardA = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE, new WithParameter("a", null));
+		assertEquals("Shield", backwardA.typeA.name);
+		assertEquals("Sword", backwardA.typeB.name);
+		assertSame(backwardA.typeA, backwardA.reference);
+
+		var backwardB = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals("Shield", backwardB.typeA.name);
+		assertEquals("Sword", backwardB.typeB.name);
+		assertSame(backwardB.typeB, backwardB.reference);
 	}
 }

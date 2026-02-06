@@ -16,12 +16,12 @@ class LegacyClass implements BitPostInit {
 	@BitField
 	final ArrayList<LegacyField> functions = new ArrayList<>();
 
-	private int largestFieldId = -1, largestFunctionId = -1;
+	private int largestFieldOrFunctionId = -1;
 
 	@Override
 	public void postInit(BitPostInit.Context context) {
-		for (LegacyField field : fields) largestFieldId = max(largestFieldId, field.id);
-		for (LegacyField function : functions) largestFunctionId = max(largestFunctionId, function.id);
+		for (LegacyField field : fields) largestFieldOrFunctionId = max(largestFieldOrFunctionId, field.id);
+		for (LegacyField function : functions) largestFieldOrFunctionId = max(largestFieldOrFunctionId, function.id);
 	}
 
 	@Override
@@ -30,6 +30,6 @@ class LegacyClass implements BitPostInit {
 	}
 
 	LegacyClassValues constructEmptyInstance() {
-		return new LegacyClassValues(largestFieldId, largestFunctionId);
+		return new LegacyClassValues(largestFieldOrFunctionId);
 	}
 }

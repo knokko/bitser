@@ -602,7 +602,7 @@ public class TestCollectionBackwardCompatibility {
 				() -> bitser.fromBytes(ReferenceList.class, structBytes, Bitser.BACKWARD_COMPATIBLE)
 		).getMessage();
 		assertContains(errorMessage, "ReferenceList -> theList");
-		assertContains(errorMessage, "from legacy BackStructInstance to reference");
+		assertContains(errorMessage, "from legacy LegacyStructInstance to reference");
 	}
 
 	@Test
@@ -619,6 +619,6 @@ public class TestCollectionBackwardCompatibility {
 				() -> bitser.fromBytes(StructList.class, referenceBytes, Bitser.BACKWARD_COMPATIBLE)
 		).getMessage();
 		assertContains(errorMessage, "StructList -> theList");
-		assertContains(errorMessage, "from legacy reference to BackStructInstance");
+		assertContains(errorMessage, "from legacy reference to LegacyStructInstance");
 	}
 }

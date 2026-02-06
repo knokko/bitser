@@ -28,6 +28,11 @@ class SingleClassWrapper {
 		public boolean optional() {
 			return false;
 		}
+
+		@Override
+		public boolean readsMethodResult() {
+			return false;
+		}
 	};
 
 	final Class<?> myClass;
@@ -44,73 +49,15 @@ class SingleClassWrapper {
 				StableReferenceFieldId.class, StringField.class
 		};
 
-		Set<Integer> IDs = new HashSet<>();
-		for (Field classField : myClass.getDeclaredFields()) {
-			if (Modifier.isStatic(classField.getModifiers())) continue;
-			BitField bitField = classField.getAnnotation(BitField.class);
-			if (bitField == null) {
-				for (Class<?> otherField : otherFields) {
-					//noinspection unchecked
-					if (classField.isAnnotationPresent((Class<? extends Annotation>) otherField)) {
-						bitField = DEFAULT_BIT_FIELD;
-						break;
-					}
-				}
-				if (classField.getType() == SimpleLazyBits.class) bitField = DEFAULT_BIT_FIELD;
-			}
-
-			if (bitField != null) {
-				if (bitField.id() < 0 && backwardCompatible) {
-					throw new InvalidBitFieldException("BitField IDs must be non-negative when backward compatible: " + classField);
-				}
-				if (bitField.id() >= 0) {
-					if (IDs.contains(bitField.id())) {
-						throw new InvalidBitFieldException(myClass + " has multiple @BitField's with id " + bitField.id());
-					}
-					IDs.add(bitField.id());
-				}
-				if (Modifier.isFinal(classField.getModifiers()) || !Modifier.isPublic(classField.getModifiers()) ||
-						!Modifier.isPublic(classField.getDeclaringClass().getModifiers())) {
-					classField.setAccessible(true);
-				}
-				VirtualField field = new VirtualField(
-						classField.toString(),
-						classField.getType(),
-						bitField.optional(),
-						new VirtualField.FieldAnnotations(classField),
-						target -> {
-							try {
-								return classField.get(target);
-							} catch (IllegalAccessException e) {
-								throw new UnexpectedBitserException("Failed to access " + classField);
-							}
-						},
-						(target, newValue) -> {
-							try {
-								classField.set(target, newValue);
-							} catch (IllegalAccessException e) {
-								throw new UnexpectedBitserException("Failed to access " + classField);
-							}
-						}
-				);
-
-				BitFieldWrapper bitFieldWrapper = createComplexWrapper(
-						myClass, field.annotations, field, classField.getGenericType(), "", false
-				);
-				fields.add(new FieldWrapper(bitField.id(), classField, bitFieldWrapper));
-			}
-		}
-
-		fields.sort(Comparator.comparing(a -> a.classField.getName()));
-		this.fieldsSortedById = new ArrayList<>(fields);
-		fieldsSortedById.sort(Comparator.comparingInt(a -> a.id));
-
-		IDs.clear();
+		Map<Integer, FunctionWrapper> functionMapping = new HashMap<>();
 		for (Method classMethod : myClass.getDeclaredMethods()) {
 			BitField bitField = classMethod.getAnnotation(BitField.class);
 			if (bitField == null) continue;
 			if (Modifier.isStatic(classMethod.getModifiers())) {
 				throw new InvalidBitFieldException("BitField methods must not be static: " + classMethod);
+			}
+			if (bitField.readsMethodResult()) {
+				throw new InvalidBitFieldException("BitField methods cannot have readsMethodResult = true: " + classMethod);
 			}
 			Parameter[] parameters = classMethod.getParameters();
 			if (parameters.length > 1) {
@@ -122,10 +69,9 @@ class SingleClassWrapper {
 			if (bitField.id() < 0) {
 				throw new InvalidBitFieldException("BitField method IDs must be non-negative: " + classMethod);
 			}
-			if (IDs.contains(bitField.id())) {
+			if (functionMapping.containsKey(bitField.id())) {
 				throw new InvalidBitFieldException(myClass + " has multiple @BitField methods with id " + bitField.id());
 			}
-			IDs.add(bitField.id());
 			if (!Modifier.isPublic(classMethod.getModifiers())) classMethod.setAccessible(true);
 			VirtualField field = new VirtualField(
 					classMethod.toString(),
@@ -138,10 +84,97 @@ class SingleClassWrapper {
 			BitFieldWrapper bitFieldWrapper = createComplexWrapper(
 					myClass, field.annotations, field, classMethod.getGenericReturnType(), "", false
 			);
-			functions.add(new FunctionWrapper(bitField.id(), classMethod, bitFieldWrapper));
+			var wrapper = new FunctionWrapper(bitField.id(), classMethod, bitFieldWrapper);
+			functions.add(wrapper);
+			functionMapping.put(bitField.id(), wrapper);
 		}
 
 		functions.sort(Comparator.comparingInt(a -> a.id));
+
+		Set<Integer> fieldIDs = new HashSet<>();
+		for (Field classField : myClass.getDeclaredFields()) {
+			if (Modifier.isStatic(classField.getModifiers())) continue;
+			BitField bitField = classField.getAnnotation(BitField.class);
+			if (bitField == null) {
+				for (Class<?> otherField : otherFields) {
+					//noinspection unchecked
+					if (classField.isAnnotationPresent((Class<? extends Annotation>) otherField)) {
+						bitField = DEFAULT_BIT_FIELD;
+						break;
+					}
+				}
+				if (classField.getType() == SimpleLazyBits.class) bitField = DEFAULT_BIT_FIELD;
+				if (bitField == null) continue;
+			}
+
+			if (bitField.id() < 0 && backwardCompatible) {
+				throw new InvalidBitFieldException("BitField IDs must be non-negative when backward compatible: " + classField);
+			}
+			if (bitField.id() >= 0) {
+				if (fieldIDs.contains(bitField.id())) {
+					throw new InvalidBitFieldException(myClass + " has multiple @BitField's with id " + bitField.id());
+				}
+				fieldIDs.add(bitField.id());
+			}
+
+			if (Modifier.isFinal(classField.getModifiers()) || !Modifier.isPublic(classField.getModifiers()) ||
+					!Modifier.isPublic(classField.getDeclaringClass().getModifiers())) {
+				classField.setAccessible(true);
+			}
+
+			if (bitField.readsMethodResult()) {
+				if (bitField.id() < 0) throw new InvalidBitFieldException(
+						"BitField's with readsMethodResult = true must have a non-negative ID: " + classField
+				);
+				var linkedFunction = functionMapping.get(bitField.id());
+				if (linkedFunction == null) throw new InvalidBitFieldException(
+						"Field " + classField + " needs a method annotated with @BitField(id = " + bitField.id() + ")"
+				);
+				if (classField.getType() != linkedFunction.classMethod.getReturnType()) {
+					throw new InvalidBitFieldException(
+							"Type of " + classField + " does not match the return type of " +
+									linkedFunction.classMethod
+					);
+				}
+				fields.add(new FieldWrapper(bitField.id(), classField, linkedFunction.bitField, true));
+				continue;
+			}
+
+			var conflictingFunction = functionMapping.get(bitField.id());
+			if (conflictingFunction != null) throw new InvalidBitFieldException(
+					"BitField id conflict between " + classField + " and " + conflictingFunction.classMethod
+			);
+
+			VirtualField field = new VirtualField(
+					classField.toString(),
+					classField.getType(),
+					bitField.optional(),
+					new VirtualField.FieldAnnotations(classField),
+					target -> {
+						try {
+							return classField.get(target);
+						} catch (IllegalAccessException e) {
+							throw new UnexpectedBitserException("Failed to access " + classField);
+						}
+					},
+					(target, newValue) -> {
+						try {
+							classField.set(target, newValue);
+						} catch (IllegalAccessException e) {
+							throw new UnexpectedBitserException("Failed to access " + classField);
+						}
+					}
+			);
+
+			BitFieldWrapper bitFieldWrapper = createComplexWrapper(
+					myClass, field.annotations, field, classField.getGenericType(), "", false
+			);
+			fields.add(new FieldWrapper(bitField.id(), classField, bitFieldWrapper, bitField.readsMethodResult()));
+		}
+
+		fields.sort(Comparator.comparing(a -> a.classField.getName()));
+		this.fieldsSortedById = new ArrayList<>(fields);
+		fieldsSortedById.sort(Comparator.comparingInt(a -> a.id));
 	}
 
 	List<FieldWrapper> getFields(boolean backwardCompatible) {
@@ -177,38 +210,17 @@ class SingleClassWrapper {
 		return code;
 	}
 
-	static class FieldWrapper {
+	record FieldWrapper(int id, Field classField, BitFieldWrapper bitField, boolean readsMethodResult) {}
 
-		final int id;
-		final Field classField;
-		final BitFieldWrapper bitField;
-
-		FieldWrapper(int id, Field classField, BitFieldWrapper bitField) {
-			this.id = id;
-			this.classField = classField;
-			this.bitField = bitField;
-		}
-	}
-
-	static class FunctionWrapper {
-
-		final int id;
-		final Method classMethod;
-		final BitFieldWrapper bitField;
-
-		FunctionWrapper(int id, Method classMethod, BitFieldWrapper bitField) {
-			this.id = id;
-			this.classMethod = classMethod;
-			this.bitField = bitField;
-		}
+	record FunctionWrapper(int id, Method classMethod, BitFieldWrapper bitField) {
 
 		Object computeValue(Object object, FunctionContext context) throws Throwable {
-			try {
-				if (classMethod.getParameterCount() == 0) return classMethod.invoke(object);
-				else return classMethod.invoke(object, context);
-			} catch (InvocationTargetException e) {
-				throw e.getCause();
+				try {
+					if (classMethod.getParameterCount() == 0) return classMethod.invoke(object);
+					else return classMethod.invoke(object, context);
+				} catch (InvocationTargetException e) {
+					throw e.getCause();
+				}
 			}
 		}
-	}
 }

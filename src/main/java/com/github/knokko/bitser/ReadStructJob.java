@@ -13,52 +13,75 @@ record ReadStructJob(Object structObject, BitStructWrapper<?> structInfo, Recurs
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
 			Object[] functionValues;
 			if (structClass.functions.isEmpty()) functionValues = new Object[0];
-			else functionValues = new Object[structClass.functions.get(structClass.functions.size() - 1).id + 1];
+			else functionValues = new Object[structClass.functions.get(structClass.functions.size() - 1).id() + 1];
+			var wereReferenceFunctions = new boolean[functionValues.length];
 
-			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(false)) {
+			for (var field : structClass.getFields(false)) {
+				String fieldName = field.classField().getName();
 				try {
-					String fieldName = field.classField.getName();
-					if (ReadHelper.readOptional(deserializer.input, field.bitField.field.optional)) continue;
-					if (field.bitField instanceof ReferenceFieldWrapper) {
+					if (field.readsMethodResult()) continue;
+					if (ReadHelper.readOptional(deserializer.input, field.bitField().field.optional)) continue;
+					if (field.bitField() instanceof ReferenceFieldWrapper) {
 						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
-								structObject, field.classField, (ReferenceFieldWrapper) field.bitField,
+								structObject, field.classField(), (ReferenceFieldWrapper) field.bitField(),
 								new RecursionNode(node, fieldName))
 						);
 					} else {
 						deserializer.input.pushContext(node, fieldName);
-						Object value = field.bitField.read(deserializer, node, fieldName);
+						Object value = field.bitField().read(deserializer, node, fieldName);
 						deserializer.input.popContext(node, fieldName);
 
-						field.classField.set(structObject, value);
-						if (field.bitField.field.referenceTargetLabel != null) {
-							deserializer.references.registerTarget(field.bitField.field.referenceTargetLabel, value);
+						field.classField().set(structObject, value);
+						if (field.bitField().field.referenceTargetLabel != null) {
+							deserializer.references.registerTarget(field.bitField().field.referenceTargetLabel, value);
 						}
 					}
 				} catch (Throwable failed) {
-					throw new RecursionException(node.generateTrace(field.classField.getName()), failed);
+					throw new RecursionException(node.generateTrace(fieldName), failed);
 				}
 			}
 
-			for (SingleClassWrapper.FunctionWrapper function : structClass.functions) {
+			for (var function : structClass.functions) {
+				String methodName = function.classMethod().getName();
 				try {
-					if (ReadHelper.readOptional(deserializer.input, function.bitField.field.optional)) continue;
-					if (function.bitField instanceof ReferenceFieldWrapper) {
-						throw new InvalidBitFieldException("Bit functions returning references are not supported");
+					if (ReadHelper.readOptional(deserializer.input, function.bitField().field.optional)) continue;
+					if (function.bitField() instanceof ReferenceFieldWrapper) {
+						wereReferenceFunctions[function.id()] = true;
+						deserializer.structMethodReferenceJobs.add(new ReadStructMethodReferenceJob(
+								functionValues, function.id(),
+								(ReferenceFieldWrapper) function.bitField(),
+								new RecursionNode(node, methodName))
+						);
 					} else {
-						String methodName = function.classMethod.getName();
 						deserializer.input.pushContext(node, methodName);
-						functionValues[function.id] = function.bitField.read(deserializer, node, methodName);
+						Object result = function.bitField().read(deserializer, node, methodName);
+						functionValues[function.id()] = result;
 						deserializer.input.popContext(node, methodName);
 
-
-						if (function.bitField.field.referenceTargetLabel != null) {
-							throw new InvalidBitFieldException(
-									"Bit functions returning reference targets are not supported"
-							);
+						if (function.bitField().field.referenceTargetLabel != null) {
+							deserializer.references.registerTarget(function.bitField().field.referenceTargetLabel, result);
 						}
 					}
 				} catch (Throwable failed) {
-					throw new RecursionException(node.generateTrace(function.classMethod.getName()), failed);
+					throw new RecursionException(node.generateTrace(methodName), failed);
+				}
+			}
+
+			for (var field : structClass.getFields(false)) {
+				String fieldName = field.classField().getName();
+				try {
+					if (!field.readsMethodResult()) continue;
+					if (wereReferenceFunctions[field.id()]) {
+						deserializer.methodReferenceToFieldJobs.add(new ReadStructMethodReferenceToFieldJob(
+								functionValues, field.id(),
+								structObject, field.classField(),
+								new RecursionNode(node, fieldName)
+						));
+					} else {
+						field.classField().set(structObject, functionValues[field.id()]);
+					}
+				} catch (Throwable failed) {
+					throw new RecursionException(node.generateTrace(fieldName), failed);
 				}
 			}
 
@@ -70,7 +93,7 @@ record ReadStructJob(Object structObject, BitStructWrapper<?> structInfo, Recurs
 		if (structObject instanceof BitPostInit) {
 			BitPostInit.Context context = new BitPostInit.Context(
 					deserializer.bitser, false, serializedFunctionValues,
-					null, null, deserializer.withParameters
+					null, deserializer.withParameters
 			);
 			deserializer.postInitJobs.add(new PostInitJob((BitPostInit) structObject, context, node));
 		}

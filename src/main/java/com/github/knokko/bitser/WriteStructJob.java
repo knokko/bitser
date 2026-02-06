@@ -36,19 +36,20 @@ record WriteStructJob(Object structObject, BitStructWrapper<?> structInfo, Recur
 		for (SingleClassWrapper structClass : structInfo.classHierarchy) {
 			for (SingleClassWrapper.FieldWrapper field : structClass.getFields(serializer.backwardCompatible)) {
 				try {
-					Object value = field.classField.get(structObject);
-					writeField(serializer, field.bitField, value, field.classField.getName());
+					if (field.readsMethodResult()) continue;
+					Object value = field.classField().get(structObject);
+					writeField(serializer, field.bitField(), value, field.classField().getName());
 				} catch (Throwable failed) {
-					throw new RecursionException(node.generateTrace(field.classField.getName()), failed);
+					throw new RecursionException(node.generateTrace(field.classField().getName()), failed);
 				}
 			}
 
 			for (SingleClassWrapper.FunctionWrapper function : structClass.functions) {
 				try {
 					Object value = function.computeValue(structObject, functionContext);
-					writeField(serializer, function.bitField, value, function.classMethod.getName());
+					writeField(serializer, function.bitField(), value, function.classMethod().getName());
 				} catch (Throwable failed) {
-					throw new RecursionException(node.generateTrace(function.classMethod.getName()), failed);
+					throw new RecursionException(node.generateTrace(function.classMethod().getName()), failed);
 				}
 			}
 		}

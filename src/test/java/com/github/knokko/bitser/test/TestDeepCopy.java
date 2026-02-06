@@ -92,7 +92,7 @@ public class TestDeepCopy {
 
 		@Override
 		public void postInit(Context context) {
-			this.sum = (Integer) context.functionValues.get(NeedsPostInit.class)[4] +
+			this.sum = (Integer) context.values.get(NeedsPostInit.class)[4] +
 					(Integer) context.withParameters.get("right");
 		}
 	}

@@ -4,10 +4,7 @@ import com.github.knokko.bitser.exceptions.ReferenceBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 class ReferenceTracker extends AbstractReferenceTracker {
 
@@ -40,9 +37,8 @@ class ReferenceTracker extends AbstractReferenceTracker {
 
 	void refreshStableIDs() {
 		for (LabelTargets targets : labels.values()) {
-			ArrayList<Object> stableTargets = new ArrayList<>(targets.stable.values());
-			targets.stable.clear();
-			for (Object target : stableTargets) targets.registerStable(target);
+			for (IdentityWrapper identity : targets.potentialStableSet) targets.registerStable(identity.target);
+			targets.potentialStableSet.clear();
 		}
 	}
 
@@ -68,6 +64,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 
 		final HashMap<IdentityWrapper, Integer> unstableToIDs = new HashMap<>();
 		final ArrayList<Object> idsToUnstable = new ArrayList<>();
+		final HashSet<IdentityWrapper> potentialStableSet = new HashSet<>();
 		final HashMap<UUID, Object> stable = new HashMap<>();
 
 		final String myLabel;
@@ -86,24 +83,23 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		private void registerStable(Object target) {
-			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
-			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
-				UUID id = maybeWrapper.getStableId(target);
-				Object withSameID = stable.put(id, target);
-				if (withSameID != null) {
-					if (withSameID == target) {
-						throw new ReferenceBitserException("Multiple stable targets have identity " + target);
-					} else {
-						throw new ReferenceBitserException(
-								"Multiple stable targets have ID " + id + ": " + target + " and " + withSameID
-						);
-					}
-				}
+			BitStructWrapper<?> maybeWrapper = Objects.requireNonNull(cache.getWrapperOrNull(target.getClass()));
+			UUID id = maybeWrapper.getStableId(target);
+			Object withSameID = stable.put(id, target);
+			if (withSameID != null) {
+				throw new ReferenceBitserException(
+						"Multiple stable targets have ID " + id + ": " + target + " and " + withSameID
+				);
 			}
 		}
 
 		void register(Object target) {
-			registerStable(target);
+			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
+			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
+				if (!potentialStableSet.add(new IdentityWrapper(target))) {
+					throw new ReferenceBitserException("Multiple stable targets have identity " + target);
+				}
+			}
 			registerUnstable(target);
 		}
 

@@ -527,4 +527,53 @@ public class TestStableReferences {
 		assertSame(backward.target, backward.reference);
 		assertEquals(original.target.id, backward.target.id);
 	}
+
+	@BitStruct(backwardCompatible = true)
+	static class DummyWorldMap {
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "world map nodes")
+		final DummyNode[] nodes;
+
+		DummyWorldMap(DummyNode[] nodes) {
+			this.nodes = nodes;
+		}
+
+		@SuppressWarnings("unused")
+		DummyWorldMap() {
+			this(new DummyNode[0]);
+		}
+	}
+
+	@BitStruct(backwardCompatible = true)
+	static class DummyNode {
+
+		@BitField(id = 0)
+		@StableReferenceFieldId
+		final UUID id;
+
+		DummyNode(UUID id) {
+			this.id = id;
+		}
+
+		@SuppressWarnings("unused")
+		DummyNode() {
+			this(new UUID(0, 0));
+		}
+	}
+
+	@Test
+	public void duplicateZeroRegressionTest() {
+		var bitser = new Bitser(false);
+		var original = new DummyWorldMap(new DummyNode[] {
+				new DummyNode(new UUID(1, 2)),
+				new DummyNode(new UUID(3, 4)),
+		});
+		var simple = bitser.stupidDeepCopy(original);
+		assertEquals(new UUID(1, 2), simple.nodes[0].id);
+		assertEquals(new UUID(3, 4), simple.nodes[1].id);
+		var backward = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals(new UUID(1, 2), backward.nodes[0].id);
+		assertEquals(new UUID(3, 4), backward.nodes[1].id);
+	}
 }

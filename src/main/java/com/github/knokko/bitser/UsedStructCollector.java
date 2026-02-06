@@ -41,14 +41,14 @@ class UsedStructCollector {
 
 				for (int index = 0; index < currentClass.fieldsSortedById.size(); index++) {
 					SingleClassWrapper.FieldWrapper field = currentClass.fieldsSortedById.get(index);
-					newClass.fields.add(new LegacyField(field.id, field.bitField));
-					field.bitField.registerLegacyClasses(this);
+					newClass.fields.add(new LegacyField(field.id(), field.bitField(), field.readsMethodResult()));
+					field.bitField().registerLegacyClasses(this);
 				}
 
 				for (int index = 0; index < currentClass.functions.size(); index++) {
 					SingleClassWrapper.FunctionWrapper function = currentClass.functions.get(index);
-					newClass.functions.add(new LegacyField(function.id, function.bitField));
-					function.bitField.registerLegacyClasses(this);
+					newClass.functions.add(new LegacyField(function.id(), function.bitField(), false));
+					function.bitField().registerLegacyClasses(this);
 				}
 			}
 		}

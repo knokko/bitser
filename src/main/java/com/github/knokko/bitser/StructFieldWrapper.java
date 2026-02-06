@@ -10,17 +10,17 @@ import com.github.knokko.bitser.field.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.security.interfaces.RSAKey;
 import java.util.Arrays;
 
 import static com.github.knokko.bitser.IntegerBitser.decodeUniformInteger;
 import static com.github.knokko.bitser.IntegerBitser.encodeUniformInteger;
 
 @BitStruct(backwardCompatible = false)
-class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
+class StructFieldWrapper extends BitFieldWrapper {
 
 	private final Class<?>[] allowed;
 
+	@BitField(id = 0, readsMethodResult = true)
 	private LegacyStruct[] legacyStructs;
 
 	@SuppressWarnings("unused")
@@ -57,11 +57,6 @@ class StructFieldWrapper extends BitFieldWrapper implements BitPostInit {
 	private StructFieldWrapper() {
 		super();
 		this.allowed = new Class[]{};
-	}
-
-	@Override
-	public void postInit(BitPostInit.Context context) {
-		this.legacyStructs = (LegacyStruct[]) context.functionValues.get(StructFieldWrapper.class)[0];
 	}
 
 	@Override

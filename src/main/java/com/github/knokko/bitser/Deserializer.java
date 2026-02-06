@@ -19,7 +19,9 @@ class Deserializer {
 	final ArrayList<ReadStructJob> structJobs = new ArrayList<>();
 	final ArrayList<ReadArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<ReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
+	final ArrayList<ReadStructMethodReferenceJob> structMethodReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
+	final ArrayList<ReadStructMethodReferenceToFieldJob> methodReferenceToFieldJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 
 	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
@@ -65,21 +67,32 @@ class Deserializer {
 			}
 		}
 
-		references.refreshStableIDs();
 		references.handleWithJobs();
+		references.refreshStableIDs();
 
-		for (ReadStructReferenceJob referenceJob : structReferenceJobs) {
+		for (var referenceJob : structReferenceJobs) {
 			try {
 				input.pushContext(referenceJob.node(), "(struct-reference-job)");
 				referenceJob.resolve(this);
 				input.popContext(referenceJob.node(), "(struct-reference-job)");
 			} catch (Throwable failed) {
-				throw new RecursionException(referenceJob.node().generateTrace(referenceJob.classField().getName()), failed);
+				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
 			}
 		}
 		structReferenceJobs.clear();
 
-		for (ReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
+		for (var referenceJob : structMethodReferenceJobs) {
+			try {
+				input.pushContext(referenceJob.node(), "(struct-method-reference-job)");
+				referenceJob.resolve(this);
+				input.popContext(referenceJob.node(), "(struct-method-reference-job)");
+			} catch (Throwable failed) {
+				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
+			}
+		}
+		structMethodReferenceJobs.clear();
+
+		for (var referenceJob : arrayReferenceJobs) {
 			try {
 				input.pushContext(referenceJob.node(), "(array-reference-job)");
 				referenceJob.resolve(this);
@@ -89,6 +102,17 @@ class Deserializer {
 			}
 		}
 		arrayReferenceJobs.clear();
+
+		for (var referenceJob : methodReferenceToFieldJobs) {
+			try {
+				input.pushContext(referenceJob.node(), "(method-reference-to-field-job)");
+				referenceJob.resolve();
+				input.popContext(referenceJob.node(), "(method-reference-to-field-job)");
+			} catch (Throwable failed) {
+				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
+			}
+		}
+		methodReferenceToFieldJobs.clear();
 
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}

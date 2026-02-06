@@ -100,7 +100,7 @@ public class TestBitPostInit {
 		@Override
 		public void postInit(Context context) {
 			assertEquals("world", hello);
-			long percentage = ((LegacyIntValue) context.legacyFieldValues.get(LegacyConversionAfter.class)[4]).value();
+			long percentage = ((LegacyIntValue) context.legacyValues.get(LegacyConversionAfter.class)[4]).value();
 			this.fraction = percentage * 0.01;
 		}
 	}
@@ -114,7 +114,7 @@ public class TestBitPostInit {
 		@Override
 		public void postInit(Context context) {
 			super.postInit(context);
-			this.owners = new String[] {((LegacyStringValue) context.legacyFieldValues.get(AfterParent.class)[4]).value()};
+			this.owners = new String[] {((LegacyStringValue) context.legacyValues.get(AfterParent.class)[4]).value()};
 		}
 	}
 
@@ -202,7 +202,7 @@ public class TestBitPostInit {
 		int x;
 
 		@SuppressWarnings("unused")
-		@BitField(id = 1)
+		@BitField(id = 2)
 		private String className() {
 			return wrapped.getName();
 		}
@@ -211,7 +211,7 @@ public class TestBitPostInit {
 		public void postInit(Context context) {
 			assertEquals(1234, x);
 			try {
-				this.wrapped = Class.forName((String) context.functionValues.get(SaveClassName.class)[1]);
+				this.wrapped = Class.forName((String) context.values.get(SaveClassName.class)[2]);
 			} catch (ClassNotFoundException e) {
 				throw new RuntimeException(e);
 			}
@@ -239,7 +239,7 @@ public class TestBitPostInit {
 		int x;
 
 		@SuppressWarnings("unused")
-		@BitField(id = 2)
+		@BitField(id = 3)
 		private ArrayList<String> classNames() {
 			ArrayList<String> names = new ArrayList<>();
 			for (Class<?> wrapped : classes) names.add(wrapped.getName());
@@ -251,20 +251,18 @@ public class TestBitPostInit {
 		public void postInit(Context context) {
 			List<String> names;
 			assertEquals(-12, x);
-			if (context.legacyFunctionValues == null) {
-				names = (List<String>) context.functionValues.get(MultipleClassNames.class)[2];
+			if (context.legacyValues == null) {
+				names = (List<String>) context.values.get(MultipleClassNames.class)[3];
 			} else {
-				Object[] values = context.legacyFunctionValues.get(MultipleClassNames.class);
-				Object[] currentValues = context.functionValues.get(MultipleClassNames.class);
-				assertEquals(-12L, ((LegacyIntValue) context.legacyFieldValues.get(MultipleClassNames.class)[1]).value());
-				if (values[1] != null) {
+				Object[] legacyValues = context.legacyValues.get(MultipleClassNames.class);
+				Object[] currentValues = context.values.get(MultipleClassNames.class);
+				assertEquals(-12L, ((LegacyIntValue) context.legacyValues.get(MultipleClassNames.class)[1]).value());
+				if (legacyValues[2] instanceof LegacyStringValue) {
 					names = new ArrayList<>(1);
-					names.add(((LegacyStringValue) values[1]).value());
-					assertArrayEquals(new Object[] {
-							null, new LegacyStringValue("java.io.IOException"), null
-					}, currentValues);
+					names.add(((LegacyStringValue) legacyValues[2]).value());
+					assertArrayEquals(new Object[] {null, -12, null}, currentValues);
 				} else {
-					LegacyArrayValue legacyNames = (LegacyArrayValue) values[2];
+					LegacyArrayValue legacyNames = (LegacyArrayValue) legacyValues[3];
 					Object[] rawNames = (Object[]) legacyNames.array();
 					names = new ArrayList<>(rawNames.length);
 					for (Object rawName : rawNames) names.add(((LegacyStringValue) rawName).value());
@@ -272,7 +270,7 @@ public class TestBitPostInit {
 					List<String> expectedListAtIndex2 = new ArrayList<>(2);
 					expectedListAtIndex2.add("java.io.File");
 					expectedListAtIndex2.add("java.nio.file.Path");
-					assertArrayEquals(new Object[] { null, null, expectedListAtIndex2}, currentValues);
+					assertArrayEquals(new Object[] { null, -12, null, expectedListAtIndex2}, currentValues);
 				}
 			}
 
@@ -339,7 +337,7 @@ public class TestBitPostInit {
 		private final Set<Class<?>> classes = new HashSet<>();
 
 		@SuppressWarnings("unused")
-		@BitField(id = 2)
+		@BitField(id = 3)
 		private HashSet<String> classNames() {
 			HashSet<String> names = new HashSet<>();
 			for (Class<?> wrapped : classes) names.add(wrapped.getName());
@@ -349,14 +347,14 @@ public class TestBitPostInit {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void postInit(BitPostInit.Context context) {
-			Object[] legacyValues = context.legacyFunctionValues.get(ClassSet.class);
-			Object[] currentValues = context.functionValues.get(ClassSet.class);
+			Object[] legacyValues = context.legacyValues.get(ClassSet.class);
+			Object[] currentValues = context.values.get(ClassSet.class);
 
-			Set<String> names = (Set<String>) currentValues[2];
-			assertArrayEquals(new Object[] { null, null, names }, currentValues);
+			Set<String> names = (Set<String>) currentValues[3];
+			assertArrayEquals(new Object[] { null, null, null, names }, currentValues);
 
-			LegacyArrayValue legacyNamesInstance = (LegacyArrayValue) legacyValues[2];
-			assertArrayEquals(new Object[] { null, null, legacyNamesInstance }, legacyValues);
+			LegacyArrayValue legacyNamesInstance = (LegacyArrayValue) legacyValues[3];
+			assertArrayEquals(new Object[] { null, new LegacyIntValue(0), null, legacyNamesInstance }, legacyValues);
 			for (String name : names) {
 				try {
 					classes.add(Class.forName(name));
@@ -397,7 +395,7 @@ public class TestBitPostInit {
 
 		@Override
 		public void postInit(Context context) {
-			this.c = ((DerivedSum) context.functionValues.get(UsesFunctionContext.class)[2]).c;
+			this.c = ((DerivedSum) context.values.get(UsesFunctionContext.class)[2]).c;
 		}
 	}
 

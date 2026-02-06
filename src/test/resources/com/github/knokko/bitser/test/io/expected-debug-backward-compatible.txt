@@ -57,6 +57,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> lengthField
@@ -106,6 +109,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> floatField
@@ -173,6 +179,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 011010
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField
@@ -222,6 +231,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010100
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
@@ -319,6 +331,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 011000
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField
@@ -356,6 +371,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010110
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
@@ -425,6 +443,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010100
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField
@@ -462,6 +483,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 10
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
@@ -516,6 +540,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
@@ -790,6 +817,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> lengthField
@@ -839,6 +869,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> floatField
@@ -906,6 +939,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 011010
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField
@@ -955,6 +991,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010100
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
@@ -1052,6 +1091,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 011000
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField
@@ -1089,6 +1131,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010110
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> keysWrapper
@@ -1158,6 +1203,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 010100
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> intField
@@ -1195,6 +1243,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 10
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
@@ -1249,6 +1300,9 @@ end LegacyClasses -> classes -> elements -> fields -> elements -> bitField
 begin LegacyClasses -> classes -> elements -> fields -> elements -> id
 int-value: 00
 end LegacyClasses -> classes -> elements -> fields -> elements -> id
+begin LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
+boolean-value: 0
+end LegacyClasses -> classes -> elements -> fields -> elements -> readsMethodResult
 end LegacyClasses -> classes -> elements -> fields -> elements -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> (struct-job)
 begin LegacyClasses -> classes -> elements -> fields -> elements -> bitField -> valuesWrapper
