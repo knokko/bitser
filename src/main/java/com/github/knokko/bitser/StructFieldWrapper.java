@@ -171,12 +171,6 @@ class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	int hashCode(Object value, BitserCache cache) {
-		if (value == null) return 17;
-		return cache.getWrapper(value.getClass()).hashCode(value, cache);
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -192,5 +186,15 @@ class StructFieldWrapper extends BitFieldWrapper {
 	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
 		var wrapper = collector.bitser.cache.getWrapper(value.getClass());
 		collector.structJobs.add(new CollectFromStructJob(value, wrapper, new RecursionNode(parentNode, fieldName)));
+	}
+
+	@Override
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		if (value != null) {
+			computer.structJobs.add(new HashStructJob(
+					value, computer.bitser.cache.getWrapper(value.getClass()),
+					new RecursionNode(parentNode, fieldName)
+			));
+		} else computer.digest.update((byte) 77);
 	}
 }

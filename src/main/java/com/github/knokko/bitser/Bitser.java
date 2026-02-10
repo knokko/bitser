@@ -10,6 +10,7 @@ import com.github.knokko.bitser.distributions.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public class Bitser {
@@ -253,9 +254,11 @@ public class Bitser {
 	}
 
 	public int hashCode(Object value) {
-		// TODO Recursive -> iterative
 		if (value == null) return 0;
-		return cache.getWrapper(value.getClass()).hashCode(value, cache);
+		var computer = new HashComputer(value, this);
+		computer.feedHash();
+		byte[] byteHash = computer.digest.digest();
+		return ByteBuffer.wrap(byteHash).getInt(0);
 	}
 
 	/**

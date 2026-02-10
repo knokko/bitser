@@ -51,10 +51,6 @@ abstract class BitFieldWrapper {
 		return Objects.equals(a, b);
 	}
 
-	int hashCode(Object value, BitserCache cache) {
-		return Objects.hashCode(value);
-	}
-
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -63,4 +59,12 @@ abstract class BitFieldWrapper {
 	}
 
 	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {}
+
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		int hashCode = Objects.hashCode(value);
+		computer.digest.update((byte) hashCode);
+		computer.digest.update((byte) (hashCode >> 8));
+		computer.digest.update((byte) (hashCode >> 16));
+		computer.digest.update((byte) (hashCode >> 24));
+	}
 }

@@ -96,6 +96,7 @@ public class TestLazyFieldWrapper {
 		assertEquals(456, compatible.suffix);
 		assertEquals("simple", compatible.lazy.get().words.get(0));
 		assertEquals("test", compatible.lazy.get().words.get(1));
+		assertEquals(bitser.hashCode(input), bitser.hashCode(compatible));
 
 		DifferentOuterStruct different1 = bitser.fromBytes(
 				DifferentOuterStruct.class,
@@ -137,24 +138,28 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testOptional() {
+		var bitser = new Bitser(true);
 		OptionalOuterStruct outer = new OptionalOuterStruct();
 		outer.suffix = 12;
 
-		OptionalOuterStruct incompatible = new Bitser(true).stupidDeepCopy(outer);
+		OptionalOuterStruct incompatible = bitser.stupidDeepCopy(outer);
 		assertNull(incompatible.lazy);
 		assertEquals(12, incompatible.suffix);
 
-		OptionalOuterStruct compatible = new Bitser(true).stupidDeepCopy(outer, Bitser.BACKWARD_COMPATIBLE);
+		OptionalOuterStruct compatible = bitser.stupidDeepCopy(outer, Bitser.BACKWARD_COMPATIBLE);
 		assertNull(compatible.lazy);
 		assertEquals(12, compatible.suffix);
+		assertEquals(bitser.hashCode(outer), bitser.hashCode(compatible));
+		assertEquals(bitser.hashCode(outer), bitser.hashCode(incompatible));
 
 		outer.lazy = new SimpleLazyBits<>(new SimpleInnerStruct());
+		assertNotEquals(bitser.hashCode(outer), bitser.hashCode(compatible));
 
-		incompatible = new Bitser(true).stupidDeepCopy(outer);
+		incompatible = bitser.stupidDeepCopy(outer);
 		assertNotNull(incompatible.lazy.get());
 		assertEquals(12, incompatible.suffix);
 
-		compatible = new Bitser(true).stupidDeepCopy(outer, Bitser.BACKWARD_COMPATIBLE);
+		compatible = bitser.stupidDeepCopy(outer, Bitser.BACKWARD_COMPATIBLE);
 		assertNotNull(compatible.lazy.get());
 		assertEquals(12, compatible.suffix);
 	}

@@ -31,12 +31,6 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	int hashCode(Object value, BitserCache cache) {
-		// I don't want the hash code to change when the referenced value changes
-		return 12345;
-	}
-
-	@Override
 	void write(
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
@@ -70,5 +64,10 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	@Override
 	void collectInstances(InstanceCollector collector, Object value, RecursionNode parentNode, String fieldName) {
 		throw new UnexpectedBitserException("Reference fields should be skipped");
+	}
+
+	@Override
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		computer.digest.update(stable ? (byte) 40 : (byte) 45);
 	}
 }

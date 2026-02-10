@@ -235,25 +235,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	int hashCode(Object value, BitserCache cache) {
-		if (value == null) return -10;
-
-		int code = 7;
-		if (field.type.isArray()) {
-			int length = Array.getLength(value);
-			for (int index = 0; index < length; index++) {
-				code = 29 * code + valuesWrapper.hashCode(Array.get(value, index), cache);
-			}
-		} else {
-			for (Object element : (Collection<?>) value) {
-				code = 23 * code + valuesWrapper.hashCode(element, cache);
-			}
-		}
-
-		return code;
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -301,5 +282,17 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		} else {
 			collector.arrayJobs.add(new CollectFromArrayJob(value, valuesWrapper, childNode, "elements"));
 		}
+	}
+
+	@Override
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		if (value != null) {
+			Object array;
+			if (value instanceof Collection<?>) array = ((Collection<?>) value).toArray();
+			else array = value;
+			computer.arrayJobs.add(new HashArrayJob(
+					array, valuesWrapper, new RecursionNode(parentNode, fieldName), "elements")
+			);
+		} else computer.digest.update((byte) -12);
 	}
 }

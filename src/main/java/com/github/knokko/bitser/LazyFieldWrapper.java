@@ -121,4 +121,16 @@ class LazyFieldWrapper extends BitFieldWrapper {
 				wrappedValue, wrapper, new RecursionNode(parentNode, fieldName))
 		);
 	}
+
+	@Override
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		if (value != null) {
+			var lazy = (SimpleLazyBits<?>) value;
+			var wrapped = lazy.get();
+			computer.structJobs.add(new HashStructJob(
+					wrapped, computer.bitser.cache.getWrapper(wrapped.getClass()),
+					new RecursionNode(parentNode, fieldName)
+			));
+		} else computer.digest.update((byte) 37);
+	}
 }

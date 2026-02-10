@@ -202,14 +202,6 @@ class SingleClassWrapper {
 		return true;
 	}
 
-	int hashCode(Object value, BitserCache cache) {
-		int code = 5;
-		for (FieldWrapper fieldWrapper : fields) {
-			code = 31 * code + fieldWrapper.bitField.hashCode(fieldWrapper.bitField.field.getValue.apply(value), cache);
-		}
-		return code;
-	}
-
 	record FieldWrapper(int id, Field classField, BitFieldWrapper bitField, boolean readsMethodResult) {}
 
 	record FunctionWrapper(int id, Method classMethod, BitFieldWrapper bitField) {

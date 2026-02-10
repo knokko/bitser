@@ -232,19 +232,6 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	int hashCode(Object value, BitserCache cache) {
-		if (value == null) return -12;
-
-		int code = 15;
-		for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
-			code = 3 * code + keysWrapper.hashCode(entry.getKey(), cache);
-			code = 5 * code + valuesWrapper.hashCode(entry.getValue(), cache);
-		}
-
-		return code;
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -295,5 +282,18 @@ class MapFieldWrapper extends BitFieldWrapper {
 		collector.arrayJobs.add(new CollectFromArrayJob(
 				map.values().toArray(), valuesWrapper, childNode, "values"
 		));
+	}
+
+	@Override
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		if (value != null) {
+			var map = (Map<?, ?>) value;
+			computer.arrayJobs.add(new HashArrayJob(
+					map.keySet().toArray(), keysWrapper, new RecursionNode(parentNode, fieldName), "keys")
+			);
+			computer.arrayJobs.add(new HashArrayJob(
+					map.values().toArray(), valuesWrapper, new RecursionNode(parentNode, fieldName), "values")
+			);
+		} else computer.digest.update((byte) -15);
 	}
 }

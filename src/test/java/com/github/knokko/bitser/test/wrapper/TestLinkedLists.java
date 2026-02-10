@@ -47,6 +47,7 @@ public class TestLinkedLists {
 		BitLinkedList recovered = bitser.stupidDeepCopy(root);
 		assertEquals("hello", recovered.value);
 		assertEquals("world", recovered.next.value);
+		assertEquals(bitser.hashCode(root), bitser.hashCode(recovered));
 		assertNull(recovered.next.next);
 	}
 
@@ -80,6 +81,7 @@ public class TestLinkedLists {
 		}
 
 		assertTrue(totalLength > 20_000);
+		assertEquals(bitser.hashCode(list), bitser.hashCode(recovered));
 	}
 
 	@Test
@@ -96,5 +98,6 @@ public class TestLinkedLists {
 			node = node.next;
 		}
 		assertTrue(totalLength > 20_000);
+		assertEquals(bitser.hashCode(list), bitser.hashCode(recovered));
 	}
 }

@@ -35,7 +35,12 @@ class DeepCopyMachine {
 				structJobs.remove(structJobs.size() - 1).copy(this);
 			}
 			if (!arrayJobs.isEmpty()) {
-				arrayJobs.remove(arrayJobs.size() - 1).copy(this);
+				var job = arrayJobs.remove(arrayJobs.size() - 1);
+				try {
+					job.copy(this);
+				} catch (Throwable failed) {
+					throw new RecursionException(job.node().generateTrace(job.description()), failed);
+				}
 			}
 		}
 

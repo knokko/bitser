@@ -9,7 +9,6 @@ import com.github.knokko.bitser.io.BitInputStream;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -137,6 +136,18 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		return bytes;
 	}
 
+	private byte[] getBytesToWrite(Object value) {
+		if (value instanceof boolean[]) return toByteArray((boolean[]) value);
+		else if (value instanceof byte[]) return (byte[]) value;
+		else if (value instanceof short[]) return toByteArray((short[]) value);
+		else if (value instanceof char[]) return toByteArray((char[]) value);
+		else if (value instanceof int[]) return toByteArray((int[]) value);
+		else if (value instanceof float[]) return toByteArray((float[]) value);
+		else if (value instanceof long[]) return toByteArray((long[]) value);
+		else if (value instanceof double[]) return toByteArray((double[]) value);
+		else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
+	}
+
 	@Override
 	public void write(
 			Serializer serializer, Object value,
@@ -153,15 +164,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 		serializer.output.finishProperty();
 
 		serializer.output.prepareProperty("byte-collection-bytes", -1);
-		if (value instanceof boolean[]) serializer.output.write(toByteArray((boolean[]) value));
-		else if (value instanceof byte[]) serializer.output.write((byte[]) value);
-		else if (value instanceof short[]) serializer.output.write(toByteArray((short[]) value));
-		else if (value instanceof char[]) serializer.output.write(toByteArray((char[]) value));
-		else if (value instanceof int[]) serializer.output.write(toByteArray((int[]) value));
-		else if (value instanceof float[]) serializer.output.write(toByteArray((float[]) value));
-		else if (value instanceof long[]) serializer.output.write(toByteArray((long[]) value));
-		else if (value instanceof double[]) serializer.output.write(toByteArray((double[]) value));
-		else throw new UnexpectedBitserException("Can't encode " + value.getClass() + " as bytes");
+		serializer.output.write(getBytesToWrite(value));
 		serializer.output.finishProperty();
 	}
 
@@ -356,18 +359,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	int hashCode(Object value, BitserCache cache) {
-		if (value == null) return -9;
-
-		int code = 9;
-		int length = Array.getLength(value);
-		for (int index = 0; index < length; index++) {
-			code = 37 * code + Array.get(value, index).hashCode();
-		}
-		return code;
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -401,5 +392,11 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				if (element != null) collector.register(element);
 			}
 		}
+	}
+
+	@Override
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		if (value == null) computer.digest.update((byte) 100);
+		else computer.digest.update(getBytesToWrite(value));
 	}
 }

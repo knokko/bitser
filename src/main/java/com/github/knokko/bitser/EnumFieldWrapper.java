@@ -10,6 +10,7 @@ import com.github.knokko.bitser.legacy.LegacyEnumOrdinal;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 
 import static com.github.knokko.bitser.IntegerBitser.*;
 import static java.lang.Math.max;
@@ -155,11 +156,11 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	int hashCode(Object value, BitserCache cache) {
-		Enum<?> enumValue = (Enum<?>) value;
-		if (enumValue == null) return -192347;
-		if (mode == BitEnum.Mode.Ordinal) return 191 * enumValue.ordinal();
-		if (mode == BitEnum.Mode.Name) return -13 * enumValue.name().hashCode();
-		throw new UnexpectedBitserException("Unknown Mode " + mode);
+	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
+		if (value != null) {
+			Enum<?> enumValue = (Enum<?>) value;
+			if (mode == BitEnum.Mode.Ordinal) computer.digest.update((byte) enumValue.ordinal());
+			if (mode == BitEnum.Mode.Name) computer.digest.update(enumValue.name().getBytes(StandardCharsets.UTF_8));
+		} else computer.digest.update((byte) 77);
 	}
 }

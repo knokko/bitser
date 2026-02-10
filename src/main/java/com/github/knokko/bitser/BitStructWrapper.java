@@ -120,13 +120,4 @@ class BitStructWrapper<T> {
 		}
 		return true;
 	}
-
-	int hashCode(Object value, BitserCache cache) {
-		if (value == null) return 1;
-		int code = 2;
-		for (SingleClassWrapper currentClass : classHierarchy) {
-			code = 13 * code + currentClass.hashCode(value, cache);
-		}
-		return code;
-	}
 }

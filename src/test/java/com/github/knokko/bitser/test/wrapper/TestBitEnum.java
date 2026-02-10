@@ -64,16 +64,20 @@ public class TestBitEnum {
 
 	@Test
 	public void test() {
+		var bitser = new Bitser(false);
 		this.seasons = Season.WINTER;
 		this.direction = Direction.UP;
 
-		TestBitEnum loaded = new Bitser(true).stupidDeepCopy(this);
+		TestBitEnum loaded = bitser.stupidDeepCopy(this);
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertNull(loaded.element);
+		assertEquals(bitser.hashCode(this), bitser.hashCode(loaded));
 
 		this.element = Element.WATER;
-		loaded = new Bitser(false).stupidDeepCopy(this);
+		assertNotEquals(bitser.hashCode(this), bitser.hashCode(loaded));
+		loaded = bitser.stupidDeepCopy(this);
+		assertEquals(bitser.hashCode(this), bitser.hashCode(loaded));
 		assertEquals(Season.WINTER, loaded.seasons);
 		assertEquals(Direction.UP, loaded.direction);
 		assertEquals(Element.WATER, loaded.element);
@@ -221,6 +225,7 @@ public class TestBitEnum {
 		MixedBoss mixed = bitser.fromBytes(MixedBoss.class, bitser.toBytes(original));
 		assertEquals(ReverseElement.AIR, mixed.weakAgainst);
 		assertEquals(ReverseElement.EARTH, mixed.strongAgainst);
+		assertEquals(bitser.hashCode(original), bitser.hashCode(mixed));
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -249,5 +254,6 @@ public class TestBitEnum {
 		ContainsEnumMap backward = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(original.nicerNames, backward.nicerNames);
 		assertEquals(12, backward.okay);
+		assertEquals(bitser.hashCode(original), bitser.hashCode(backward));
 	}
 }
