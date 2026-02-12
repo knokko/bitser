@@ -18,7 +18,7 @@ record DeepCompareStructsJob(
 					if (valueA == null || valueB == null) return true;
 					if (field.bitField().certainlyNotEqual(comparator, valueA, valueB, node, fieldName)) return true;
 					if (field.bitField().field.referenceTargetLabel != null) {
-						comparator.referenceTargetMapping.put(new ReferenceTracker.IdentityWrapper(valueA), valueB);
+						comparator.referenceTargetMapping.put(valueA, valueB);
 					}
 				} catch (Throwable failed) {
 					throw new RecursionException(node.generateTrace(fieldName), failed);

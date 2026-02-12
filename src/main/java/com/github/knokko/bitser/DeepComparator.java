@@ -4,6 +4,7 @@ import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 
 class DeepComparator {
 
@@ -11,7 +12,7 @@ class DeepComparator {
 
 	final ArrayList<DeepCompareStructsJob> structJobs = new ArrayList<>();
 	final ArrayList<DeepCompareArraysJob> arrayJobs = new ArrayList<>();
-	final HashMap<ReferenceTracker.IdentityWrapper, Object> referenceTargetMapping = new HashMap<>();
+	final IdentityHashMap<Object, Object> referenceTargetMapping = new IdentityHashMap<>();
 	final ArrayList<DeepCompareReferenceJob> referenceJobs = new ArrayList<>();
 
 	DeepComparator(Object rootA, Object rootB, BitStructWrapper<?> rootWrapper, Bitser bitser) {

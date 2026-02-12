@@ -20,7 +20,7 @@ record DeepCompareArraysJob(
 
 			if (elementsWrapper.certainlyNotEqual(comparator, elementA, elementB, node, description)) return true;
 			if (elementsWrapper.field.referenceTargetLabel != null) {
-				comparator.referenceTargetMapping.put(new ReferenceTracker.IdentityWrapper(elementA), elementB);
+				comparator.referenceTargetMapping.put(elementA, elementB);
 			}
 		}
 

@@ -7,15 +7,12 @@ import com.github.knokko.bitser.legacy.LegacyReference;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.legacy.WithReference;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 class BackReferenceTracker extends AbstractReferenceTracker {
 
 	private final HashMap<String, LabelTargets> labels = new HashMap<>();
-	private final HashMap<ReferenceTracker.IdentityWrapper, Object> legacyToModern = new HashMap<>();
+	private final IdentityHashMap<Object, Object> legacyToModern = new IdentityHashMap<>();
 
 	BackReferenceTracker(BitserCache cache) {
 		super(cache);
@@ -46,7 +43,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 	}
 
 	void registerModern(Object legacyTarget, Object modernTarget) {
-		if (legacyToModern.put(new ReferenceTracker.IdentityWrapper(legacyTarget), modernTarget) != null) {
+		if (legacyToModern.put(legacyTarget, modernTarget) != null) {
 			throw new LegacyBitserException("Multiple legacy reference targets have identity " + legacyTarget);
 		}
 	}
@@ -68,7 +65,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 	}
 
 	Object getModern(Object legacyReference) {
-		Object modernReference = legacyToModern.get(new ReferenceTracker.IdentityWrapper(legacyReference));
+		Object modernReference = legacyToModern.get(legacyReference);
 		if (modernReference == null) throw new LegacyBitserException(
 				"Reference target for " + legacyReference + " no longer exists"
 		);
@@ -90,7 +87,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		private final String myLabel;
 
 		private final HashMap<UUID, Object> stable = new HashMap<>();
-		final HashMap<ReferenceTracker.IdentityWrapper, Integer> legacyOrWithToIDs = new HashMap<>();
+		final IdentityHashMap<Object, Integer> legacyOrWithToIDs = new IdentityHashMap<>();
 		final ArrayList<Object> idsToLegacyOrWith = new ArrayList<>();
 
 		LabelTargets(String label) {
@@ -98,14 +95,14 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		void registerLegacy(Object target) {
-			if (legacyOrWithToIDs.put(new ReferenceTracker.IdentityWrapper(target), legacyOrWithToIDs.size()) != null) {
+			if (legacyOrWithToIDs.put(target, legacyOrWithToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple legacy unstable targets have identity " + target);
 			}
 			idsToLegacyOrWith.add(new LegacyReference(target));
 		}
 
 		void registerWith(Object target, BitserCache cache) {
-			if (legacyOrWithToIDs.put(new ReferenceTracker.IdentityWrapper(target), legacyOrWithToIDs.size()) != null) {
+			if (legacyOrWithToIDs.put(target, legacyOrWithToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple legacy unstable targets have identity " + target);
 			}
 			idsToLegacyOrWith.add(new WithReference(target));

@@ -37,7 +37,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 
 	void refreshStableIDs() {
 		for (LabelTargets targets : labels.values()) {
-			for (IdentityWrapper identity : targets.potentialStableSet) targets.registerStable(identity.target);
+			for (Object target : targets.potentialStableSet) targets.registerStable(target);
 			targets.potentialStableSet.clear();
 		}
 	}
@@ -62,9 +62,9 @@ class ReferenceTracker extends AbstractReferenceTracker {
 
 	static class LabelTargets {
 
-		final HashMap<IdentityWrapper, Integer> unstableToIDs = new HashMap<>();
+		final IdentityHashMap<Object, Integer> unstableToIDs = new IdentityHashMap<>();
 		final ArrayList<Object> idsToUnstable = new ArrayList<>();
-		final HashSet<IdentityWrapper> potentialStableSet = new HashSet<>();
+		final Set<Object> potentialStableSet = Collections.newSetFromMap(new IdentityHashMap<>());
 		final HashMap<UUID, Object> stable = new HashMap<>();
 
 		final String myLabel;
@@ -76,7 +76,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		private void registerUnstable(Object target) {
-			if (unstableToIDs.put(new IdentityWrapper(target), unstableToIDs.size()) != null) {
+			if (unstableToIDs.put(target, unstableToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple unstable targets have identity " + target);
 			}
 			idsToUnstable.add(target);
@@ -96,7 +96,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		void register(Object target) {
 			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
 			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
-				if (!potentialStableSet.add(new IdentityWrapper(target))) {
+				if (!potentialStableSet.add(target)) {
 					throw new ReferenceBitserException("Multiple stable targets have identity " + target);
 				}
 			}
@@ -120,7 +120,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 					throw new ReferenceBitserException("Expected reference with ID " + id + " to be " + expectedTarget + ", but was " + reference);
 				}
 			} else {
-				Integer index = unstableToIDs.get(new IdentityWrapper(reference));
+				Integer index = unstableToIDs.get(reference);
 				if (index == null) {
 					throw new ReferenceBitserException("Can't find unstable reference target " + reference + " with label " + myLabel);
 				}
@@ -151,25 +151,6 @@ class ReferenceTracker extends AbstractReferenceTracker {
 			int index = (int) IntegerBitser.decodeUniformInteger(0, unstableToIDs.size() - 1, input);
 			input.finishProperty();
 			return idsToUnstable.get(index);
-		}
-	}
-
-	static class IdentityWrapper {
-
-		final Object target;
-
-		IdentityWrapper(Object target) {
-			this.target = target;
-		}
-
-		@Override
-		public int hashCode() {
-			return System.identityHashCode(target);
-		}
-
-		@Override
-		public boolean equals(Object other) {
-			return other instanceof IdentityWrapper && this.target == ((IdentityWrapper) other).target;
 		}
 	}
 }
