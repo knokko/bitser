@@ -7,10 +7,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
-import com.github.knokko.bitser.field.BitField;
-import com.github.knokko.bitser.field.IntegerField;
-import com.github.knokko.bitser.field.ReferenceField;
-import com.github.knokko.bitser.field.ReferenceFieldTarget;
+import com.github.knokko.bitser.field.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -23,6 +20,9 @@ public class TestLazyFieldWrapper {
 
 	@BitStruct(backwardCompatible = true)
 	private static class SimpleInnerStruct {
+
+		@SuppressWarnings("unused")
+		private static final Class<?>[] BITSER_HIERARCHY = { SimpleInnerStruct.class };
 
 		@BitField(id = 0)
 		final ArrayList<String> words = new ArrayList<>();
@@ -85,6 +85,7 @@ public class TestLazyFieldWrapper {
 		assertEquals(456, incompatible.suffix);
 		assertEquals("simple", incompatible.lazy.get().words.get(0));
 		assertEquals("test", incompatible.lazy.get().words.get(1));
+		assertTrue(bitser.deepEquals(input, incompatible));
 
 		SimpleOuterStruct compatible = bitser.stupidDeepCopy(input, Bitser.BACKWARD_COMPATIBLE);
 		DifferentOuterStruct different2 = bitser.fromBytes(
@@ -97,6 +98,10 @@ public class TestLazyFieldWrapper {
 		assertEquals("simple", compatible.lazy.get().words.get(0));
 		assertEquals("test", compatible.lazy.get().words.get(1));
 		assertEquals(bitser.hashCode(input), bitser.hashCode(compatible));
+		assertTrue(bitser.deepEquals(input, compatible));
+		compatible.lazy.get().words.add("no longer equal");
+		assertNotEquals(bitser.hashCode(input), bitser.hashCode(compatible));
+		assertFalse(bitser.deepEquals(input, compatible));
 
 		DifferentOuterStruct different1 = bitser.fromBytes(
 				DifferentOuterStruct.class,
@@ -151,9 +156,11 @@ public class TestLazyFieldWrapper {
 		assertEquals(12, compatible.suffix);
 		assertEquals(bitser.hashCode(outer), bitser.hashCode(compatible));
 		assertEquals(bitser.hashCode(outer), bitser.hashCode(incompatible));
+		assertTrue(bitser.deepEquals(outer, compatible));
 
 		outer.lazy = new SimpleLazyBits<>(new SimpleInnerStruct());
 		assertNotEquals(bitser.hashCode(outer), bitser.hashCode(compatible));
+		assertFalse(bitser.deepEquals(outer, compatible));
 
 		incompatible = bitser.stupidDeepCopy(outer);
 		assertNotNull(incompatible.lazy.get());
@@ -425,5 +432,37 @@ public class TestLazyFieldWrapper {
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
 		assertContains(errorMessage, "TestLazyFieldWrapper$ListGenericType.lazyList");
+	}
+
+	@BitStruct(backwardCompatible = false)
+	static class UnexpectedAnnotation1 {
+
+		@SuppressWarnings("unused")
+		@ClassField(root = SimpleInnerStruct.class)
+		SimpleLazyBits<SimpleInnerStruct> lazy;
+	}
+
+	@BitStruct(backwardCompatible = false)
+	static class UnexpectedAnnotation2 {
+
+		@SuppressWarnings("unused")
+		@ReferenceField(stable = false, label = "lazy")
+		SimpleLazyBits<SimpleInnerStruct> lazy;
+	}
+
+	private void assertUnexpectedAnnotation(Object subject) {
+		String errorMessage = assertThrows(
+				InvalidBitFieldException.class,
+				() -> new Bitser(false).hashCode(subject)
+		).getMessage();
+		assertContains(errorMessage, ".lazy");
+		assertContains(errorMessage, "TestLazyFieldWrapper$UnexpectedAnnotation");
+		assertContains(errorMessage, "SimpleLazyBits fields shouldn't have any bitser annotations except @BitField");
+	}
+
+	@Test
+	public void testUnexpectedAnnotations() {
+		assertUnexpectedAnnotation(new UnexpectedAnnotation1());
+		assertUnexpectedAnnotation(new UnexpectedAnnotation2());
 	}
 }

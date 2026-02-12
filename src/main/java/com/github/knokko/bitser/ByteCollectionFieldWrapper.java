@@ -354,11 +354,6 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		return Objects.deepEquals(a, b);
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -398,5 +393,13 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
 		if (value == null) computer.digest.update((byte) 100);
 		else computer.digest.update(getBytesToWrite(value));
+	}
+
+	@Override
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		return !Objects.deepEquals(valueA, valueB);
 	}
 }

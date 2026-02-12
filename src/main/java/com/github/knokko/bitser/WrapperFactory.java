@@ -256,6 +256,13 @@ class WrapperFactory {
 		}
 
 		if (field.type == SimpleLazyBits.class) {
+			if (createSimpleWrapper(field, true) != null) {
+				throw new InvalidBitFieldException(
+						"SimpleLazyBits fields shouldn't have any bitser annotations except @BitField, " +
+								"but found " + field
+				);
+			}
+
 			if (genericType instanceof ParameterizedType) {
 				Type[] typeArguments = ((ParameterizedType) genericType).getActualTypeArguments();
 				if (typeArguments.length != 1) {

@@ -26,11 +26,6 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		return a == b;
-	}
-
-	@Override
 	void write(
 			Serializer serializer, Object value,
 			RecursionNode parentNode, String fieldName
@@ -69,5 +64,14 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	@Override
 	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
 		computer.digest.update(stable ? (byte) 40 : (byte) 45);
+	}
+
+	@Override
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		comparator.referenceJobs.add(new DeepCompareReferenceJob(valueA, valueB));
+		return false;
 	}
 }

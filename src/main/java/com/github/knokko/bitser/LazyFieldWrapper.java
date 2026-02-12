@@ -133,4 +133,21 @@ class LazyFieldWrapper extends BitFieldWrapper {
 			));
 		} else computer.digest.update((byte) 37);
 	}
+
+	@Override
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		var lazyA = (SimpleLazyBits<?>) valueA;
+		var lazyB = (SimpleLazyBits<?>) valueB;
+		var wrappedA = lazyA.get();
+		var wrappedB = lazyB.get();
+
+		var wrapper = comparator.bitser.cache.getWrapper(valueClass);
+		comparator.structJobs.add(new DeepCompareStructsJob(
+				wrappedA, wrappedB, wrapper, new RecursionNode(node, fieldName)
+		));
+		return false;
+	}
 }

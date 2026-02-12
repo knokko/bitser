@@ -192,16 +192,6 @@ class SingleClassWrapper {
 		}
 	}
 
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		for (FieldWrapper fieldWrapper : fields) {
-			if (!fieldWrapper.bitField.deepEquals(
-					fieldWrapper.bitField.field.getValue.apply(a),
-					fieldWrapper.bitField.field.getValue.apply(b), cache
-			)) return false;
-		}
-		return true;
-	}
-
 	record FieldWrapper(int id, Field classField, BitFieldWrapper bitField, boolean readsMethodResult) {}
 
 	record FunctionWrapper(int id, Method classMethod, BitFieldWrapper bitField) {

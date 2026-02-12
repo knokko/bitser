@@ -245,6 +245,7 @@ public class TestUnstableReferences {
 		NonStructReferences loaded = new Bitser(true).stupidDeepCopy(new NonStructReferences("world"));
 		assertEquals("world", loaded.hello);
 		assertSame(loaded.hello, loaded.hi);
+		assertTrue(new Bitser(false).deepEquals(loaded, new NonStructReferences("world")));
 	}
 
 	@Test
@@ -385,6 +386,8 @@ public class TestUnstableReferences {
 		assertSame(loaded.target1, loaded.unstableReference1);
 		assertSame(loaded.target2, loaded.stableReference);
 		assertSame(loaded.target2, loaded.unstableReference2);
+		assertTrue(new Bitser(true).deepEquals(mixed, loaded));
+		assertEquals(new Bitser(false).hashCode(mixed), new Bitser(true).hashCode(loaded));
 	}
 
 	@Test
@@ -533,6 +536,8 @@ public class TestUnstableReferences {
 		assertSame(backward.targetList.get(0), backward.referenceList.get(0));
 		assertSame(backward.targetMap.keySet().iterator().next(), backward.referenceMap.keySet().iterator().next());
 		assertSame(backward.targetMap.values().iterator().next(), backward.referenceMap.values().iterator().next());
+		assertTrue(bitser.deepEquals(original, backward));
+		assertEquals(bitser.hashCode(original), bitser.hashCode(backward));
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -690,5 +695,45 @@ public class TestUnstableReferences {
 		assertEquals("Shield", backwardB.typeA.name);
 		assertEquals("Sword", backwardB.typeB.name);
 		assertSame(backwardB.typeB, backwardB.reference);
+	}
+
+	@Test
+	public void testDeepEqualsAndHashCode() {
+		var bitser = new Bitser(false);
+		var typeA1 = new ItemType("t1");
+		var typeA2 = new ItemType("t2");
+		var typeX = new ItemType("x");
+		var typeY = new ItemType("y");
+
+		var withRoot = new ItemRoot();
+		withRoot.types.add(typeX);
+		withRoot.types.add(typeY);
+
+		var rootA = new ItemRoot();
+		rootA.types.add(typeA1);
+		rootA.types.add(typeA2);
+		rootA.items.add(new Item("i1", typeA1));
+		rootA.items.add(new Item("ix", typeX));
+
+		var rootB = bitser.deepCopy(rootA);
+		assertTrue(bitser.deepEquals(rootA, rootB));
+		assertEquals(bitser.hashCode(rootA), bitser.hashCode(rootB));
+		assertNotSame(rootA.items.get(0).type, rootB.items.get(0).type);
+		assertSame(rootA.items.get(1).type, rootB.items.get(1).type);
+
+		rootB.items.set(1, new Item("ix", typeY));
+		assertFalse(bitser.deepEquals(rootA, rootB));
+
+		rootB.items.set(1, new Item("ix", typeX));
+		assertTrue(bitser.deepEquals(rootA, rootB));
+
+		rootB.items.set(0, new Item("i1", rootB.types.get(1)));
+		assertFalse(bitser.deepEquals(rootA, rootB));
+
+		rootB.items.set(0, new Item("i1", rootA.types.get(0)));
+		assertFalse(bitser.deepEquals(rootA, rootB));
+
+		rootB.items.set(0, new Item("i1", rootB.types.get(0)));
+		assertTrue(bitser.deepEquals(rootA, rootB));
 	}
 }

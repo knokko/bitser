@@ -212,29 +212,6 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		if (a == null && b == null) return true;
-		if (a == null || b == null) return false;
-		if (field.type.isArray()) {
-			int length = Array.getLength(a);
-			if (Array.getLength(b) != length) return false;
-			for (int index = 0; index < length; index++) {
-				if (!valuesWrapper.deepEquals(Array.get(a, index), Array.get(b, index), cache)) return false;
-			}
-		} else {
-			Iterator<?> iteratorA = ((Collection<?>) a).iterator();
-			Iterator<?> iteratorB = ((Collection<?>) b).iterator();
-			while (true) {
-				if (iteratorA.hasNext() != iteratorB.hasNext()) return false;
-				if (!iteratorA.hasNext()) break;
-				if (!valuesWrapper.deepEquals(iteratorA.next(), iteratorB.next(), cache)) return false;
-			}
-		}
-
-		return true;
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -294,5 +271,23 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 					array, valuesWrapper, new RecursionNode(parentNode, fieldName), "elements")
 			);
 		} else computer.digest.update((byte) -12);
+	}
+
+	@Override
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		Object arrayA, arrayB;
+		if (valueA instanceof Collection<?> collectionA) arrayA = collectionA.toArray();
+		else arrayA = valueA;
+		if (valueB instanceof Collection<?> collectionB) arrayB = collectionB.toArray();
+		else arrayB = valueB;
+
+		var childNode = new RecursionNode(node, fieldName);
+		comparator.arrayJobs.add(new DeepCompareArraysJob(
+				arrayA, arrayB, valuesWrapper, childNode, "elements"
+		));
+		return false;
 	}
 }

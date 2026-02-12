@@ -162,15 +162,6 @@ class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		if (a == null && b == null) return true;
-		if (a == null || b == null) return false;
-		BitStructWrapper<?> wrapperA = cache.getWrapper(a.getClass());
-		BitStructWrapper<?> wrapperB = cache.getWrapper(b.getClass());
-		return wrapperA == wrapperB && wrapperA.deepEquals(a, b, cache);
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -196,5 +187,18 @@ class StructFieldWrapper extends BitFieldWrapper {
 					new RecursionNode(parentNode, fieldName)
 			));
 		} else computer.digest.update((byte) 77);
+	}
+
+	@Override
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		var wrapperA = comparator.bitser.cache.getWrapper(valueA.getClass());
+		var wrapperB = comparator.bitser.cache.getWrapper(valueB.getClass());
+		if (wrapperA != wrapperB) return true;
+		var childNode = new RecursionNode(node, fieldName);
+		comparator.structJobs.add(new DeepCompareStructsJob(valueA, valueB, wrapperA, childNode));
+		return false;
 	}
 }

@@ -47,10 +47,6 @@ abstract class BitFieldWrapper {
 
 	abstract Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName);
 
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		return Objects.equals(a, b);
-	}
-
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -66,5 +62,12 @@ abstract class BitFieldWrapper {
 		computer.digest.update((byte) (hashCode >> 8));
 		computer.digest.update((byte) (hashCode >> 16));
 		computer.digest.update((byte) (hashCode >> 24));
+	}
+
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		return !valueA.equals(valueB);
 	}
 }

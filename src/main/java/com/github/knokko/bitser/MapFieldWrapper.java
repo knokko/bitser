@@ -216,22 +216,6 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		if (a == null && b == null) return true;
-		if (a == null || b == null) return false;
-		Iterator<? extends Map.Entry<?, ?>> iteratorA = ((Map<?, ?>) a).entrySet().iterator();
-		Iterator<? extends Map.Entry<?, ?>> iteratorB = ((Map<?, ?>) b).entrySet().iterator();
-		while (true) {
-			if (iteratorA.hasNext() != iteratorB.hasNext()) return false;
-			if (!iteratorA.hasNext()) return true;
-			Map.Entry<?, ?> entryA = iteratorA.next();
-			Map.Entry<?, ?> entryB = iteratorB.next();
-			if (!keysWrapper.deepEquals(entryA.getKey(), entryB.getKey(), cache)) return false;
-			if (!valuesWrapper.deepEquals(entryA.getValue(), entryB.getValue(), cache)) return false;
-		}
-	}
-
-	@Override
 	Object deepCopy(
 			Object original, DeepCopyMachine machine,
 			RecursionNode parentNode, String fieldName
@@ -295,5 +279,22 @@ class MapFieldWrapper extends BitFieldWrapper {
 					map.values().toArray(), valuesWrapper, new RecursionNode(parentNode, fieldName), "values")
 			);
 		} else computer.digest.update((byte) -15);
+	}
+
+	@Override
+	boolean certainlyNotEqual(
+			DeepComparator comparator, Object valueA, Object valueB,
+			RecursionNode node, String fieldName
+	) {
+		var mapA = (Map<?, ?>) valueA;
+		var mapB = (Map<?, ?>) valueB;
+		var childNode = new RecursionNode(node, fieldName);
+		comparator.arrayJobs.add(new DeepCompareArraysJob(
+				mapA.keySet().toArray(), mapB.keySet().toArray(), keysWrapper, childNode, "keys"
+		));
+		comparator.arrayJobs.add(new DeepCompareArraysJob(
+				mapA.values().toArray(), mapB.values().toArray(), valuesWrapper, childNode, "values"
+		));
+		return false;
 	}
 }

@@ -113,11 +113,4 @@ class BitStructWrapper<T> {
 		}
 		return copy;
 	}
-
-	boolean deepEquals(Object a, Object b, BitserCache cache) {
-		for (SingleClassWrapper currentClass : classHierarchy) {
-			if (!currentClass.deepEquals(a, b, cache)) return false;
-		}
-		return true;
-	}
 }

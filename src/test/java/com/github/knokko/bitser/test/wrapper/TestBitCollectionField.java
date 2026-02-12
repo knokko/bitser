@@ -83,6 +83,18 @@ public class TestBitCollectionField {
 		b.array = new String[] { "hello", "b" };
 		assertFalse(bitser.deepEquals(a, b));
 		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.array[1] = null;
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		b.array[1] = null;
+		assertTrue(bitser.deepEquals(a, b));
+		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+
+		a.array[1] = "null";
+		assertFalse(bitser.deepEquals(a, b));
+		assertNotEquals(bitser.hashCode(a), bitser.hashCode(b));
 	}
 
 	@Test
