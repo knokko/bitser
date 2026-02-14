@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
@@ -81,7 +82,7 @@ class BackDeserializer {
 		}
 
 		references.processStableLegacyIDs();
-		references.handleWithJobs();
+		references.handleWithJobs(new FunctionContext(bitser, true, withParameters));
 
 		for (BackReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {

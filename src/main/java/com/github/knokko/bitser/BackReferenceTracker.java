@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.legacy.LegacyReference;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
@@ -35,9 +36,11 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		labels.computeIfAbsent(label, LabelTargets::new).registerLegacy(target);
 	}
 
-	void handleWithJobs() {
+	void handleWithJobs(FunctionContext functionContext) {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
-			if (!structJobs.isEmpty()) structJobs.remove(structJobs.size() - 1).register(this);
+			if (!structJobs.isEmpty()) {
+				structJobs.remove(structJobs.size() - 1).register(this, functionContext);
+			}
 			if (!arrayJobs.isEmpty()) arrayJobs.remove(arrayJobs.size() - 1).register(this);
 		}
 	}

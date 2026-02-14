@@ -558,6 +558,7 @@ public class TestUnstableReferences {
 		private ItemType typeC;
 
 		@BitField(id = 2)
+		@SuppressWarnings("unused")
 		@ReferenceFieldTarget(label = "item types")
 		ItemType[] getTargets() {
 			return new ItemType[] { type1, type2 };
@@ -583,6 +584,30 @@ public class TestUnstableReferences {
 		assertEquals("Shield", backward.typeA.name);
 		assertEquals("Sword", backward.typeB.name);
 		assertSame(backward.typeA, backward.typeC);
+	}
+
+	@Test
+	public void testFunctionReferenceTargetOnWithObject() {
+		var with = new FunctionReferenceTarget();
+		with.type1 = new ItemType("with1");
+		with.type2 = new ItemType("with2");
+		with.typeA = with.type1;
+		with.typeB = with.type2;
+		with.typeC = with.type2;
+
+		var main = new FunctionReferenceTarget();
+		main.type1 = new ItemType("unused1");
+		main.type2 = new ItemType("unused2");
+		main.typeA = with.typeA;
+		main.typeB = with.typeB;
+		main.typeC = with.typeC;
+
+		var bitser = new Bitser(false);
+		var basic = bitser.stupidDeepCopy(main, with);
+		assertSame(with.typeA, basic.typeA);
+
+		var backward = bitser.stupidDeepCopy(main, with, Bitser.BACKWARD_COMPATIBLE);
+		assertSame(with.typeA, backward.typeA);
 	}
 
 	@BitStruct(backwardCompatible = true)

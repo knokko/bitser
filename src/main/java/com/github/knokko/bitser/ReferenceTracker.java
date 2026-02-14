@@ -1,6 +1,7 @@
 package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.io.BitOutputStream;
 
@@ -28,9 +29,11 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 	}
 
-	void handleWithJobs() {
+	void handleWithJobs(FunctionContext functionContext) {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
-			if (!structJobs.isEmpty()) structJobs.remove(structJobs.size() - 1).register(this);
+			if (!structJobs.isEmpty()) {
+				structJobs.remove(structJobs.size() - 1).register(this, functionContext);
+			}
 			if (!arrayJobs.isEmpty()) arrayJobs.remove(arrayJobs.size() - 1).register(this);
 		}
 	}

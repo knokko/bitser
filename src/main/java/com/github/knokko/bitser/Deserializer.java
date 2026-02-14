@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 import com.github.knokko.bitser.exceptions.RecursionException;
@@ -67,7 +68,7 @@ class Deserializer {
 			}
 		}
 
-		references.handleWithJobs();
+		references.handleWithJobs(new FunctionContext(bitser, false, withParameters));
 		references.refreshStableIDs();
 
 		for (var referenceJob : structReferenceJobs) {

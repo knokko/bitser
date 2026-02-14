@@ -1,5 +1,6 @@
 package com.github.knokko.bitser;
 
+import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitOutputStream;
 import com.github.knokko.bitser.distributions.FloatDistributionTracker;
 import com.github.knokko.bitser.distributions.IntegerDistributionTracker;
@@ -69,7 +70,7 @@ class Serializer {
 			}
 		}
 
-		references.handleWithJobs();
+		references.handleWithJobs(new FunctionContext(bitser, backwardCompatible, withParameters));
 		references.refreshStableIDs();
 
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
