@@ -49,6 +49,7 @@ class Deserializer {
 	}
 
 	void run() {
+		// Stage 1
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				ReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
@@ -68,9 +69,13 @@ class Deserializer {
 			}
 		}
 
+		// Stage 2
 		references.handleWithJobs(new FunctionContext(bitser, false, withParameters));
-		references.refreshStableIDs();
 
+		// Stage 3
+		references.mapStableIDs();
+
+		// Stage 4
 		for (var referenceJob : structReferenceJobs) {
 			try {
 				input.pushContext(referenceJob.node(), "(struct-reference-job)");
@@ -104,6 +109,9 @@ class Deserializer {
 		}
 		arrayReferenceJobs.clear();
 
+		// Stages 5 and 6 are only used in backward-compatible deserialization
+
+		// Stage 7
 		for (var referenceJob : methodReferenceToFieldJobs) {
 			try {
 				input.pushContext(referenceJob.node(), "(method-reference-to-field-job)");
@@ -115,6 +123,7 @@ class Deserializer {
 		}
 		methodReferenceToFieldJobs.clear();
 
+		// Stages 8, 9, and 10
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}
 }

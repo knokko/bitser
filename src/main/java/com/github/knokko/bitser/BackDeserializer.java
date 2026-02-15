@@ -62,6 +62,7 @@ class BackDeserializer {
 	}
 
 	void run() {
+		// Stage 1
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				BackReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
@@ -81,9 +82,13 @@ class BackDeserializer {
 			}
 		}
 
-		references.processStableLegacyIDs();
+		// Stage 2
 		references.handleWithJobs(new FunctionContext(bitser, true, withParameters));
 
+		// Stage 3
+		references.mapStableIDs();
+
+		// Stage 4
 		for (BackReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
 				input.pushContext(referenceJob.node(), "(struct-reference-job)");
@@ -107,6 +112,7 @@ class BackDeserializer {
 		}
 		arrayReferenceJobs.clear();
 
+		// Stage 5
 		while (!convertStructJobs.isEmpty() || !convertArrayJobs.isEmpty()) {
 			if (!convertStructJobs.isEmpty()) {
 				BackConvertStructJob job = convertStructJobs.remove(convertStructJobs.size() - 1);
@@ -122,6 +128,7 @@ class BackDeserializer {
 			}
 		}
 
+		// Stage 6
 		for (BackConvertStructReferenceJob job : convertStructReferenceJobs) {
 			try {
 				job.convert(this);
@@ -149,6 +156,7 @@ class BackDeserializer {
 		}
 		convertArrayReferenceJobs.clear();
 
+		// Stage 7
 		for (var referenceJob : methodReferenceToFieldJobs) {
 			try {
 				referenceJob.resolve();
@@ -158,6 +166,7 @@ class BackDeserializer {
 		}
 		methodReferenceToFieldJobs.clear();
 
+		// Stages 8, 9, and 10
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}
 }

@@ -51,6 +51,7 @@ class Serializer {
 	}
 
 	void run() {
+		// Stage 1
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				WriteStructJob job = structJobs.remove(structJobs.size() - 1);
@@ -70,9 +71,13 @@ class Serializer {
 			}
 		}
 
+		// Stage 2
 		references.handleWithJobs(new FunctionContext(bitser, backwardCompatible, withParameters));
-		references.refreshStableIDs();
 
+		// Stage 3
+		references.mapStableIDs();
+
+		// Stage 4
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
 				output.pushContext(referenceJob.node(), "(struct-reference-job)");
@@ -94,5 +99,7 @@ class Serializer {
 			}
 		}
 		arrayReferenceJobs.clear();
+
+		// Stages 5 and later are only needed during DEserialization
 	}
 }

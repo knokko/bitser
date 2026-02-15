@@ -2,6 +2,7 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.exceptions.ReferenceBitserException;
+import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.field.FunctionContext;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.legacy.LegacyReference;
@@ -21,7 +22,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 
 	@Override
 	void registerTarget(String label, Object target) {
-		labels.computeIfAbsent(label, LabelTargets::new).registerWith(target, cache);
+		labels.computeIfAbsent(label, LabelTargets::new).registerWith(target);
 	}
 
 	void setWithObjects(List<Object> withObjects) {
@@ -51,16 +52,24 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 	}
 
-	void processStableLegacyIDs() {
+	void mapStableIDs() {
 		for (LabelTargets targets : labels.values()) {
-			for (Object rawLegacyTarget : targets.idsToLegacyOrWith) {
-				Object legacyTarget = ((LegacyReference) rawLegacyTarget).reference();
-				if (legacyTarget instanceof LegacyStructInstance) {
-					UUID stableID = ((LegacyStructInstance) legacyTarget).stableID;
-					if (stableID != null) {
-						if (targets.stable.put(stableID, new LegacyReference(legacyTarget)) != null) {
-							throw new ReferenceBitserException("Multiple legacy stable targets have ID " + stableID);
-						}
+			for (Object rawTarget : targets.idsToLegacyOrWith) {
+				UUID stableID = null;
+				if (rawTarget instanceof LegacyReference legacyTarget) {
+					Object targetObject = legacyTarget.reference();
+					if (targetObject instanceof LegacyStructInstance targetStruct) stableID = targetStruct.stableID;
+				} else if (rawTarget instanceof WithReference withTarget) {
+					Object withObject = withTarget.reference();
+					BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(withObject.getClass());
+					if (maybeWrapper != null && maybeWrapper.hasStableId()) {
+						stableID = maybeWrapper.getStableId(withObject);
+					}
+				} else throw new UnexpectedBitserException("Unexpected reference target " + rawTarget);
+
+				if (stableID != null) {
+					if (targets.stable.put(stableID, rawTarget) != null) {
+						throw new ReferenceBitserException("Multiple legacy stable targets have ID " + stableID);
 					}
 				}
 			}
@@ -104,25 +113,11 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 			idsToLegacyOrWith.add(new LegacyReference(target));
 		}
 
-		void registerWith(Object target, BitserCache cache) {
+		void registerWith(Object target) {
 			if (legacyOrWithToIDs.put(target, legacyOrWithToIDs.size()) != null) {
 				throw new ReferenceBitserException("Multiple legacy unstable targets have identity " + target);
 			}
 			idsToLegacyOrWith.add(new WithReference(target));
-			BitStructWrapper<?> maybeWrapper = cache.getWrapperOrNull(target.getClass());
-			if (maybeWrapper != null && maybeWrapper.hasStableId()) {
-				UUID id = maybeWrapper.getStableId(target);
-				Object withSameID = stable.put(id, new WithReference(target));
-				if (withSameID != null) {
-					if (((WithReference) withSameID).reference() == target) {
-						throw new ReferenceBitserException("Multiple stable targets have identity " + target);
-					} else {
-						throw new ReferenceBitserException(
-								"Multiple stable targets have ID " + id + ": " + target + " and " + withSameID
-						);
-					}
-				}
-			}
 		}
 
 		Object getWithOrLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {

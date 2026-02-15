@@ -38,7 +38,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 	}
 
-	void refreshStableIDs() {
+	void mapStableIDs() {
 		for (LabelTargets targets : labels.values()) {
 			for (Object target : targets.potentialStableSet) targets.registerStable(target);
 			targets.potentialStableSet.clear();
