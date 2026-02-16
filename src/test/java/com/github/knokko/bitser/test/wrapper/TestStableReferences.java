@@ -80,7 +80,7 @@ public class TestStableReferences {
 		root.items.add(new Item("cold shield", shield));
 		root.items.add(new Item("spiky shield", shield));
 
-		ItemRoot loaded = new Bitser(false).stupidDeepCopy(root);
+		ItemRoot loaded = new Bitser().stupidDeepCopy(root);
 
 		assertEquals(2, loaded.types.size());
 		assertEquals("sword", loaded.types.get(0).name);
@@ -190,7 +190,7 @@ public class TestStableReferences {
 		node3.bestFriend = new DeepNodeReference(node2);
 		node3.neighbours.add(node1);
 
-		Graph loaded = new Bitser(false).stupidDeepCopy(graph);
+		Graph loaded = new Bitser().stupidDeepCopy(graph);
 		assertEquals(4, loaded.mostNodes.size());
 
 		Node loaded1 = loaded.mostNodes.get(0);
@@ -250,7 +250,7 @@ public class TestStableReferences {
 	public void testFieldThatIsBothReferenceAndTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new BothReferenceAndTarget(), new BitCountStream())
+				() -> new Bitser().serialize(new BothReferenceAndTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is both a reference field and a reference target");
 	}
@@ -271,7 +271,7 @@ public class TestStableReferences {
 	public void testNonStructReferenceTarget() {
 		String errorMessage =  assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new NonStructTarget(), new BitCountStream())
+				() -> new Bitser().serialize(new NonStructTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "UUID doesn't have an @StableReferenceFieldId");
 		assertContains(errorMessage, "NonStructTarget -> reference");
@@ -303,7 +303,7 @@ public class TestStableReferences {
 		target.reference = target.target;
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(target, new BitCountStream())
+				() -> new Bitser().serialize(target, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "doesn't have an @StableReferenceFieldId");
 		assertContains(errorMessage, "WithoutStableId");
@@ -314,7 +314,7 @@ public class TestStableReferences {
 	public void testNullReferenceTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(false).serialize(new StableReferenceTargetWithoutStableId(), new BitCountStream())
+				() -> new Bitser().serialize(new StableReferenceTargetWithoutStableId(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 	}
@@ -343,7 +343,7 @@ public class TestStableReferences {
 	public void testReferenceToStableNullId() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(new ReferencesNullId(), new BitCountStream())
+				() -> new Bitser().serialize(new ReferencesNullId(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "ReferencesNullId -> actualId");
 		assertContains(errorMessage, "must not be null");
@@ -362,7 +362,7 @@ public class TestStableReferences {
 	public void testOptionalStableReferenceId() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new OptionalStableId(), new BitCountStream())
+				() -> new Bitser().serialize(new OptionalStableId(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "@StableReferenceFieldId's can't be optional");
 	}
@@ -379,7 +379,7 @@ public class TestStableReferences {
 	public void testStableReferenceNonUUID() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new StableNonUUID(), new BitCountStream())
+				() -> new Bitser().serialize(new StableNonUUID(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Only UUID fields can have @StableReferenceFieldId");
 	}
@@ -393,7 +393,7 @@ public class TestStableReferences {
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serialize(root, new BitCountStream())
+				() -> new Bitser().serialize(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple stable targets have identity");
 	}
@@ -406,7 +406,7 @@ public class TestStableReferences {
 		primaryRoot.types.add(itemType);
 		primaryRoot.items.add(new Item("it", itemType));
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(primaryRoot);
 
 		ItemRoot withRoot = new ItemRoot();
@@ -432,7 +432,7 @@ public class TestStableReferences {
 	public void testMissingTargetLabel() {
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serialize(new MissingTargetLabel(), new BitCountStream())
+				() -> new Bitser().serialize(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
@@ -449,7 +449,7 @@ public class TestStableReferences {
 		ItemRoot withRoot = new ItemRoot();
 		withRoot.types.add(itemType);
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(primaryRoot, withRoot);
 
 		String errorMessage = assertThrows(
@@ -469,7 +469,7 @@ public class TestStableReferences {
 		ItemRoot with = new ItemRoot();
 		with.types.add(itemType);
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(item, with);
 
 		String errorMessage = assertThrows(
@@ -513,7 +513,7 @@ public class TestStableReferences {
 
 	@Test
 	public void testAbstractSuperClass() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		AbstractTestRoot original = new AbstractTestRoot();
 		((StableSubClass) original.target).x = 5;
 
@@ -564,7 +564,7 @@ public class TestStableReferences {
 
 	@Test
 	public void duplicateZeroRegressionTest() {
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		var original = new DummyWorldMap(new DummyNode[] {
 				new DummyNode(new UUID(1, 2)),
 				new DummyNode(new UUID(3, 4)),

@@ -55,7 +55,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testDerivedSum() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		DerivedSum original = new DerivedSum(3, 4);
 		assertEquals(3, original.a);
 		assertEquals(7, original.c);
@@ -120,7 +120,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testLegacyConversion() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertEquals(0.75, bitser.fromBytes(
 				LegacyConversionAfter.class,
 				bitser.toBytes(new LegacyConversionBefore(), Bitser.BACKWARD_COMPATIBLE),
@@ -130,7 +130,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testLegacyConversionWithInheritance() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		AfterParent parent = bitser.fromBytes(
 				AfterParent.class, bitser.toBytes(new BeforeParent(), Bitser.BACKWARD_COMPATIBLE),
 				Bitser.BACKWARD_COMPATIBLE
@@ -153,7 +153,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testWithParameters() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		DefaultValue customValue = new DefaultValue();
 		customValue.value = "hello";
 
@@ -174,7 +174,7 @@ public class TestBitPostInit {
 	public void testDuplicateDeserializeWithParameter() {
 		String errorMessage = assertThrows(
 				IllegalArgumentException.class,
-				() -> new Bitser(false).fromBytes(
+				() -> new Bitser().fromBytes(
 					AfterParent.class, new byte[0], new WithParameter("ok", 1), new WithParameter("ok", 2))
 		).getMessage();
 		assertContains(errorMessage, "Duplicate with parameter");
@@ -185,7 +185,7 @@ public class TestBitPostInit {
 	public void testDuplicateSerializeWithParameter() {
 		String errorMessage = assertThrows(
 				IllegalArgumentException.class,
-				() -> new Bitser(false).toBytes(
+				() -> new Bitser().toBytes(
 					new AfterParent(), new WithParameter("ok", 1), new WithParameter("ok", 2))
 		).getMessage();
 		assertContains(errorMessage, "Duplicate with parameter");
@@ -224,7 +224,7 @@ public class TestBitPostInit {
 		original.wrapped = String.class;
 		original.x = 1234;
 
-		SaveClassName loaded = new Bitser(true).stupidDeepCopy(original);
+		SaveClassName loaded = new Bitser().stupidDeepCopy(original);
 		assertSame(String.class, loaded.wrapped);
 		assertEquals(1234, loaded.x);
 	}
@@ -286,7 +286,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testSingleToMultipleClassNames() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		SaveClassName original = new SaveClassName();
 		original.wrapped = IOException.class;
@@ -304,7 +304,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testMultipleClasses() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		MultipleClassNames original = new MultipleClassNames();
 		original.x = -12;
 		original.classes.add(Integer.class);
@@ -317,7 +317,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testMultipleClassesBackwardCompatible() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		MultipleClassNames original = new MultipleClassNames();
 		original.x = -12;
 		original.classes.add(File.class);
@@ -367,7 +367,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testAutomaticConversion() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		MultipleClassNames original = new MultipleClassNames();
 		original.classes.add(File.class);
 		original.classes.add(Path.class);
@@ -401,7 +401,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testFunctionContext() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		UsesFunctionContext loaded = bitser.fromBytes(
 				UsesFunctionContext.class,
 				bitser.toBytes(new UsesFunctionContext(), new WithParameter("b", 7))
@@ -411,7 +411,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testBackwardCompatibleFunctionContext() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		UsesFunctionContext loaded = bitser.fromBytes(
 				UsesFunctionContext.class,
 				bitser.toBytes(
@@ -439,7 +439,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testLegacyClassDoesNotHavePostInit() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertTrue(bitser.fromBytes(
 				WithPostInit.class,
 				bitser.toBytes(new WithoutPostInit(), Bitser.BACKWARD_COMPATIBLE),
@@ -459,7 +459,7 @@ public class TestBitPostInit {
 
 	@Test
 	public void testPostInitWithoutLegacyClass() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertTrue(bitser.fromBytes(
 				OuterWithPostInit.class,
 				bitser.toBytes(new OuterWithoutPostInit(), Bitser.BACKWARD_COMPATIBLE),
@@ -537,7 +537,7 @@ public class TestBitPostInit {
 		original.map.put(new InnerStruct(25), new InnerStruct(30));
 		original.map.put(new InnerStruct(60), new InnerStruct(70));
 
-		OuterMapStruct copied = new Bitser(true).stupidDeepCopy(original);
+		OuterMapStruct copied = new Bitser().stupidDeepCopy(original);
 		assertEquals(4, copied.map.size());
 		assertEquals(new InnerStruct(11), copied.map.get(new InnerStruct(5)));
 		assertEquals(new InnerStruct(16), copied.map.get(new InnerStruct(15)));
@@ -572,7 +572,7 @@ public class TestBitPostInit {
 		original.set.add(new InnerStruct(25));
 		original.set.add(new InnerStruct(70));
 
-		OuterSetStruct copied = new Bitser(false).stupidDeepCopy(original);
+		OuterSetStruct copied = new Bitser().stupidDeepCopy(original);
 		assertEquals(4, copied.set.size());
 		assertTrue(copied.set.contains(new InnerStruct(11)));
 		assertTrue(copied.set.contains(new InnerStruct(20)));

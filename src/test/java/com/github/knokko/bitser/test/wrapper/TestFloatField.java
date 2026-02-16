@@ -23,13 +23,13 @@ public class TestFloatField {
 
 	@Test
 	public void testInvalidConfigurations() {
-		assertThrows(InvalidBitFieldException.class, () -> new Bitser(true).stupidDeepCopy(new Invalid1()));
-		assertThrows(InvalidBitFieldException.class, () -> new Bitser(true).stupidDeepCopy(new Invalid2()));
+		assertThrows(InvalidBitFieldException.class, () -> new Bitser().stupidDeepCopy(new Invalid1()));
+		assertThrows(InvalidBitFieldException.class, () -> new Bitser().stupidDeepCopy(new Invalid2()));
 	}
 
 	@Test
 	public void testValidConfiguration() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		this.optional = null;
 		this.required = 1.8;
 
@@ -46,7 +46,7 @@ public class TestFloatField {
 
 	@Test
 	public void testExpectMultipleOf() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		this.optional = null;
 		this.required = 1.4;
@@ -87,7 +87,7 @@ public class TestFloatField {
 
 	@Test
 	public void testCommonValues() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		CommonValues original = new CommonValues();
 		original.values = new float[] { -5f, -1f, 0.0001f, 2.1f, 3f, 5.0001f };
 
@@ -111,7 +111,7 @@ public class TestFloatField {
 	@Test
 	public void particleSizeRegressionTest() {
 		ParticleSize original = new ParticleSize();
-		ParticleSize copied = new Bitser(false).stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		ParticleSize copied = new Bitser().stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(0f, copied.growX);
 	}
 
@@ -129,6 +129,6 @@ public class TestFloatField {
 		OutOfRange original = new OutOfRange();
 		original.value = 15f;
 
-		assertEquals(15f, new Bitser(true).stupidDeepCopy(original).value);
+		assertEquals(15f, new Bitser().stupidDeepCopy(original).value);
 	}
 }

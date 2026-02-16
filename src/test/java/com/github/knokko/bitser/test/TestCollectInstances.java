@@ -66,7 +66,7 @@ public class TestCollectInstances {
 
 	@Test
 	public void runTest() {
-		var bitser = new Bitser(true);
+		var bitser = new Bitser();
 		var root = new RootStruct();
 
 		root.lazy = new SimpleLazyBits<>(new MiniStruct());

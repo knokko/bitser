@@ -93,7 +93,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream1() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(new SmallStruct());
 		String errorMessage = assertThrows(
 				IllegalArgumentException.class, () -> bitser.fromBytes(LargerStruct.class, bytes)
@@ -103,7 +103,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream2() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(new SmallStruct());
 		String errorMessage = assertThrows(IOException.class, () -> bitser.deserialize(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(bytes))
@@ -114,7 +114,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream3() {
-		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserialize(
+		String errorMessage = assertThrows(IOException.class, () -> new Bitser().deserialize(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(new byte[0]))
 		)).getMessage();
 		assertContains(errorMessage, "IO exception");
@@ -122,7 +122,7 @@ public class TestBitStreams {
 
 	@Test
 	public void testEndOfStream4() {
-		String errorMessage = assertThrows(IOException.class, () -> new Bitser(false).deserialize(
+		String errorMessage = assertThrows(IOException.class, () -> new Bitser().deserialize(
 				LargerStruct.class, new BitInputStream(new ByteArrayInputStream(new byte[0])), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
 		assertContains(errorMessage, "End of stream reached");

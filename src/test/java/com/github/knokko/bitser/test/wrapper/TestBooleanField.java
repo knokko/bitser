@@ -23,14 +23,14 @@ public class TestBooleanField {
 		this.optional = null;
 		this.required = true;
 
-		TestBooleanField loaded = new Bitser(false).stupidDeepCopy(this);
+		TestBooleanField loaded = new Bitser().stupidDeepCopy(this);
 		assertNull(loaded.optional);
 		assertTrue(loaded.required);
 
 		this.optional = false;
 		this.required = false;
 
-		loaded = new Bitser(false).stupidDeepCopy(this);
+		loaded = new Bitser().stupidDeepCopy(this);
 		assertFalse(loaded.optional);
 		assertFalse(loaded.required);
 	}
@@ -46,7 +46,7 @@ public class TestBooleanField {
 	@Test
 	public void testInvalidOptional() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new Invalid())
+				() -> new Bitser().toBytes(new Invalid())
 		).getMessage();
 		assertContains(errorMessage, "can't be optional");
 	}

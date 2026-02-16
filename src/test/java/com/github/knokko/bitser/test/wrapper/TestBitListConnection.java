@@ -35,7 +35,7 @@ public class TestBitListConnection {
 //
 //	@Test
 //	public void testIntegerList() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		TestBitStructConnection.ChangeTracker tracker = new TestBitStructConnection.ChangeTracker(1);
 //
 //		Root original = new Root();
@@ -67,7 +67,7 @@ public class TestBitListConnection {
 //
 //	@Test
 //	public void testStringList() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		TestBitStructConnection.ChangeTracker tracker = new TestBitStructConnection.ChangeTracker(1);
 //
 //		BitStructConnection<Root> root1 = bitser.createStructConnection(new Root(), tracker);
@@ -125,7 +125,7 @@ public class TestBitListConnection {
 //
 //	@Test
 //	public void testStructList() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		TestBitStructConnection.ChangeTracker tracker = new TestBitStructConnection.ChangeTracker(1);
 //
 //		BitStructConnection<StructList> connection1 = bitser.createStructConnection(new StructList(), tracker);
@@ -155,7 +155,7 @@ public class TestBitListConnection {
 //
 //	@Test
 //	public void testEditDeletedStruct() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		TestBitStructConnection.ChangeTracker tracker1 = new TestBitStructConnection.ChangeTracker(1);
 //		TestBitStructConnection.CombinedChangeTracker tracker2 = new TestBitStructConnection.CombinedChangeTracker();
 //
@@ -203,7 +203,7 @@ public class TestBitListConnection {
 //
 //	@Test
 //	public void testNestedList() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		TestBitStructConnection.ChangeTracker tracker = new TestBitStructConnection.ChangeTracker(1);
 //
 //		BitStructConnection<NestedList> connection1 = bitser.createStructConnection(new NestedList(), tracker);

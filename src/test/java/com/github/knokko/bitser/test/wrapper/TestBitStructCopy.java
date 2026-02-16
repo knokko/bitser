@@ -61,7 +61,7 @@ public class TestBitStructCopy {
 		root.target = new ChildStruct(-123);
 		root.reference = root.target;
 
-		Root copied = new Bitser(false).shallowCopy(root);
+		Root copied = new Bitser().shallowCopy(root);
 		assertNotSame(root, copied);
 		assertTrue(copied.b);
 		assertEquals(16, copied.c.x);
@@ -72,7 +72,7 @@ public class TestBitStructCopy {
 		assertSame(root.target, copied.target);
 		assertSame(copied.reference, copied.target);
 
-		Root deepCopy = new Bitser(false).stupidDeepCopy(root);
+		Root deepCopy = new Bitser().stupidDeepCopy(root);
 		assertNotSame(root, deepCopy);
 		assertNotSame(root.c, deepCopy.c);
 		assertTrue(deepCopy.b);

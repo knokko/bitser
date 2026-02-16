@@ -68,7 +68,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testShallowCollectionsBackwardCompatibility() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		ShallowBefore before = new ShallowBefore();
 		before.sinTable.put(0, 0f);
 		before.sinTable.put(90, 1f);
@@ -246,7 +246,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testWriteAsBytesCompatibility() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		WriteBytesBefore before = new WriteBytesBefore();
 		before.bools1[1] = true;
 		before.bools2[0] = true;
@@ -362,7 +362,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidBooleanArrayToIntArray() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
 				() -> bitser.fromBytes(
@@ -376,7 +376,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidBooleanArrayToIntSet() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
 				() -> bitser.fromBytes(
@@ -390,7 +390,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidIntArrayToBooleanArray() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
 				() -> bitser.fromBytes(
@@ -404,7 +404,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidIntArrayToBooleanList() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
 				() -> bitser.fromBytes(
@@ -418,7 +418,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidIntSetToBooleanList() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		IntSet intSet = new IntSet();
 		intSet.integers.add(1234);
 		String errorMessage = assertThrows(
@@ -434,7 +434,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void forbidNullsIntoPrimitives() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		IntSet intSet = new IntSet();
 		intSet.integers.add(null);
 		String errorMessage = assertThrows(
@@ -452,7 +452,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void forbidNullsIntoNonNulls() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		IntSet intSet = new IntSet();
 		intSet.integers.add(null);
 		String errorMessage = assertThrows(
@@ -497,7 +497,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void convertBetweenMaps() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		OldMap before = new OldMap();
 		before.map.put('I', 10f);
 		before.map.put(Character.MAX_VALUE, 100f);
@@ -529,7 +529,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidIntListToStringList() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		IntList intList = new IntList();
 		intList.integers.add(1234);
 
@@ -555,7 +555,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testForbidUuidToIntArray() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(
 				LegacyBitserException.class,
 				() -> bitser.fromBytes(
@@ -591,7 +591,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testInvalidStructListToReferenceList() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		StructList structList = new StructList();
 		structList.theList.add(new JustID());
@@ -607,7 +607,7 @@ public class TestCollectionBackwardCompatibility {
 
 	@Test
 	public void testInvalidReferenceListToStructList() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		ReferenceList referenceList = new ReferenceList();
 		referenceList.theTargets.add(new JustID());

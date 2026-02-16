@@ -27,7 +27,7 @@ public class TestInvalidFunctions {
 	public void testMethodWithNegativeID() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new WithNegativeID())
+				() -> new Bitser().toBytes(new WithNegativeID())
 		).getMessage();
 		assertContains(errorMessage, "method IDs must be non-negative");
 		assertContains(errorMessage, "TestInvalidFunctions$WithNegativeID.test()");
@@ -53,7 +53,7 @@ public class TestInvalidFunctions {
 	public void testTwoMethodsWithTheSameID() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new WithDuplicateID())
+				() -> new Bitser().toBytes(new WithDuplicateID())
 		).getMessage();
 		assertContains(errorMessage, "multiple @BitField methods with id 5");
 		assertContains(errorMessage, "TestInvalidFunctions$WithDuplicateID");
@@ -82,7 +82,7 @@ public class TestInvalidFunctions {
 	public void testFieldThatReadsFromMissingMethod() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new ReadsMissingMethod())
+				() -> new Bitser().toBytes(new ReadsMissingMethod())
 		).getMessage();
 		assertContains(errorMessage, "needs a method annotated with @BitField(id = 2)");
 		assertContains(errorMessage, "TestInvalidFunctions$ReadsMissingMethod.readsMethod");
@@ -103,7 +103,7 @@ public class TestInvalidFunctions {
 
 	@Test
 	public void testReadsSimpleMethod() {
-		assertEquals(2, new Bitser(false).stupidDeepCopy(new ReadsSimpleMethod()).readsMethod);
+		assertEquals(2, new Bitser().stupidDeepCopy(new ReadsSimpleMethod()).readsMethod);
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -119,7 +119,7 @@ public class TestInvalidFunctions {
 	public void testMethodThatReadsFromOtherMethod() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new MethodReadsOtherMethod())
+				() -> new Bitser().toBytes(new MethodReadsOtherMethod())
 		).getMessage();
 		assertContains(errorMessage, "BitField methods cannot have readsMethodResult");
 		assertContains(errorMessage, "TestInvalidFunctions$MethodReadsOtherMethod.readsOtherMethod");
@@ -136,7 +136,7 @@ public class TestInvalidFunctions {
 	public void testFieldWithNegativeIdReadsMethod() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new ReadsMethodWithNegativeID())
+				() -> new Bitser().toBytes(new ReadsMethodWithNegativeID())
 		).getMessage();
 		assertContains(errorMessage, "BitField's with readsMethodResult = true must have a non-negative ID");
 		assertContains(errorMessage, "TestInvalidFunctions$ReadsMethodWithNegativeID.readNegative");
@@ -160,7 +160,7 @@ public class TestInvalidFunctions {
 	public void testDifferentTypes() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new DifferentTypes())
+				() -> new Bitser().toBytes(new DifferentTypes())
 		).getMessage();
 		assertContains(errorMessage, "does not match the return type");
 		assertContains(errorMessage, "TestInvalidFunctions$DifferentTypes");
@@ -184,7 +184,7 @@ public class TestInvalidFunctions {
 	public void testConflictBetweenFieldIdAndMethodId() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new FieldMethodConflict())
+				() -> new Bitser().toBytes(new FieldMethodConflict())
 		).getMessage();
 		assertContains(errorMessage, "id conflict between");
 		assertContains(errorMessage, "TestInvalidFunctions$FieldMethodConflict");

@@ -25,7 +25,7 @@ public class TestByteCollectionField {
 		BooleanArray array = new BooleanArray();
 		array.data = new boolean[] {true, false, true, true, true, false, true, false};
 
-		array = new Bitser(true).stupidDeepCopy(array);
+		array = new Bitser().stupidDeepCopy(array);
 		assertArrayEquals(new boolean[] {true, false, true, true, true, false, true, false}, array.data);
 	}
 
@@ -34,7 +34,7 @@ public class TestByteCollectionField {
 		BooleanArray array = new BooleanArray();
 		array.data = new boolean[] {true, false, true, true};
 
-		array = new Bitser(false).stupidDeepCopy(array);
+		array = new Bitser().stupidDeepCopy(array);
 		assertArrayEquals(new boolean[] {true, false, true, true}, array.data);
 	}
 
@@ -48,7 +48,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testByteArray() {
 		ByteArray array = new ByteArray();
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		ByteArray loaded = bitser.stupidDeepCopy(array);
 		assertNull(loaded.data);
 
@@ -66,7 +66,7 @@ public class TestByteCollectionField {
 		ByteArray a = new ByteArray();
 		ByteArray b = new ByteArray();
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		assertTrue(bitser.deepEquals(a, b));
 		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
 
@@ -101,7 +101,7 @@ public class TestByteCollectionField {
 
 	@Test
 	public void testIntArray() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		IntArray nullArray = new IntArray(null);
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class, () -> bitser.toBytes(nullArray)
@@ -131,7 +131,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidOptional() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).stupidDeepCopy(new InvalidOptional())
+				() -> new Bitser().stupidDeepCopy(new InvalidOptional())
 		).getMessage();
 		assertContains(errorMessage, "NestedFieldSetting's on writeAsBytes targets is forbidden:");
 	}
@@ -148,7 +148,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidAnnotations() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).stupidDeepCopy(new InvalidAnnotations())
+				() -> new Bitser().stupidDeepCopy(new InvalidAnnotations())
 		).getMessage();
 		assertContains(errorMessage, "Value annotations are forbidden when writeAsBytes is true");
 	}
@@ -164,7 +164,7 @@ public class TestByteCollectionField {
 	@Test
 	public void testInvalidType() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).stupidDeepCopy(new InvalidType())
+				() -> new Bitser().stupidDeepCopy(new InvalidType())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected write-as-bytes field type class");
 	}

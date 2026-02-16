@@ -33,7 +33,7 @@ public class TestLazyFloatDistributionTracker {
 		OuterStruct outer = new OuterStruct();
 		outer.lazy.get().temperatures = new float[] { 3f, 3f };
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		FloatDistributionTracker tracker1 = new FloatDistributionTracker();
 		OuterStruct copied = bitser.stupidDeepCopy(outer, tracker1);
 

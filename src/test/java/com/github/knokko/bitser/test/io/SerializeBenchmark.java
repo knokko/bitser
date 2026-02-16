@@ -323,7 +323,7 @@ public class SerializeBenchmark {
 	}
 
 	public static void main(String[] args) throws IOException {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		RootStruct root = new RootStruct();
 		for (int counter = 0; counter < 500_000; counter++) {

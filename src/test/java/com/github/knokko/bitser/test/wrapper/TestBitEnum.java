@@ -64,7 +64,7 @@ public class TestBitEnum {
 
 	@Test
 	public void test() {
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		this.seasons = Season.WINTER;
 		this.direction = Direction.UP;
 
@@ -97,7 +97,7 @@ public class TestBitEnum {
 	@Test
 	public void testNonEnumClass() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new NonEnumStruct(), new BitCountStream())
+				() -> new Bitser().serialize(new NonEnumStruct(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "BitEnum can only be used on enums");
 	}
@@ -127,7 +127,7 @@ public class TestBitEnum {
 
 	@Test
 	public void testDeletedEnumConstantName() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(new SeasonStruct());
 
 		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.fromBytes(
@@ -163,7 +163,7 @@ public class TestBitEnum {
 
 	@Test
 	public void testDeletedEnumConstantOrdinal() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(new DirectionStruct());
 
 		String errorMessage = assertThrows(InvalidBitFieldException.class, () -> bitser.fromBytes(
@@ -183,7 +183,7 @@ public class TestBitEnum {
 
 	@Test
 	public void testOverruleDefaultMode() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		OverruleSeason overrule = new OverruleSeason();
 		overrule.season = Season.SUMMER;
@@ -216,7 +216,7 @@ public class TestBitEnum {
 
 	@Test
 	public void testWithoutBitEnum() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		Boss original = new Boss();
 		original.weakAgainst = Element.FIRE;
@@ -241,7 +241,7 @@ public class TestBitEnum {
 
 	@Test
 	public void testEnumMap() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		ContainsEnumMap original = new ContainsEnumMap();
 		original.nicerNames.put(Season.AUTUMN, "leafs");

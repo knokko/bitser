@@ -37,7 +37,7 @@ public class TestLinkedLists {
 
 	@Test
 	public void testShort() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		BitLinkedList root = new BitLinkedList();
 		root.value = "hello";
@@ -53,7 +53,7 @@ public class TestLinkedLists {
 
 	@Test
 	public void testShortBackwardCompatible() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		BitLinkedList root = new BitLinkedList();
 		root.value = "hello";
@@ -68,7 +68,7 @@ public class TestLinkedLists {
 
 	@Test
 	public void testLong() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		BitLinkedList list = BitLinkedList.generateRandom();
 
 		BitLinkedList recovered = bitser.stupidDeepCopy(list);
@@ -86,7 +86,7 @@ public class TestLinkedLists {
 
 	@Test
     public void testLongBackwardCompatible() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		BitLinkedList list = BitLinkedList.generateRandom();
 
 		BitLinkedList recovered = bitser.stupidDeepCopy(list, Bitser.BACKWARD_COMPATIBLE);

@@ -22,7 +22,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testMinimal() {
-		new Bitser(true).stupidDeepCopy(new Empty(), Bitser.BACKWARD_COMPATIBLE);
+		new Bitser().stupidDeepCopy(new Empty(), Bitser.BACKWARD_COMPATIBLE);
 	}
 
 	private enum OldPet {
@@ -88,7 +88,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testSimpleBackwardCompatibility() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		SimpleBefore before = new SimpleBefore();
 		before.dummyChance = 12;
 		before.dummyFraction = 2.5f;
@@ -161,7 +161,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testNested() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		NestedBefore before = new NestedBefore();
 		before.nested.dummyChance = 99;
@@ -188,7 +188,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testConsistencyWithNonBackwardCompatibleStructs() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		NestedAfter compatible = new NestedAfter();
 		compatible.test = 90;
@@ -238,7 +238,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testInvalidFullIntToPartialInt() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.fromBytes(
 				PartialInt.class, bitser.toBytes(new FullInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
@@ -248,7 +248,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testInvalidPartialIntToFullByte() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.fromBytes(
 				FullByte.class, bitser.toBytes(new PartialInt(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
@@ -274,7 +274,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testOptionalIntegers() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		OptionalInt none = new OptionalInt();
 		none.x = null;
 
@@ -304,7 +304,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testOptionalFloats() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		OptionalFloat none = new OptionalFloat();
 		none.x = null;
 
@@ -316,7 +316,7 @@ public class TestSimpleBackwardCompatibility {
 	@Test
 	public void testDeserializeEmpty() {
 		// Since OptionalFloat.x has id 2 and FullInt.x has id 0, the value of FullInt.x should be its default value
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		assertEquals(1_000_000, bitser.fromBytes(FullInt.class, bitser.toBytes(
 				new OptionalFloat(), Bitser.BACKWARD_COMPATIBLE
 		), Bitser.BACKWARD_COMPATIBLE).x);
@@ -324,7 +324,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testInvalidNamedEnumConversion() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleAfter after = new SimpleAfter();
 		after.namedPet = NewPet.PIG;
 
@@ -337,7 +337,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testInvalidOrdinalEnumConversion() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleAfter after = new SimpleAfter();
 		after.ordinalPet = NewPet.PIG;
 
@@ -366,7 +366,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testInvalidConversionFromStringToUUID() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		String errorMessage = assertThrows(LegacyBitserException.class, () -> bitser.fromBytes(
 				IdWrapper.class, bitser.toBytes(new StringWrapper(), Bitser.BACKWARD_COMPATIBLE), Bitser.BACKWARD_COMPATIBLE
 		)).getMessage();
@@ -386,7 +386,7 @@ public class TestSimpleBackwardCompatibility {
 	public void testBackwardCompatibleParentWithNonCompatibleChild() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).toBytes(
+				() -> new Bitser().toBytes(
 						new ParentWithIncompatibleChild(), Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -408,7 +408,7 @@ public class TestSimpleBackwardCompatibility {
 	public void testBackwardCompatibleParentWithNonCompatibleFunction() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).toBytes(
+				() -> new Bitser().toBytes(
 					new ParentWithIncompatibleFunction(), Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -436,7 +436,7 @@ public class TestSimpleBackwardCompatibility {
 	public void testBackwardCompatibleParentWithChildThatMissesID() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).toBytes(
+				() -> new Bitser().toBytes(
 					new ParentWithMissingIdChild(), Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
@@ -446,7 +446,7 @@ public class TestSimpleBackwardCompatibility {
 
 	@Test
 	public void testInvalidConversionFromStringToStruct() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		StringWrapper old = new StringWrapper();
 		byte[] bytes = bitser.toBytes(old, Bitser.BACKWARD_COMPATIBLE);
 

@@ -101,7 +101,7 @@ public class TestBitStructConnection {
 //
 //	@Test
 //	public void testFindPrimitiveChanges() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		ChangeTracker tracker = new ChangeTracker(3);
 //
 //		Primitives original = new Primitives();
@@ -154,7 +154,7 @@ public class TestBitStructConnection {
 //
 //	@Test
 //	public void testFindPrimitiveWrapperChanges() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		ChangeTracker tracker = new ChangeTracker(0);
 //
 //		PrimitiveWrappers original = new PrimitiveWrappers();
@@ -219,7 +219,7 @@ public class TestBitStructConnection {
 //
 //	@Test
 //	public void testFindSimpleNonNestedChanges() throws IOException {
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //		ChangeTracker tracker = new ChangeTracker(5);
 //		NoNesting original = new NoNesting();
 //		original.s1 = "hello";
@@ -282,7 +282,7 @@ public class TestBitStructConnection {
 //	@Test
 //	public void testNestedStructs() throws IOException {
 //		ChangeTracker tracker = new ChangeTracker(1);
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //
 //		Nested1 state2 = new Nested1();
 //		state2.f = 123f;
@@ -311,7 +311,7 @@ public class TestBitStructConnection {
 //	@Test
 //	public void testNestedStructReassignments() throws IOException {
 //		ChangeTracker tracker = new ChangeTracker(1);
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //
 //		BitStructConnection<Nested1> connection1 = bitser.createStructConnection(new Nested1(), tracker);
 //		BitStructConnection<Nested1> connection2 = bitser.createStructConnection(new Nested1(), tracker);
@@ -365,7 +365,7 @@ public class TestBitStructConnection {
 //	@Test
 //	public void testHandleOptionalNestedStruct() throws IOException {
 //		ChangeTracker tracker = new ChangeTracker(1);
-//		Bitser bitser = new Bitser(false);
+//		Bitser bitser = new Bitser();
 //
 //		BitStructConnection<OptionalRoot> connection1 = bitser.createStructConnection(new OptionalRoot(), tracker);
 //		BitStructConnection<OptionalRoot> connection2 = bitser.createStructConnection(new OptionalRoot(), tracker);
@@ -391,7 +391,7 @@ public class TestBitStructConnection {
 //
 //	@Test
 //	public void testHandleOptionalNestedHazard() throws IOException {
-//		Bitser bitser = new Bitser(true);
+//		Bitser bitser = new Bitser();
 //		CombinedChangeTracker tracker1 = new CombinedChangeTracker();
 //		ChangeTracker tracker2 = new ChangeTracker(1);
 //

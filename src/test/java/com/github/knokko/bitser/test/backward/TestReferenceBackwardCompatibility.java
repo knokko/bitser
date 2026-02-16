@@ -121,7 +121,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testVerySimpleShallow() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		OldShallow original = new OldShallow();
 		original.a = 1;
 		original.targets = new Dummy[2];
@@ -229,7 +229,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testReferenceMethod() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		ReferenceMethodOld before = new ReferenceMethodOld();
 		before.dummies.add(new Dummy(5));
 
@@ -255,7 +255,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testReferenceMethodCorrupted() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		ReferenceMethodOldCorrupted before = new ReferenceMethodOldCorrupted();
 		before.dummies.add(new Dummy(5));
 
@@ -351,7 +351,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testStableReferences() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		OldMixedReferenceList before = new OldMixedReferenceList();
 		before.targets.add(new StableDummy(0.5));
 		before.targets.add(new StableDummy(-2.5));
@@ -496,7 +496,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testNested() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		OldNestedRoot oldRoot = new OldNestedRoot();
 		oldRoot.stableRoot = new StableDummy(4.5);
 		oldRoot.friendRoot = new Dummy(12);
@@ -551,7 +551,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testUnstableToStableReference() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleUnstable unstable = new SimpleUnstable();
 		unstable.target = new Dummy(75);
 		unstable.reference = unstable.target;
@@ -579,7 +579,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testStableToUnstableReference() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleStable stable = new SimpleStable();
 		stable.target = new StableDummy(75.75);
 		stable.reference = stable.target;
@@ -605,7 +605,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testReferenceToNonReference() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		SimpleUnstable unstable = new SimpleUnstable();
 		unstable.target = new Dummy(45);
 		unstable.reference = unstable.target;
@@ -623,7 +623,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testNonReferenceToReference() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleNonReference simple = new SimpleNonReference();
 		simple.reference = new Dummy(1);
 		simple.target = new Dummy(2);
@@ -675,7 +675,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testReferenceFunctionToNonReferenceFunction() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		ReferenceFunction unstable = new ReferenceFunction();
 		unstable.target = new Dummy(45);
 
@@ -692,7 +692,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testNonReferenceFunctionToReferenceFunction() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		NonReferenceFunction simple = new NonReferenceFunction();
 		simple.target = new Dummy(2);
 
@@ -723,7 +723,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testNonReferenceToOptionalReference() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleNonReference simple = new SimpleNonReference();
 		simple.reference = new Dummy(1);
 		simple.target = new Dummy(2);
@@ -753,7 +753,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testReferenceToOptionalNonReference() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		SimpleUnstable unstable = new SimpleUnstable();
 		unstable.target = new Dummy(50);
 		unstable.reference = unstable.target;
@@ -771,7 +771,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testBackwardCompatibleWithStruct() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		OldNestedRoot oldWith = new OldNestedRoot();
 		oldWith.stableRoot = new StableDummy(1.0);
 		oldWith.friendRoot = new Dummy(2);
@@ -812,7 +812,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testBackwardCompatibleWithArray() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		OldNestedRoot oldWith = new OldNestedRoot();
 		oldWith.stableRoot = new StableDummy(1.0);
 		oldWith.friendRoot = new Dummy(2);
@@ -896,7 +896,7 @@ public class TestReferenceBackwardCompatibility {
 		lots.bestAttacksPerZone.put(lots.zones.get(385), lots.attacks.get(3));
 		lots.bestStruct = lots.structs.get(72);
 
-		LotsOfReferences copy = new Bitser(false).stupidDeepCopy(lots, Bitser.BACKWARD_COMPATIBLE);
+		LotsOfReferences copy = new Bitser().stupidDeepCopy(lots, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(lots.attacks, copy.attacks);
 		assertNotSame(lots.attacks, copy.attacks);
 		assertEquals(lots.structs, copy.structs);
@@ -1000,7 +1000,7 @@ public class TestReferenceBackwardCompatibility {
 		root.reference1.put("pretty", new ReferenceWrapper1(target1));
 		root.reference2.put(new ReferenceWrapper2(target2), "taste");
 
-		MapOfStructs copy = new Bitser(true).stupidDeepCopy(root, Bitser.BACKWARD_COMPATIBLE);
+		MapOfStructs copy = new Bitser().stupidDeepCopy(root, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(1, copy.target1.size());
 		assertEquals(1, copy.target2.size());
 		assertEquals(1, copy.reference1.size());
@@ -1043,7 +1043,7 @@ public class TestReferenceBackwardCompatibility {
 
 	@Test
 	public void testRenameReferenceLabels() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		BeforeRename before = new BeforeRename();
 		AfterRename notBackward = bitser.fromBytes(
 				AfterRename.class,
@@ -1099,7 +1099,7 @@ public class TestReferenceBackwardCompatibility {
 		NoTargetYet simple = new NoTargetYet();
 		simple.noTarget = new StableDummy(-2.5);
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		IsTargetNow target = bitser.fromBytes(
 				IsTargetNow.class,
 				bitser.toBytes(simple, Bitser.BACKWARD_COMPATIBLE),
@@ -1115,7 +1115,7 @@ public class TestReferenceBackwardCompatibility {
 		IsTargetNow target = new IsTargetNow();
 		target.target = new StableDummy(1.0);
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		NoTargetYet nope = bitser.fromBytes(
 				NoTargetYet.class,
 				bitser.toBytes(target, Bitser.BACKWARD_COMPATIBLE),
@@ -1143,7 +1143,7 @@ public class TestReferenceBackwardCompatibility {
 		OptionalReferenceArray array = new OptionalReferenceArray();
 		array.references = new UUID[] { array.target, null, array.target };
 
-		OptionalReferenceArray loaded = new Bitser(true).stupidDeepCopy(array, Bitser.BACKWARD_COMPATIBLE);
+		OptionalReferenceArray loaded = new Bitser().stupidDeepCopy(array, Bitser.BACKWARD_COMPATIBLE);
 		assertEquals(3, loaded.references.length);
 		assertSame(loaded.target, loaded.references[0]);
 		assertNull(loaded.references[1]);

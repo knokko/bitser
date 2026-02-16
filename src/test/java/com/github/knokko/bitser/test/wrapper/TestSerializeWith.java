@@ -59,7 +59,7 @@ public class TestSerializeWith {
 
 	@Test
 	public void testSingleStable() throws IOException {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		TargetStruct targets = new TargetStruct();
 		targets.stable.add(new StableStruct(12));
 
@@ -82,7 +82,7 @@ public class TestSerializeWith {
 
 	@Test
 	public void testSingleUnstable() throws IOException {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		TargetStruct targets = new TargetStruct();
 		targets.unstable.add("hello");
 
@@ -135,7 +135,7 @@ public class TestSerializeWith {
 		web.references.stable.add(with2.stable.get(0));
 		web.references.unstable.add(with2.unstable.get(0));
 
-		Web loaded = new Bitser(true).stupidDeepCopy(web, with2, with1);
+		Web loaded = new Bitser().stupidDeepCopy(web, with2, with1);
 		assertEquals(1, loaded.ownTargets.stable.size());
 		assertEquals(1, loaded.ownTargets.unstable.size());
 		assertEquals(3, loaded.references.stable.size());

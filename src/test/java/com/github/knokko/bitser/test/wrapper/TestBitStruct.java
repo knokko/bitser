@@ -36,7 +36,7 @@ public class TestBitStruct {
 		wandCooldowns.maxCharges = 4;
 		wandCooldowns.rechargeTime = 20;
 
-		wandCooldowns = new Bitser(true).stupidDeepCopy(wandCooldowns);
+		wandCooldowns = new Bitser().stupidDeepCopy(wandCooldowns);
 		assertEquals(5, wandCooldowns.cooldown);
 		assertEquals(4, wandCooldowns.maxCharges);
 		assertEquals(20, wandCooldowns.rechargeTime);
@@ -76,7 +76,7 @@ public class TestBitStruct {
 		root.next = new Chain();
 		root.next.properties = new Chain.Properties(2);
 
-		root = new Bitser(true).stupidDeepCopy(root);
+		root = new Bitser().stupidDeepCopy(root);
 		assertEquals(10, root.properties.strength);
 		assertEquals(2, root.next.properties.strength);
 		assertNull(root.next.next);
@@ -87,7 +87,7 @@ public class TestBitStruct {
 		Chain a = new Chain();
 		Chain b = new Chain();
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		assertFalse(bitser.deepEquals(a, null));
 		assertNotEquals(bitser.hashCode(a), bitser.hashCode(null));
 		assertTrue(bitser.deepEquals(a, b));
@@ -130,7 +130,7 @@ public class TestBitStruct {
 	@Test
 	public void testNoAnnotationsError() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new NoAnnotations(), new BitCountStream())
+				() -> new Bitser().serialize(new NoAnnotations(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Missing annotations for");
 	}
@@ -175,7 +175,7 @@ public class TestBitStruct {
 		rectangle.height = 789;
 		rectangle.color = "red";
 
-		rectangle = new Bitser(false).stupidDeepCopy(rectangle);
+		rectangle = new Bitser().stupidDeepCopy(rectangle);
 		assertEquals(-12, rectangle.x);
 		assertEquals(-34, rectangle.y);
 		assertEquals(56, rectangle.width);
@@ -189,7 +189,7 @@ public class TestBitStruct {
 	public void testNoBitStructInheritance() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).serialize(new SubWandCooldowns(), new BitCountStream())
+				() -> new Bitser().serialize(new SubWandCooldowns(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "SubWandCooldowns is not a BitStruct");
 	}
@@ -211,7 +211,7 @@ public class TestBitStruct {
 	@Test
 	public void testDuplicateIDs() {
 		String errorMessage = assertThrows(
-				InvalidBitFieldException.class, () -> new Bitser(false).stupidDeepCopy(new DuplicateIDs())
+				InvalidBitFieldException.class, () -> new Bitser().stupidDeepCopy(new DuplicateIDs())
 		).getMessage();
 		assertContains(errorMessage, "DuplicateIDs");
 		assertContains(errorMessage, "multiple @BitField");
@@ -232,7 +232,7 @@ public class TestBitStruct {
 		ReferenceStruct b = new ReferenceStruct();
 		b.id = new UUID(12, 34);
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertFalse(bitser.deepEquals(a, b));
 
 		a.id = b.id;

@@ -81,7 +81,7 @@ public class TestUnstableReferences {
 		root.items.add(new Item("cold shield", shield));
 		root.items.add(new Item("spiky shield", shield));
 
-		ItemRoot loaded = new Bitser(false).stupidDeepCopy(root);
+		ItemRoot loaded = new Bitser().stupidDeepCopy(root);
 
 		assertEquals(2, loaded.types.size());
 		assertEquals("sword", loaded.types.get(0).name);
@@ -186,7 +186,7 @@ public class TestUnstableReferences {
 		node3.bestFriend = new DeepNodeReference(node2);
 		node3.neighbours.add(node1);
 
-		Graph loaded = new Bitser(false).stupidDeepCopy(graph);
+		Graph loaded = new Bitser().stupidDeepCopy(graph);
 		assertEquals(4, loaded.mostNodes.size());
 
 		Node loaded1 = loaded.mostNodes.get(0);
@@ -242,10 +242,10 @@ public class TestUnstableReferences {
 
 	@Test
 	public void testNonBitStructReferences() {
-		NonStructReferences loaded = new Bitser(true).stupidDeepCopy(new NonStructReferences("world"));
+		NonStructReferences loaded = new Bitser().stupidDeepCopy(new NonStructReferences("world"));
 		assertEquals("world", loaded.hello);
 		assertSame(loaded.hello, loaded.hi);
-		assertTrue(new Bitser(false).deepEquals(loaded, new NonStructReferences("world")));
+		assertTrue(new Bitser().deepEquals(loaded, new NonStructReferences("world")));
 	}
 
 	@Test
@@ -255,7 +255,7 @@ public class TestUnstableReferences {
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serialize(root, new BitCountStream())
+				() -> new Bitser().serialize(root, new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label item types");
@@ -273,7 +273,7 @@ public class TestUnstableReferences {
 	public void testMissingTargetLabel() {
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serialize(new MissingTargetLabel(), new BitCountStream())
+				() -> new Bitser().serialize(new MissingTargetLabel(), new BitCountStream())
 		).getMessage();
 
 		assertContains(errorMessage, "Can't find @ReferenceFieldTarget with label nope");
@@ -300,7 +300,7 @@ public class TestUnstableReferences {
 	public void testFieldThatIsBothReferenceAndTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new BothReferenceAndTarget(), new BitCountStream())
+				() -> new Bitser().serialize(new BothReferenceAndTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is both a reference field and a reference target");
 	}
@@ -318,7 +318,7 @@ public class TestUnstableReferences {
 	public void testPrimitiveTarget() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new WithPrimitiveTarget(), new BitCountStream())
+				() -> new Bitser().serialize(new WithPrimitiveTarget(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "is primitive, which is forbidden");
 	}
@@ -332,7 +332,7 @@ public class TestUnstableReferences {
 
 		String errorMessage = assertThrows(
 				ReferenceBitserException.class,
-				() -> new Bitser(false).serialize(root, new BitCountStream())
+				() -> new Bitser().serialize(root, new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Multiple unstable targets have identity");
 		assertContains(errorMessage, "ItemRoot -> types");
@@ -380,14 +380,14 @@ public class TestUnstableReferences {
 		mixed.unstableReference1 = mixed.target1;
 		mixed.unstableReference2 = mixed.target2;
 
-		Mixed loaded = new Bitser(false).stupidDeepCopy(mixed);
+		Mixed loaded = new Bitser().stupidDeepCopy(mixed);
 		assertEquals("world", loaded.target1.hello);
 		assertEquals("triangle", loaded.target2.hello);
 		assertSame(loaded.target1, loaded.unstableReference1);
 		assertSame(loaded.target2, loaded.stableReference);
 		assertSame(loaded.target2, loaded.unstableReference2);
-		assertTrue(new Bitser(true).deepEquals(mixed, loaded));
-		assertEquals(new Bitser(false).hashCode(mixed), new Bitser(true).hashCode(loaded));
+		assertTrue(new Bitser().deepEquals(mixed, loaded));
+		assertEquals(new Bitser().hashCode(mixed), new Bitser().hashCode(loaded));
 	}
 
 	@Test
@@ -400,7 +400,7 @@ public class TestUnstableReferences {
 		ItemRoot withRoot = new ItemRoot();
 		withRoot.types.add(itemType);
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(primaryRoot, withRoot);
 
 		String errorMessage = assertThrows(
@@ -420,7 +420,7 @@ public class TestUnstableReferences {
 		ItemRoot with = new ItemRoot();
 		with.types.add(itemType);
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(item, with);
 
 		String errorMessage = assertThrows(
@@ -448,7 +448,7 @@ public class TestUnstableReferences {
 	public void testForbidNullReferences() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).toBytes(new RequiredReferenceList())
+				() -> new Bitser().toBytes(new RequiredReferenceList())
 		).getMessage();
 		assertContains(errorMessage, "RequiredReferenceList -> references");
 		assertContains(errorMessage, "must not have null elements");
@@ -509,7 +509,7 @@ public class TestUnstableReferences {
 
 	@Test
 	public void testGenericTarget() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		GenericRoot original = new GenericRoot();
 		original.target = new GenericTarget<String>();
 		original.reference = original.target;
@@ -574,7 +574,7 @@ public class TestUnstableReferences {
 		original.typeB = original.type1;
 		original.typeC = original.type2;
 
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		var simple = bitser.stupidDeepCopy(original);
 		assertEquals("Shield", simple.typeA.name);
 		assertEquals("Sword", simple.typeB.name);
@@ -602,7 +602,7 @@ public class TestUnstableReferences {
 		main.typeB = with.typeB;
 		main.typeC = with.typeC;
 
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		var basic = bitser.stupidDeepCopy(main, with);
 		assertSame(with.typeA, basic.typeA);
 
@@ -638,7 +638,7 @@ public class TestUnstableReferences {
 		original.typeA = new ItemType("Shield");
 		original.typeB = new ItemType("Sword");
 
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		var simpleA = bitser.stupidDeepCopy(original, new WithParameter("a", null));
 		assertEquals("Shield", simpleA.typeA.name);
 		assertEquals("Sword", simpleA.typeB.name);
@@ -700,7 +700,7 @@ public class TestUnstableReferences {
 		original.typeA = new ItemType("Shield");
 		original.typeB = new ItemType("Sword");
 
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		var simpleA = bitser.stupidDeepCopy(original, new WithParameter("a", null));
 		assertEquals("Shield", simpleA.typeA.name);
 		assertEquals("Sword", simpleA.typeB.name);
@@ -724,7 +724,7 @@ public class TestUnstableReferences {
 
 	@Test
 	public void testDeepEqualsAndHashCode() {
-		var bitser = new Bitser(false);
+		var bitser = new Bitser();
 		var typeA1 = new ItemType("t1");
 		var typeA2 = new ItemType("t2");
 		var typeX = new ItemType("x");

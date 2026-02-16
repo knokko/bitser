@@ -71,7 +71,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testSimple() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		SimpleOuterStruct input = new SimpleOuterStruct();
 		input.prefix = 123;
 		input.lazy = new SimpleLazyBits<>(new SimpleInnerStruct());
@@ -125,7 +125,7 @@ public class TestLazyFieldWrapper {
 	public void testNull() {
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(false).toBytes(new SimpleOuterStruct())
+				() -> new Bitser().toBytes(new SimpleOuterStruct())
 		).getMessage();
 		assertContains(errorMessage, "-> lazy");
 		assertContains(errorMessage, "must not be null");
@@ -143,7 +143,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testOptional() {
-		var bitser = new Bitser(true);
+		var bitser = new Bitser();
 		OptionalOuterStruct outer = new OptionalOuterStruct();
 		outer.suffix = 12;
 
@@ -184,7 +184,7 @@ public class TestLazyFieldWrapper {
 		input.lazy = new SimpleLazyBits<>(new SimpleInnerStruct());
 		input.lazy.get().words.add("not anymore");
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		NotLazy output = bitser.fromBytes(
 				NotLazy.class,
@@ -201,7 +201,7 @@ public class TestLazyFieldWrapper {
 		input.inner = new SimpleInnerStruct();
 		input.inner.words.add("become lazy");
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		SimpleOuterStruct output = bitser.fromBytes(
 				SimpleOuterStruct.class,
@@ -237,7 +237,7 @@ public class TestLazyFieldWrapper {
 		input.lazy = new SimpleLazyBits<>(new SimpleInnerStruct());
 		input.lazy.get().words.add("not anymore");
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		byte[] bytes = bitser.toBytes(input, Bitser.BACKWARD_COMPATIBLE);
 
 		String errorMessage = assertThrows(
@@ -251,7 +251,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testLazyNullToNonLazyNullString() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		OptionalOuterStruct optional = new OptionalOuterStruct();
 		optional.suffix = 456;
 		byte[] bytes = bitser.toBytes(optional, Bitser.BACKWARD_COMPATIBLE);
@@ -275,7 +275,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testLazyNullToNonLazyNullStruct() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		OptionalOuterStruct optional = new OptionalOuterStruct();
 		optional.suffix = 123;
 		byte[] bytes = bitser.toBytes(optional, Bitser.BACKWARD_COMPATIBLE);
@@ -315,7 +315,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testAllowOwnReferences() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		ReferenceOuterStruct original = new ReferenceOuterStruct();
 		original.reference = original.target;
 		original.lazy = new SimpleLazyBits<>(new ReferenceInnerStruct());
@@ -332,7 +332,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testForbidReferencesToLazy() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		ReferenceOuterStruct original = new ReferenceOuterStruct();
 		original.lazy = new SimpleLazyBits<>(new ReferenceInnerStruct());
 		original.reference = original.lazy.get().target;
@@ -347,7 +347,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testForbidReferencesFromLazy() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		ReferenceOuterStruct original = new ReferenceOuterStruct();
 		original.lazy = new SimpleLazyBits<>(new ReferenceInnerStruct());
 		original.reference = original.target;
@@ -369,7 +369,7 @@ public class TestLazyFieldWrapper {
 
 	@Test
 	public void testLazyList() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		LazyList list = new LazyList();
 		list.lazyList.add(new SimpleLazyBits<>(new SimpleInnerStruct()));
@@ -408,7 +408,7 @@ public class TestLazyFieldWrapper {
 	public void testUnknownGenericType() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).toBytes(new UnknownGenericType())
+				() -> new Bitser().toBytes(new UnknownGenericType())
 		).getMessage();
 		assertContains(errorMessage, "SimpleLazyBits<?>");
 		assertContains(errorMessage, "TestLazyFieldWrapper$UnknownGenericType.lazyMystery");
@@ -418,7 +418,7 @@ public class TestLazyFieldWrapper {
 	public void testIntegerGenericType() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).toBytes(new IntGenericType())
+				() -> new Bitser().toBytes(new IntGenericType())
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
 		assertContains(errorMessage, "TestLazyFieldWrapper$IntGenericType.lazyInt");
@@ -428,7 +428,7 @@ public class TestLazyFieldWrapper {
 	public void testListGenericType() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).toBytes(new ListGenericType())
+				() -> new Bitser().toBytes(new ListGenericType())
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
 		assertContains(errorMessage, "TestLazyFieldWrapper$ListGenericType.lazyList");
@@ -453,7 +453,7 @@ public class TestLazyFieldWrapper {
 	private void assertUnexpectedAnnotation(Object subject) {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(false).hashCode(subject)
+				() -> new Bitser().hashCode(subject)
 		).getMessage();
 		assertContains(errorMessage, ".lazy");
 		assertContains(errorMessage, "TestLazyFieldWrapper$UnexpectedAnnotation");

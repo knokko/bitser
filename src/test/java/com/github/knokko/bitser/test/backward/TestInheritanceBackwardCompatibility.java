@@ -112,7 +112,7 @@ public class TestInheritanceBackwardCompatibility {
 
 	@Test
 	public void testSimpleInheritanceBackwardCompatibility() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		OldFish fish1 = new OldFish();
 		fish1.canJump = false;
 		fish1.swimSpeed = 3.5;
@@ -214,7 +214,7 @@ public class TestInheritanceBackwardCompatibility {
 
 	@Test
 	public void testWithFewerOptionsValid() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		OldBird oldBird = new OldBird();
 		oldBird.numLegs = 5;
@@ -233,7 +233,7 @@ public class TestInheritanceBackwardCompatibility {
 
 	@Test
 	public void testWithFewerOptionsInvalid() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		OldZoo oldZoo = new OldZoo();
 		oldZoo.animals = new OldAnimal[] { new OldFish() };
@@ -287,7 +287,7 @@ public class TestInheritanceBackwardCompatibility {
 
 	@Test
 	public void testWithIncompatibleHierarchy1() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		IncompatibleZoo zoo = new IncompatibleZoo();
 		zoo.animals = new IncompatibleAnimal[] { new IncompatibleBird() };
@@ -302,7 +302,7 @@ public class TestInheritanceBackwardCompatibility {
 
 	@Test
 	public void testWithIncompatibleHierarchy2() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		OldZoo zoo = new OldZoo();
 		zoo.animals = new OldAnimal[] { new OldBird() };

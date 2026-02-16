@@ -28,7 +28,7 @@ public class TestStringField {
 
 	@Test
 	public void testOptionalStrings() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertThrows(InvalidBitValueException.class, () -> bitser.toBytes(this));
 		this.b = "abcde";
 
@@ -42,14 +42,14 @@ public class TestStringField {
 		this.a = "Ώ ΐ Α Β Γ Δ Ε Ζ Η Θ Ι ";
 		this.b = " ນ ບ ";
 
-		TestStringField loaded = new Bitser(false).stupidDeepCopy(this);
+		TestStringField loaded = new Bitser().stupidDeepCopy(this);
 		assertEquals(this.a, loaded.a);
 		assertEquals(this.b, loaded.b);
 	}
 
 	@Test
 	public void testLargeMemoryAllocationAttack() throws IOException {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 		BitOutputStream bitOutput = new BitOutputStream(byteOutput);

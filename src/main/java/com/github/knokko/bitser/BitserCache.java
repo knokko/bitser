@@ -4,7 +4,6 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.StableReferenceFieldId;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,14 +13,9 @@ class BitserCache {
 	private final Map<Class<?>, BitStructWrapper<?>> wrappers;
 	private final Map<Class<?>, Boolean> hasStableIdMap;
 
-	BitserCache(boolean threadSafe) {
-		if (threadSafe) {
-			wrappers = new ConcurrentHashMap<>();
-			hasStableIdMap = new ConcurrentHashMap<>();
-		} else {
-			wrappers = new HashMap<>();
-			hasStableIdMap = new HashMap<>();
-		}
+	BitserCache() {
+		wrappers = new ConcurrentHashMap<>();
+		hasStableIdMap = new ConcurrentHashMap<>();
 	}
 
 	<T> BitStructWrapper<T> getWrapper(Class<T> objectClass) {

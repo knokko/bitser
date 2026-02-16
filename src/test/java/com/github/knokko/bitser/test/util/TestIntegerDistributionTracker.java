@@ -26,7 +26,7 @@ public class TestIntegerDistributionTracker {
 
 	@Test
 	public void testLotsOfFives() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		ExampleStruct example = new ExampleStruct();
 		example.numbers = new int[] { 3, 5, 5, 5, 1, 2, 3, 2, 5 };
 		example.lonely = -12;

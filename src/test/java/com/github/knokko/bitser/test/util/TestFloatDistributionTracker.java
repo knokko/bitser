@@ -26,7 +26,7 @@ public class TestFloatDistributionTracker {
 
 	@Test
 	public void testLotsOfFivesAndHalves() {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		ExampleStruct example = new ExampleStruct();
 		example.numbers = new float[] { 3.1f, 5.5f, 5.5f, 5.5f, 1.2f, 2.8f, 3.1f, 2.7f, 5.5f };
 		example.lonely = -12.5;

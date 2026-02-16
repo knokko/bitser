@@ -135,7 +135,7 @@ public class TestBitDebugStream {
 
 	@Test
 	public void testWithoutDebug() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		RootStruct original = generate();
 
 		check(bitser.stupidDeepCopy(original));
@@ -147,9 +147,9 @@ public class TestBitDebugStream {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
 		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
 
-		byte[] contentBytes = new Bitser(false).toBytes(generate(), debugOption);
+		byte[] contentBytes = new Bitser().toBytes(generate(), debugOption);
 
-		check(new Bitser(true).fromBytes(RootStruct.class, contentBytes, debugOption));
+		check(new Bitser().fromBytes(RootStruct.class, contentBytes, debugOption));
 
 		Scanner actualScanner = new Scanner(new ByteArrayInputStream(debugBytes.toByteArray()));
 		Scanner expectedScanner = new Scanner(Objects.requireNonNull(
@@ -167,11 +167,11 @@ public class TestBitDebugStream {
 		ByteArrayOutputStream debugBytes = new ByteArrayOutputStream();
 		DebugBits debugOption = new DebugBits(new PrintWriter(debugBytes), false);
 
-		byte[] contentBytes = new Bitser(false).toBytes(
+		byte[] contentBytes = new Bitser().toBytes(
 				generate(), debugOption, Bitser.BACKWARD_COMPATIBLE
 		);
 
-		check(new Bitser(true).fromBytes(
+		check(new Bitser().fromBytes(
 				RootStruct.class, contentBytes, debugOption, Bitser.BACKWARD_COMPATIBLE
 		));
 

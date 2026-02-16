@@ -120,7 +120,7 @@ public class TestBitClass {
 			world.entities.add(creeper);
 		}
 
-		world = new Bitser(false).stupidDeepCopy(world);
+		world = new Bitser().stupidDeepCopy(world);
 		assertEquals(5, world.entities.size());
 
 		Boat boat = (Boat) world.entities.get(0);
@@ -159,6 +159,6 @@ public class TestBitClass {
 	public void testInvalidEntity() {
 		World world = new World();
 		world.entities.add(new Invalid());
-		assertThrows(InvalidBitValueException.class, () -> new Bitser(false).toBytes(world));
+		assertThrows(InvalidBitValueException.class, () -> new Bitser().toBytes(world));
 	}
 }

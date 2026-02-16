@@ -41,7 +41,7 @@ public class TestBitCollectionField {
 		Strings strings = new Strings();
 		strings.array = new String[]{"hello", null, "world"};
 
-		strings = new Bitser(true).stupidDeepCopy(strings);
+		strings = new Bitser().stupidDeepCopy(strings);
 		assertArrayEquals(new String[]{"hello", null, "world"}, strings.array);
 		assertNull(strings.list);
 	}
@@ -53,7 +53,7 @@ public class TestBitCollectionField {
 		strings.list = new ArrayList<>();
 		strings.list.add("hello, world!");
 
-		strings = new Bitser(false).stupidDeepCopy(strings);
+		strings = new Bitser().stupidDeepCopy(strings);
 		assertArrayEquals(new String[]{"test1234"}, strings.array);
 		assertEquals(1, strings.list.size());
 		assertEquals("hello, world!", strings.list.get(0));
@@ -64,7 +64,7 @@ public class TestBitCollectionField {
 		Strings a = new Strings();
 		Strings b = new Strings();
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertTrue(bitser.deepEquals(a, b));
 		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
 
@@ -102,7 +102,7 @@ public class TestBitCollectionField {
 		Strings a = new Strings();
 		Strings b = new Strings();
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		assertTrue(bitser.deepEquals(a, b));
 		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
 
@@ -145,7 +145,7 @@ public class TestBitCollectionField {
 		bytes.list.add(null);
 		bytes.list.add((byte) 45);
 
-		bytes = new Bitser(false).stupidDeepCopy(bytes);
+		bytes = new Bitser().stupidDeepCopy(bytes);
 		assertArrayEquals(new byte[2], bytes.array);
 		assertEquals(3, bytes.list.size());
 		assertEquals((byte) 123, bytes.list.get(0));
@@ -160,7 +160,7 @@ public class TestBitCollectionField {
 		bytes.array[1] = 34;
 		bytes.list.add((byte) -123);
 
-		bytes = new Bitser(true).stupidDeepCopy(bytes);
+		bytes = new Bitser().stupidDeepCopy(bytes);
 		assertArrayEquals(new byte[]{-12, 34}, bytes.array);
 		assertEquals(1, bytes.list.size());
 		assertEquals((byte) -123, bytes.list.get(0));
@@ -179,7 +179,7 @@ public class TestBitCollectionField {
 	public void testInvalidShortArray() {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
-				() -> new Bitser(true).toBytes(new InvalidShortArray())
+				() -> new Bitser().toBytes(new InvalidShortArray())
 		).getMessage();
 		assertContains(errorMessage, "can't be optional");
 	}
@@ -199,7 +199,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testNullLongArray() {
 		Longs longs = new Longs();
-		longs = new Bitser(false).stupidDeepCopy(longs);
+		longs = new Bitser().stupidDeepCopy(longs);
 		assertNull(longs.array);
 		assertEquals(0, longs.set.size());
 	}
@@ -208,7 +208,7 @@ public class TestBitCollectionField {
 	public void testNullLongValues() {
 		Longs longs = new Longs();
 		longs.array = new Long[]{12L, null, 34L};
-		longs = new Bitser(false).stupidDeepCopy(longs);
+		longs = new Bitser().stupidDeepCopy(longs);
 		assertArrayEquals(new Long[]{12L, null, 34L}, longs.array);
 		assertEquals(0, longs.set.size());
 	}
@@ -219,7 +219,7 @@ public class TestBitCollectionField {
 		longs.set = null;
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
+				() -> new Bitser().serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
 		).getMessage();
 		assertContains(errorMessage, "must not be null");
 	}
@@ -232,7 +232,7 @@ public class TestBitCollectionField {
 		longs.set.add(34L);
 		String errorMessage = assertThrows(
 				InvalidBitValueException.class,
-				() -> new Bitser(true).serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
+				() -> new Bitser().serialize(longs, new BitOutputStream(new ByteArrayOutputStream()))
 		).getMessage();
 		assertContains(errorMessage, "must not have null elements");
 	}
@@ -243,7 +243,7 @@ public class TestBitCollectionField {
 		longs.array = new Long[]{-1L, 2L};
 		longs.set.add(-1234L);
 
-		longs = new Bitser(true).stupidDeepCopy(longs);
+		longs = new Bitser().stupidDeepCopy(longs);
 		assertArrayEquals(new Long[]{-1L, 2L}, longs.array);
 		assertEquals(1, longs.set.size());
 		assertEquals(-1234L, longs.set.iterator().next());
@@ -260,7 +260,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testMissingGenerics() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new MissingGenerics(), new BitCountStream())
+				() -> new Bitser().serialize(new MissingGenerics(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected generic type");
 	}
@@ -276,7 +276,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testUnknownGenerics() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new UnknownGenerics(), new BitCountStream())
+				() -> new Bitser().serialize(new UnknownGenerics(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected generic type");
 	}
@@ -292,7 +292,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testAbstractList() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).serialize(new WithAbstractList(), new BitCountStream())
+				() -> new Bitser().serialize(new WithAbstractList(), new BitCountStream())
 		).getMessage();
 		assertContains(errorMessage, "Field type must not be abstract or an interface");
 		assertContains(errorMessage, "WithAbstractList.list");
@@ -311,7 +311,7 @@ public class TestBitCollectionField {
 		ReferenceList a = new ReferenceList();
 		ReferenceList b = new ReferenceList();
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		assertTrue(bitser.deepEquals(a, b));
 		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
 		assertTrue(bitser.deepEquals(null, null));
@@ -351,7 +351,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testCollectionWithWeirdConstructors() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).stupidDeepCopy(new StructWithWeirdCollection())
+				() -> new Bitser().stupidDeepCopy(new StructWithWeirdCollection())
 		).getMessage();
 		assertContains(errorMessage, "-> collection");
 		assertContains(errorMessage, "Failed to find constructor of class");
@@ -382,7 +382,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testCollectionWithAggressiveConstructor() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).stupidDeepCopy(new StructWithAggressiveCollection())
+				() -> new Bitser().stupidDeepCopy(new StructWithAggressiveCollection())
 		).getMessage();
 		assertContains(errorMessage, "-> collection");
 		assertContains(errorMessage, "Failed to instantiate class");
@@ -402,7 +402,7 @@ public class TestBitCollectionField {
 	@Test
 	public void testNotGenericCollection() {
 		String errorMessage = assertThrows(InvalidBitFieldException.class,
-				() -> new Bitser(true).stupidDeepCopy(new StructWithNotGenericCollection())
+				() -> new Bitser().stupidDeepCopy(new StructWithNotGenericCollection())
 		).getMessage();
 		assertContains(errorMessage, "Unexpected generic type");
 		assertContains(errorMessage, "NotGenericCollection");
@@ -419,7 +419,7 @@ public class TestBitCollectionField {
 
 	@Test
 	public void testLargeMemoryAllocationAttack() throws IOException {
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 
 		ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
 		BitOutputStream bitOutput = new BitOutputStream(byteOutput);

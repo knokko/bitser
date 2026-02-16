@@ -118,7 +118,7 @@ public class TestDeepCopy {
 
 	@Test
 	public void testDeepCopy() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 
 		WithClass withObject = new WithClass();
 

@@ -27,7 +27,7 @@ public class TestIntegerField {
 	@Test
 	public void testZero() {
 		this.varInt = 10;
-		TestIntegerField loaded = new Bitser(false).stupidDeepCopy(this);
+		TestIntegerField loaded = new Bitser().stupidDeepCopy(this);
 		assertEquals(10, loaded.varInt);
 		assertEquals(0, loaded.uniformInt);
 	}
@@ -36,7 +36,7 @@ public class TestIntegerField {
 	public void testNonZero() {
 		this.varInt = 12345;
 		this.uniformInt = -123456;
-		TestIntegerField loaded = new Bitser(true).stupidDeepCopy(this);
+		TestIntegerField loaded = new Bitser().stupidDeepCopy(this);
 		assertEquals(12345, loaded.varInt);
 		assertEquals(-123456, loaded.uniformInt);
 	}
@@ -45,7 +45,7 @@ public class TestIntegerField {
 	public void testOutOfRange() {
 		this.varInt = 9;
 		String errorMessage = assertThrows(InvalidBitValueException.class,
-				() -> new Bitser(true).stupidDeepCopy(this)
+				() -> new Bitser().stupidDeepCopy(this)
 		).getMessage();
 		assertContains(errorMessage, "9 is out of range [10, 100000]");
 		assertContains(errorMessage, " -> varInt");
@@ -63,7 +63,7 @@ public class TestIntegerField {
 		SingleShort instance = new SingleShort();
 		instance.value = 123;
 
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		BitCountStream counter = new BitCountStream();
 		bitser.serialize(instance, counter);
 
@@ -100,7 +100,7 @@ public class TestIntegerField {
 			sizes.terminators.add(number);
 		}
 
-		Bitser bitser = new Bitser(false);
+		Bitser bitser = new Bitser();
 		DigitSizes incompatible = bitser.stupidDeepCopy(sizes);
 		DigitSizes compatible = bitser.stupidDeepCopy(sizes, Bitser.BACKWARD_COMPATIBLE);
 
@@ -124,7 +124,7 @@ public class TestIntegerField {
 
 	@Test
 	public void testCommonValues() {
-		Bitser bitser = new Bitser(true);
+		Bitser bitser = new Bitser();
 		CommonValues common = new CommonValues();
 		common.scores.add(0);
 		common.scores.add(50);
