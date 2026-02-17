@@ -3,7 +3,6 @@ package com.github.knokko.bitser;
 import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 
 class DeepComparator {
@@ -23,12 +22,17 @@ class DeepComparator {
 	boolean equals() {
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
-				if (structJobs.remove(structJobs.size() - 1).certainlyNotEqual(this)) return false;
+				var job = structJobs.remove(structJobs.size() - 1);
+				if (job.certainlyNotEqual(this)) {
+					return false;
+				}
 			}
 			if (!arrayJobs.isEmpty()) {
 				var job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
-					if (job.certainlyNotEqual(this)) return false;
+					if (job.certainlyNotEqual(this)) {
+						return false;
+					}
 				} catch (Throwable failed) {
 					throw new RecursionException(job.node().generateTrace(job.description()), failed);
 				}
@@ -36,7 +40,9 @@ class DeepComparator {
 		}
 
 		for (var job : referenceJobs) {
-			if (job.notEqual(this)) return false;
+			if (job.notEqual(this)) {
+				return false;
+			}
 		}
 
 		return true;

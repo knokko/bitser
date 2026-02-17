@@ -70,7 +70,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 			StringBitser.encode(enumValue.name(), lengthField, serializer.output);
 		} else if (mode == BitEnum.Mode.Ordinal) {
 			int maxOrdinal = field.type.getEnumConstants().length - 1;
-			serializer.output.prepareProperty("enum-ordinal", -1);
+			serializer.output.prepareProperty("enum-ordinal");
 			encodeUniformInteger(enumValue.ordinal(), 0, maxOrdinal, serializer.output);
 			serializer.output.finishProperty();
 		} else throw new UnexpectedBitserException("Unknown enum mode: " + mode);
@@ -93,7 +93,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 
 		int ordinal;
 		if (mode == BitEnum.Mode.Ordinal) {
-			deserializer.input.prepareProperty("enum-ordinal", -1);
+			deserializer.input.prepareProperty("enum-ordinal");
 			ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
 			deserializer.input.finishProperty();
 		} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
@@ -118,7 +118,7 @@ class EnumFieldWrapper extends BitFieldWrapper {
 		}
 
 		if (mode == BitEnum.Mode.Ordinal) {
-			deserializer.input.prepareProperty("enum-ordinal", -1);
+			deserializer.input.prepareProperty("enum-ordinal");
 			int ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
 			deserializer.input.finishProperty();
 			return new LegacyEnumOrdinal(ordinal);

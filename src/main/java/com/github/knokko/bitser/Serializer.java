@@ -52,19 +52,20 @@ class Serializer {
 
 	void run() {
 		// Stage 1
+		output.setMarker("stage 1: struct jobs & array jobs");
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				WriteStructJob job = structJobs.remove(structJobs.size() - 1);
-				output.pushContext(job.node(), "(struct-job)");
+				output.pushContext(job.node(), null);
 				job.write(this);
-				output.popContext(job.node(), "(struct-job)");
+				output.popContext(job.node(), null);
 			}
 			if (!arrayJobs.isEmpty()) {
 				WriteArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
-					output.pushContext(job.node(), "(array-job)");
+					output.pushContext(job.node(), null);
 					job.write(this);
-					output.popContext(job.node(), "(array-job)");
+					output.popContext(job.node(), null);
 				} catch (Throwable failed) {
 					throw new RecursionException(job.node().generateTrace(null), failed);
 				}
@@ -72,17 +73,20 @@ class Serializer {
 		}
 
 		// Stage 2
+		output.setMarker("stage 2: with jobs");
 		references.handleWithJobs(new FunctionContext(bitser, backwardCompatible, withParameters));
 
 		// Stage 3
+		output.setMarker("stage 3: map stable IDs");
 		references.mapStableIDs();
 
 		// Stage 4
+		output.setMarker("stage 4: reference jobs");
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
-				output.pushContext(referenceJob.node(), "(struct-reference-job)");
+				output.pushContext(referenceJob.node(), null);
 				referenceJob.save(this);
-				output.popContext(referenceJob.node(), "(struct-reference-job)");
+				output.popContext(referenceJob.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
 			}
@@ -91,9 +95,9 @@ class Serializer {
 
 		for (WriteArrayReferenceJob referenceJob : arrayReferenceJobs) {
 			try {
-				output.pushContext(referenceJob.node(), "(array-reference-job)");
+				output.pushContext(referenceJob.node(), null);
 				referenceJob.save(this);
-				output.popContext(referenceJob.node(), "(array-reference-job)");
+				output.popContext(referenceJob.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
 			}

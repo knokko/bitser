@@ -33,7 +33,7 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 			RecursionNode parentNode, String fieldName
 	) throws Throwable {
 		UUID value = (UUID) rawValue;
-		serializer.output.prepareProperty("uuid", -1);
+		serializer.output.prepareProperty("uuid");
 		encodeFullLong(value.getMostSignificantBits(), serializer.output);
 		encodeFullLong(value.getLeastSignificantBits(), serializer.output);
 		serializer.output.finishProperty();
@@ -41,7 +41,7 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("uuid", -1);
+		deserializer.input.prepareProperty("uuid");
 		UUID result = new UUID(decodeFullLong(deserializer.input), decodeFullLong(deserializer.input));
 		deserializer.input.finishProperty();
 		return result;
@@ -49,7 +49,7 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("uuid", -1);
+		deserializer.input.prepareProperty("uuid");
 		UUID result = new UUID(decodeFullLong(deserializer.input), decodeFullLong(deserializer.input));
 		deserializer.input.finishProperty();
 		return new LegacyUUIDValue(result);

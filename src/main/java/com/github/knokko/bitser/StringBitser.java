@@ -17,13 +17,12 @@ public class StringBitser {
 	) throws IOException {
 		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
 
-		output.prepareProperty("string-length", -1);
+		output.prepareProperty("string-length");
 		encodeInteger(bytes.length, lengthField, output);
 		output.finishProperty();
 
-		int counter = 0;
 		for (byte b : bytes) {
-			output.prepareProperty("string-char", counter++);
+			output.prepareProperty("string-char");
 			encodeUniformInteger(b, Byte.MIN_VALUE, Byte.MAX_VALUE, output);
 			output.finishProperty();
 		}
@@ -32,13 +31,13 @@ public class StringBitser {
 	public static String decode(
 			IntegerField.Properties lengthField, CollectionSizeLimit sizeLimit, BitInputStream input
 	) throws IOException {
-		input.prepareProperty("string-length", -1);
+		input.prepareProperty("string-length");
 		int length = decodeLength(lengthField, sizeLimit, "string length", input);
 		input.finishProperty();
 
 		byte[] bytes = new byte[length];
 		for (int index = 0; index < length; index++) {
-			input.prepareProperty("string-char", -1);
+			input.prepareProperty("string-char");
 			bytes[index] = (byte) decodeUniformInteger(Byte.MIN_VALUE, Byte.MAX_VALUE, input);
 			input.finishProperty();
 		}

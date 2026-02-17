@@ -81,7 +81,7 @@ class StructFieldWrapper extends BitFieldWrapper {
 		for (int index = 0; index < allowed.length; index++) {
 			if (allowed[index] == value.getClass())	{
 				if (allowed.length > 1) {
-					serializer.output.prepareProperty("allowed-class-index", -1);
+					serializer.output.prepareProperty("allowed-class-index");
 					encodeUniformInteger(index, 0, allowed.length - 1, serializer.output);
 					serializer.output.finishProperty();
 				}
@@ -103,7 +103,7 @@ class StructFieldWrapper extends BitFieldWrapper {
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		int allowedClassIndex;
 		if (allowed.length > 1) {
-			deserializer.input.prepareProperty("allowed-class-index", -1);
+			deserializer.input.prepareProperty("allowed-class-index");
 			allowedClassIndex = (int) decodeUniformInteger(0, allowed.length - 1, deserializer.input);
 			deserializer.input.finishProperty();
 		} else allowedClassIndex = 0;
@@ -120,7 +120,7 @@ class StructFieldWrapper extends BitFieldWrapper {
 	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		int allowedClassIndex;
 		if (legacyStructs.length > 1) {
-			deserializer.input.prepareProperty("allowed-class-index", -1);
+			deserializer.input.prepareProperty("allowed-class-index");
 			allowedClassIndex = (int) decodeUniformInteger(0, legacyStructs.length - 1, deserializer.input);
 			deserializer.input.finishProperty();
 		} else allowedClassIndex = 0;

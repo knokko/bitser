@@ -78,7 +78,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 			serializer.intDistribution.insert("map size", (long) map.size(), sizeField);
 		}
 
-		serializer.output.prepareProperty("map-size", -1);
+		serializer.output.prepareProperty("map-size");
 		IntegerBitser.encodeInteger(map.size(), sizeField, serializer.output);
 		serializer.output.finishProperty();
 
@@ -109,7 +109,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		deserializer.input.prepareProperty("map-size", -1);
+		deserializer.input.prepareProperty("map-size");
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "map-size", deserializer.input);
 		deserializer.input.finishProperty();
 
@@ -145,7 +145,7 @@ class MapFieldWrapper extends BitFieldWrapper {
 	@Override
 	public Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		deserializer.input.prepareProperty("map-size", -1);
+		deserializer.input.prepareProperty("map-size");
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "map-size", deserializer.input);
 		deserializer.input.finishProperty();
 

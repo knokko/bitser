@@ -58,7 +58,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				serializer.intDistribution.insert("collection size", (long) length, sizeField);
 			}
 
-			serializer.output.prepareProperty("array-length", -1);
+			serializer.output.prepareProperty("array-length");
 			IntegerBitser.encodeInteger(length, sizeField, serializer.output);
 			serializer.output.finishProperty();
 
@@ -80,7 +80,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 				serializer.intDistribution.insert("collection size", (long) collection.size(), sizeField);
 			}
 
-			serializer.output.prepareProperty("collection-size", -1);
+			serializer.output.prepareProperty("collection-size");
 			IntegerBitser.encodeInteger(collection.size(), sizeField, serializer.output);
 			serializer.output.finishProperty();
 
@@ -103,7 +103,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (field.type.isArray()) {
-			deserializer.input.prepareProperty("array-length", -1);
+			deserializer.input.prepareProperty("array-length");
 			int length = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "array-length", deserializer.input);
 			deserializer.input.finishProperty();
 
@@ -122,7 +122,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 			return array;
 		} else {
-			deserializer.input.prepareProperty("collection-size", -1);
+			deserializer.input.prepareProperty("collection-size");
 			int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "collection-size", deserializer.input);
 			deserializer.input.finishProperty();
 
@@ -148,7 +148,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	@Override
 	public Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		deserializer.input.prepareProperty("legacy-array-length", -1);
+		deserializer.input.prepareProperty("legacy-array-length");
 		int length = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "legacy-array-length", deserializer.input);
 		deserializer.input.finishProperty();
 

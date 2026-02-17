@@ -46,10 +46,10 @@ class LazyFieldWrapper extends BitFieldWrapper {
 			if (bytes == null || serializer.forbidLazySaving) {
 				bytes = serializer.bitser.toBytes(lazy.get(), options.toArray());
 			}
-			serializer.output.prepareProperty("lazy-bytes-length", -1);
+			serializer.output.prepareProperty("lazy-bytes-length");
 			encodeUnknownLength(bytes.length, serializer.output);
 			serializer.output.finishProperty();
-			serializer.output.prepareProperty("lazy-bytes", -1);
+			serializer.output.prepareProperty("lazy-bytes");
 			serializer.output.write(bytes);
 			serializer.output.finishProperty();
 		} else {
@@ -58,12 +58,12 @@ class LazyFieldWrapper extends BitFieldWrapper {
 	}
 
 	private byte[] readLazyBytes(BitInputStream input, CollectionSizeLimit sizeLimit) throws IOException {
-		input.prepareProperty("lazy-bytes-length", -1);
+		input.prepareProperty("lazy-bytes-length");
 		int size = decodeUnknownLength(sizeLimit, "lazy byte[] size", input);
 		input.finishProperty();
 
 		byte[] bytes = new byte[size];
-		input.prepareProperty("lazy-bytes", -1);
+		input.prepareProperty("lazy-bytes");
 		input.read(bytes);
 		input.finishProperty();
 

@@ -18,10 +18,10 @@ public class FloatBitser {
 		if (field.commonValues.length > 0) {
 			for (int index = 0; index < field.commonValues.length; index++) {
 				if (abs(value - field.commonValues[index]) <= field.errorTolerance) {
-					output.prepareProperty("float-common", -1);
+					output.prepareProperty("float-common");
 					output.write(true);
 					output.finishProperty();
-					output.prepareProperty("float-common-index", -1);
+					output.prepareProperty("float-common-index");
 					encodeUniformInteger(index, 0, field.commonValues.length - 1, output);
 					output.finishProperty();
 					return;
@@ -43,22 +43,22 @@ public class FloatBitser {
 				encodeInteger(count, field.expectedIntegerMultiple, counter);
 
 				if ((!doublePrecision && counter.getCounter() < 32) || (doublePrecision && counter.getCounter() < 64)) {
-					output.prepareProperty("float-simplified", -1);
+					output.prepareProperty("float-simplified");
 					output.write(true);
 					output.finishProperty();
-					output.prepareProperty("float-integer-value", -1);
+					output.prepareProperty("float-integer-value");
 					encodeInteger(count, field.expectedIntegerMultiple, output);
 					output.finishProperty();
 					return;
 				}
 			}
 
-			output.prepareProperty("float-simplified", -1);
+			output.prepareProperty("float-simplified");
 			output.write(false);
 			output.finishProperty();
 		}
 
-		output.prepareProperty("float-value", -1);
+		output.prepareProperty("float-value");
 		if (doublePrecision) {
 			encodeFullLong(Double.doubleToRawLongBits(value), output);
 		} else {
@@ -71,12 +71,12 @@ public class FloatBitser {
 			boolean doublePrecision, FloatField.Properties field, BitInputStream input
 	) throws IOException {
 		if (field.commonValues.length > 0) {
-			input.prepareProperty("float-common", -1);
+			input.prepareProperty("float-common");
 			boolean isCommon = input.read();
 			input.finishProperty();
 
 			if (isCommon) {
-				input.prepareProperty("float-common-index", -1);
+				input.prepareProperty("float-common-index");
 				int commonIndex = (int) decodeUniformInteger(0, field.commonValues.length - 1, input);
 				input.finishProperty();
 				return field.commonValues[commonIndex];
@@ -84,12 +84,12 @@ public class FloatBitser {
 		}
 
 		if (field.expectMultipleOf != 0.0) {
-			input.prepareProperty("float-simplified", -1);
+			input.prepareProperty("float-simplified");
 			boolean isMultipleOf = input.read();
 			input.finishProperty();
 
 			if (isMultipleOf) {
-				input.prepareProperty("float-integer-value", -1);
+				input.prepareProperty("float-integer-value");
 				long count = IntegerBitser.decodeInteger(field.expectedIntegerMultiple, input);
 				input.finishProperty();
 				double result = count * field.expectMultipleOf;
@@ -98,7 +98,7 @@ public class FloatBitser {
 			}
 		}
 
-		input.prepareProperty("float-value", -1);
+		input.prepareProperty("float-value");
 		if (doublePrecision) {
 			long doubleBits = decodeFullLong(input);
 			input.finishProperty();

@@ -63,19 +63,20 @@ class BackDeserializer {
 
 	void run() {
 		// Stage 1
+		input.setMarker("stage 1: struct jobs & array jobs");
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
 				BackReadStructJob structJob = structJobs.remove(structJobs.size() - 1);
-				input.pushContext(structJob.node(), "(back-struct-job)");
+				input.pushContext(structJob.node(), null);
 				structJob.read(this);
-				input.popContext(structJob.node(), "(back-struct-job)");
+				input.popContext(structJob.node(), null);
 			}
 			if (!arrayJobs.isEmpty()) {
 				BackReadArrayJob job = arrayJobs.remove(arrayJobs.size() - 1);
 				try {
-					input.pushContext(job.node(), "(array-job)");
+					input.pushContext(job.node(), null);
 					job.read(this);
-					input.popContext(job.node(), "(array-job)");
+					input.popContext(job.node(), null);
 				} catch (Throwable failed) {
 					throw new RecursionException(job.node().generateTrace(null), failed);
 				}
@@ -83,17 +84,20 @@ class BackDeserializer {
 		}
 
 		// Stage 2
+		input.setMarker("stage 2: with jobs");
 		references.handleWithJobs(new FunctionContext(bitser, true, withParameters));
 
 		// Stage 3
+		input.setMarker("stage 3: map stable IDs");
 		references.mapStableIDs();
 
 		// Stage 4
+		input.setMarker("stage 4: reference jobs");
 		for (BackReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
-				input.pushContext(referenceJob.node(), "(struct-reference-job)");
+				input.pushContext(referenceJob.node(), null);
 				referenceJob.resolve(this);
-				input.popContext(referenceJob.node(), "(struct-reference-job)");
+				input.popContext(referenceJob.node(), null);
 			} catch (Throwable failed) {
 				String topContext = "field/function " + referenceJob.legacyValuesIndex();
 				throw new RecursionException(referenceJob.node().generateTrace(topContext), failed);
@@ -103,9 +107,9 @@ class BackDeserializer {
 
 		for (BackReadArrayReferenceJob referenceJob : arrayReferenceJobs) {
 			try {
-				input.pushContext(referenceJob.node(), "(array-reference-job)");
+				input.pushContext(referenceJob.node(), null);
 				referenceJob.resolve(this);
-				input.popContext(referenceJob.node(), "(array-reference-job)");
+				input.popContext(referenceJob.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(referenceJob.node().generateTrace("elements"), failed);
 			}
@@ -113,6 +117,7 @@ class BackDeserializer {
 		arrayReferenceJobs.clear();
 
 		// Stage 5
+		input.setMarker("stage 5: convert struct & array jobs");
 		while (!convertStructJobs.isEmpty() || !convertArrayJobs.isEmpty()) {
 			if (!convertStructJobs.isEmpty()) {
 				BackConvertStructJob job = convertStructJobs.remove(convertStructJobs.size() - 1);
@@ -129,6 +134,7 @@ class BackDeserializer {
 		}
 
 		// Stage 6
+		input.setMarker("stage 6: convert reference jobs");
 		for (BackConvertStructReferenceJob job : convertStructReferenceJobs) {
 			try {
 				job.convert(this);
@@ -157,6 +163,7 @@ class BackDeserializer {
 		convertArrayReferenceJobs.clear();
 
 		// Stage 7
+		input.setMarker("stage 7: method reference to field jobs");
 		for (var referenceJob : methodReferenceToFieldJobs) {
 			try {
 				referenceJob.resolve();
@@ -167,6 +174,7 @@ class BackDeserializer {
 		methodReferenceToFieldJobs.clear();
 
 		// Stages 8, 9, and 10
+		input.setMarker("stage 8 to 10: collection population & post init");
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}
 }

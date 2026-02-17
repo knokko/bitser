@@ -159,17 +159,17 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			serializer.intDistribution.insert("collection size", (long) length, sizeField);
 		}
 
-		serializer.output.prepareProperty("byte-collection-length", -1);
+		serializer.output.prepareProperty("byte-collection-length");
 		IntegerBitser.encodeInteger(length, sizeField, serializer.output);
 		serializer.output.finishProperty();
 
-		serializer.output.prepareProperty("byte-collection-bytes", -1);
+		serializer.output.prepareProperty("byte-collection-bytes");
 		serializer.output.write(getBytesToWrite(value));
 		serializer.output.finishProperty();
 	}
 
 	private void readData(BitInputStream input, Object array) throws IOException {
-		input.prepareProperty("byte-collection-bytes", -1);
+		input.prepareProperty("byte-collection-bytes");
 		if (array instanceof boolean[]) backToBooleanArray((boolean[]) array, input);
 		else if (array instanceof byte[]) input.read((byte[]) array);
 		else if (array instanceof short[]) backToShortArray((short[]) array, input);
@@ -184,7 +184,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("byte-collection-length", -1);
+		deserializer.input.prepareProperty("byte-collection-length");
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
 		deserializer.input.finishProperty();
 		Object value = Array.newInstance(field.type.getComponentType(), size);
@@ -194,7 +194,7 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("byte-collection-length", -1);
+		deserializer.input.prepareProperty("byte-collection-length");
 		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
 		deserializer.input.finishProperty();
 		Object value = constructCollectionWithSize(size);

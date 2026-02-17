@@ -249,6 +249,17 @@ public class TestBitCollectionField {
 		assertEquals(-1234L, longs.set.iterator().next());
 	}
 
+	@Test
+	public void testLongSetEquality() {
+		Longs original = new Longs();
+		for (long counter = 0; counter < 10_000; counter++) original.set.add(counter);
+
+		var bitser = new Bitser();
+		for (int counter = 0; counter < 10; counter++) {
+			assertTrue(bitser.deepEquals(original, bitser.deepCopy(original)));
+		}
+	}
+
 	@BitStruct(backwardCompatible = false)
 	private static class MissingGenerics {
 

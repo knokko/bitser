@@ -1,4 +1,7 @@
-begin RootStruct -> (struct-job)
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 1: struct jobs & array jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+begin RootStruct
 begin RootStruct -> array
 array-length: 010100
 end RootStruct -> array
@@ -14,55 +17,55 @@ end RootStruct -> map
 begin RootStruct -> padding
 int-value: 01001101000100
 end RootStruct -> padding
-end RootStruct -> (struct-job)
-begin RootStruct -> map -> (array-job)
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-end RootStruct -> map -> (array-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct
+begin RootStruct -> map
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+end RootStruct -> map
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> nestedMap
 map-size: 10
 end RootStruct -> map -> elements -> nestedMap
-end RootStruct -> map -> elements -> (struct-job)
-begin RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> nestedMap -> element
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements -> nestedMap -> elements
 uuid: 11111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000
-end RootStruct -> map -> elements -> nestedMap -> element
-end RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> map -> elements -> nestedMap -> elements
+end RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> nestedMap
 map-size: 00
 end RootStruct -> map -> elements -> nestedMap
-end RootStruct -> map -> elements -> (struct-job)
-begin RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> nestedMap -> element
-end RootStruct -> map -> elements -> nestedMap -> element
-end RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> nestedMap -> elements -> (struct-job)
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements -> nestedMap -> elements
+end RootStruct -> map -> elements -> nestedMap -> elements
+end RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements -> nestedMap -> elements
 begin RootStruct -> map -> elements -> nestedMap -> elements -> address
 int-value: 0011101000000000000000000000000000000000000000000000000000000000
 end RootStruct -> map -> elements -> nestedMap -> elements -> address
-end RootStruct -> map -> elements -> nestedMap -> elements -> (struct-job)
-begin RootStruct -> map -> (array-job)
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-end RootStruct -> map -> (array-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> map -> elements -> nestedMap -> elements
+begin RootStruct -> map
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+end RootStruct -> map
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> address
 int-value: 0011101000000000000000000000000000000000000000000000000000000000
 end RootStruct -> map -> elements -> address
-end RootStruct -> map -> elements -> (struct-job)
-begin RootStruct -> list -> (array-job)
-begin RootStruct -> list -> element
-end RootStruct -> list -> element
-begin RootStruct -> list -> element
-end RootStruct -> list -> element
-end RootStruct -> list -> (array-job)
-begin RootStruct -> list -> elements -> (struct-job)
+end RootStruct -> map -> elements
+begin RootStruct -> list
+begin RootStruct -> list -> elements
+end RootStruct -> list -> elements
+begin RootStruct -> list -> elements
+end RootStruct -> list -> elements
+end RootStruct -> list
+begin RootStruct -> list -> elements
 begin RootStruct -> list -> elements -> description
 string-length: 011100
 string-char: 11001111
@@ -72,24 +75,24 @@ string-char: 11110111
 string-char: 01110111
 string-char: 00100111
 end RootStruct -> list -> elements -> description
-end RootStruct -> list -> elements -> (struct-job)
-begin RootStruct -> array -> (array-job)
-begin RootStruct -> array -> element
-end RootStruct -> array -> element
-begin RootStruct -> array -> element
-end RootStruct -> array -> element
-end RootStruct -> array -> (array-job)
-begin RootStruct -> array -> elements -> (struct-job)
+end RootStruct -> list -> elements
+begin RootStruct -> array
+begin RootStruct -> array -> elements
+end RootStruct -> array -> elements
+begin RootStruct -> array -> elements
+end RootStruct -> array -> elements
+end RootStruct -> array
+begin RootStruct -> array -> elements
 begin RootStruct -> array -> elements -> weight
 float-value: 00000000000000000000010100000011
 end RootStruct -> array -> elements -> weight
-end RootStruct -> array -> elements -> (struct-job)
-begin RootStruct -> array -> elements -> (struct-job)
+end RootStruct -> array -> elements
+begin RootStruct -> array -> elements
 begin RootStruct -> array -> elements -> weight
 float-value: 00000000000000000000001000000010
 end RootStruct -> array -> elements -> weight
-end RootStruct -> array -> elements -> (struct-job)
-begin RootStruct -> list -> elements -> (struct-job)
+end RootStruct -> array -> elements
+begin RootStruct -> list -> elements
 begin RootStruct -> list -> elements -> description
 string-length: 011010
 string-char: 01100111
@@ -98,14 +101,26 @@ string-char: 01001111
 string-char: 11001111
 string-char: 00101111
 end RootStruct -> list -> elements -> description
-end RootStruct -> list -> elements -> (struct-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> list -> elements
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> address
 int-value: 0100110000000000000000000000000000000000000000000000000000000000
 end RootStruct -> map -> elements -> address
-end RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> map -> elements
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 2: with jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 3: map stable IDs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 ---------------------------------------------------------------------------------------------
-begin RootStruct -> (struct-job)
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 1: struct jobs & array jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+begin RootStruct
 begin RootStruct -> array
 array-length: 010100
 end RootStruct -> array
@@ -121,55 +136,55 @@ end RootStruct -> map
 begin RootStruct -> padding
 int-value: 01001101000100
 end RootStruct -> padding
-end RootStruct -> (struct-job)
-begin RootStruct -> map -> (array-job)
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-end RootStruct -> map -> (array-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct
+begin RootStruct -> map
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+end RootStruct -> map
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> nestedMap
 map-size: 10
 end RootStruct -> map -> elements -> nestedMap
-end RootStruct -> map -> elements -> (struct-job)
-begin RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> nestedMap -> element
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements -> nestedMap -> elements
 uuid: 11111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000
-end RootStruct -> map -> elements -> nestedMap -> element
-end RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> map -> elements -> nestedMap -> elements
+end RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> nestedMap
 map-size: 00
 end RootStruct -> map -> elements -> nestedMap
-end RootStruct -> map -> elements -> (struct-job)
-begin RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> nestedMap -> element
-end RootStruct -> map -> elements -> nestedMap -> element
-end RootStruct -> map -> elements -> nestedMap -> (array-job)
-begin RootStruct -> map -> elements -> nestedMap -> elements -> (struct-job)
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements -> nestedMap -> elements
+end RootStruct -> map -> elements -> nestedMap -> elements
+end RootStruct -> map -> elements -> nestedMap
+begin RootStruct -> map -> elements -> nestedMap -> elements
 begin RootStruct -> map -> elements -> nestedMap -> elements -> address
 int-value: 0011101000000000000000000000000000000000000000000000000000000000
 end RootStruct -> map -> elements -> nestedMap -> elements -> address
-end RootStruct -> map -> elements -> nestedMap -> elements -> (struct-job)
-begin RootStruct -> map -> (array-job)
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-begin RootStruct -> map -> element
-end RootStruct -> map -> element
-end RootStruct -> map -> (array-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> map -> elements -> nestedMap -> elements
+begin RootStruct -> map
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+begin RootStruct -> map -> elements
+end RootStruct -> map -> elements
+end RootStruct -> map
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> address
 int-value: 0011101000000000000000000000000000000000000000000000000000000000
 end RootStruct -> map -> elements -> address
-end RootStruct -> map -> elements -> (struct-job)
-begin RootStruct -> list -> (array-job)
-begin RootStruct -> list -> element
-end RootStruct -> list -> element
-begin RootStruct -> list -> element
-end RootStruct -> list -> element
-end RootStruct -> list -> (array-job)
-begin RootStruct -> list -> elements -> (struct-job)
+end RootStruct -> map -> elements
+begin RootStruct -> list
+begin RootStruct -> list -> elements
+end RootStruct -> list -> elements
+begin RootStruct -> list -> elements
+end RootStruct -> list -> elements
+end RootStruct -> list
+begin RootStruct -> list -> elements
 begin RootStruct -> list -> elements -> description
 string-length: 011100
 string-char: 11001111
@@ -179,24 +194,24 @@ string-char: 11110111
 string-char: 01110111
 string-char: 00100111
 end RootStruct -> list -> elements -> description
-end RootStruct -> list -> elements -> (struct-job)
-begin RootStruct -> array -> (array-job)
-begin RootStruct -> array -> element
-end RootStruct -> array -> element
-begin RootStruct -> array -> element
-end RootStruct -> array -> element
-end RootStruct -> array -> (array-job)
-begin RootStruct -> array -> elements -> (struct-job)
+end RootStruct -> list -> elements
+begin RootStruct -> array
+begin RootStruct -> array -> elements
+end RootStruct -> array -> elements
+begin RootStruct -> array -> elements
+end RootStruct -> array -> elements
+end RootStruct -> array
+begin RootStruct -> array -> elements
 begin RootStruct -> array -> elements -> weight
 float-value: 00000000000000000000010100000011
 end RootStruct -> array -> elements -> weight
-end RootStruct -> array -> elements -> (struct-job)
-begin RootStruct -> array -> elements -> (struct-job)
+end RootStruct -> array -> elements
+begin RootStruct -> array -> elements
 begin RootStruct -> array -> elements -> weight
 float-value: 00000000000000000000001000000010
 end RootStruct -> array -> elements -> weight
-end RootStruct -> array -> elements -> (struct-job)
-begin RootStruct -> list -> elements -> (struct-job)
+end RootStruct -> array -> elements
+begin RootStruct -> list -> elements
 begin RootStruct -> list -> elements -> description
 string-length: 011010
 string-char: 01100111
@@ -205,10 +220,25 @@ string-char: 01001111
 string-char: 11001111
 string-char: 00101111
 end RootStruct -> list -> elements -> description
-end RootStruct -> list -> elements -> (struct-job)
-begin RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> list -> elements
+begin RootStruct -> map -> elements
 begin RootStruct -> map -> elements -> address
 int-value: 0100110000000000000000000000000000000000000000000000000000000000
 end RootStruct -> map -> elements -> address
-end RootStruct -> map -> elements -> (struct-job)
+end RootStruct -> map -> elements
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 2: with jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 3: map stable IDs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 7: method reference to field jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 8 to 10: collection population & post init >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 ---------------------------------------------------------------------------------------------

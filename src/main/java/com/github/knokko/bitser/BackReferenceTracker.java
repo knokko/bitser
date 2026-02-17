@@ -126,7 +126,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		private Object getStable(BitInputStream input) throws Throwable {
-			input.prepareProperty("legacy-stable-id", -1);
+			input.prepareProperty("legacy-stable-id");
 			UUID id = new UUID(IntegerBitser.decodeFullLong(input), IntegerBitser.decodeFullLong(input));
 			input.finishProperty();
 			Object value = stable.get(id);
@@ -139,7 +139,7 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		private Object getUnstable(BitInputStream input) throws Throwable {
-			input.prepareProperty("legacy-unstable-id", -1);
+			input.prepareProperty("legacy-unstable-id");
 			int index = (int) IntegerBitser.decodeUniformInteger(0, legacyOrWithToIDs.size() - 1, input);
 			input.finishProperty();
 			return idsToLegacyOrWith.get(index);

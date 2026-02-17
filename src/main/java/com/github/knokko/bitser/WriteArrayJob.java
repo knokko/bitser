@@ -12,9 +12,9 @@ record WriteArrayJob(Object array, BitFieldWrapper elementsWrapper, RecursionNod
 					serializer.output, element, elementsWrapper.field.optional, nullErrorMessage
 			)) continue;
 
-			serializer.output.pushContext(node, "element");
+			serializer.output.pushContext(node, "elements");
 			elementsWrapper.write(serializer, element, node, "elements");
-			serializer.output.popContext(node, "element");
+			serializer.output.popContext(node, "elements");
 			if (elementsWrapper.field.referenceTargetLabel != null) {
 				serializer.references.registerTarget(elementsWrapper.field.referenceTargetLabel, element);
 			}

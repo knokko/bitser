@@ -11,7 +11,7 @@ class WriteHelper {
 			BitOutputStream output, Object value, boolean optional, String errorMessage
 	) throws IOException, InvalidBitValueException {
 		if (optional) {
-			output.prepareProperty("optional", -1);
+			output.prepareProperty("optional");
 			output.write(value != null);
 			output.finishProperty();
 			return value == null;

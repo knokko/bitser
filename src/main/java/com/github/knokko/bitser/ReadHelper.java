@@ -8,7 +8,7 @@ class ReadHelper {
 
 	static boolean readOptional(BitInputStream input, boolean optional) throws IOException {
 		if (!optional) return false;
-		input.prepareProperty("optional", -1);
+		input.prepareProperty("optional");
 		boolean nonNull = input.read();
 		input.finishProperty();
 		return !nonNull;

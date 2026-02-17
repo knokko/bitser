@@ -51,8 +51,8 @@ public class DebugBitInputStream extends BitInputStream {
 	}
 
 	@Override
-	public void prepareProperty(String fieldName, int counter) {
-		super.prepareProperty(fieldName, counter);
+	public void prepareProperty(String fieldName) {
+		super.prepareProperty(fieldName);
 		writer.print(fieldName + ": ");
 		if (aggressiveFlush) writer.flush();
 	}
@@ -69,5 +69,13 @@ public class DebugBitInputStream extends BitInputStream {
 		super.close();
 		writer.println("---------------------------------------------------------------------------------------------");
 		writer.flush();
+	}
+
+	@Override
+	public void setMarker(String marker) {
+		writer.println();
+		writer.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< " + marker + " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+		writer.println();
+		if (aggressiveFlush) writer.flush();
 	}
 }

@@ -1,6 +1,5 @@
 package com.github.knokko.bitser;
 
-import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.HashMap;

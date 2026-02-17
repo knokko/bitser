@@ -16,6 +16,8 @@ import java.util.*;
 
 public class SerializeBenchmark {
 
+	private static final Bitser BITSER = new Bitser();
+
 	private static final IntegerField.Properties VARIABLE_INT = new IntegerField.Properties(
 			Integer.MIN_VALUE, Integer.MAX_VALUE, false, 0, new long[0]
 	);
@@ -27,7 +29,7 @@ public class SerializeBenchmark {
 	);
 
 	@BitStruct(backwardCompatible = true)
-	private static class RootStruct {
+	static class RootStruct {
 
 		@BitField(id = 0)
 		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
@@ -121,7 +123,7 @@ public class SerializeBenchmark {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class BigStruct {
+	static class BigStruct {
 
 		@BitField(id = 0)
 		@StableReferenceFieldId
@@ -216,7 +218,7 @@ public class SerializeBenchmark {
 	}
 
 	@BitStruct(backwardCompatible = true)
-	private static class SmallStruct {
+	static class SmallStruct {
 
 		private static final Field fieldX, fieldY, fieldZ, fieldA, fieldB;
 
@@ -263,6 +265,16 @@ public class SerializeBenchmark {
 			this.z = z;
 			this.a = a;
 			this.b = b;
+		}
+
+		@Override
+		public int hashCode() {
+			return BITSER.hashCode(this);
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			return other instanceof SmallStruct && BITSER.deepEquals(this, other);
 		}
 
 		void handwrittenSave1(DataOutputStream output) throws IOException {

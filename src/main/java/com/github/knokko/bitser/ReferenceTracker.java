@@ -110,7 +110,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 			if (referenceWrapper.stable) {
 				BitStructWrapper<?> valueInfo = cache.getWrapperOrNull(reference.getClass());
 				UUID id = valueInfo.getStableId(reference);
-				output.prepareProperty("stable-id", -1);
+				output.prepareProperty("stable-id");
 				IntegerBitser.encodeFullLong(id.getMostSignificantBits(), output);
 				IntegerBitser.encodeFullLong(id.getLeastSignificantBits(), output);
 				output.finishProperty();
@@ -127,7 +127,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 				if (index == null) {
 					throw new ReferenceBitserException("Can't find unstable reference target " + reference + " with label " + myLabel);
 				}
-				output.prepareProperty("unstable-id", -1);
+				output.prepareProperty("unstable-id");
 				IntegerBitser.encodeUniformInteger(index, 0, unstableToIDs.size() - 1, output);
 				output.finishProperty();
 			}
@@ -139,7 +139,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		private Object getStable(BitInputStream input) throws Throwable {
-			input.prepareProperty("stable-id", -1);
+			input.prepareProperty("stable-id");
 			UUID id = new UUID(IntegerBitser.decodeFullLong(input), IntegerBitser.decodeFullLong(input));
 			input.finishProperty();
 			Object value = stable.get(id);
@@ -150,7 +150,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		}
 
 		private Object getUnstable(BitInputStream input) throws Throwable {
-			input.prepareProperty("unstable-id", -1);
+			input.prepareProperty("unstable-id");
 			int index = (int) IntegerBitser.decodeUniformInteger(0, unstableToIDs.size() - 1, input);
 			input.finishProperty();
 			return idsToUnstable.get(index);

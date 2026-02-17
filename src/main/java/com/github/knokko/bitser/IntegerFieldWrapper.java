@@ -62,7 +62,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 		if (serializer.intDistribution != null) {
 			serializer.intDistribution.insert(field.toString(), longValue, intField);
 		}
-		serializer.output.prepareProperty("int-value", -1);
+		serializer.output.prepareProperty("int-value");
 		encodeInteger(longValue, intField, serializer.output);
 		serializer.output.finishProperty();
 	}
@@ -79,7 +79,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("int-value", -1);
+		deserializer.input.prepareProperty("int-value");
 		long longValue = decodeInteger(intField, deserializer.input);
 		deserializer.input.finishProperty();
 		return toRightType(longValue);
@@ -87,7 +87,7 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("int-value", -1);
+		deserializer.input.prepareProperty("int-value");
 		long longValue = decodeInteger(intField, deserializer.input);
 		deserializer.input.finishProperty();
 		return new LegacyIntValue(longValue);
