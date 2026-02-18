@@ -9,6 +9,7 @@ import java.util.Map;
 class InstanceCollector {
 
 	final Map<Class<?>, Collection<Object>> destination;
+	final Map<Class<?>, Collection<Object>> referencesDestination;
 	final Bitser bitser;
 	final Map<String, Object> withObjects;
 
@@ -17,9 +18,11 @@ class InstanceCollector {
 
 	InstanceCollector(
 			Object rootStruct, Map<Class<?>, Collection<Object>> destination,
+			Map<Class<?>, Collection<Object>> referencesDestination,
 			Bitser bitser, Map<String, Object> withObjects
 	) {
 		this.destination = destination;
+		this.referencesDestination = referencesDestination;
 		this.bitser = bitser;
 		this.withObjects = withObjects;
 		this.structJobs.add(new CollectFromStructJob(
@@ -46,6 +49,14 @@ class InstanceCollector {
 
 	void register(Object value) {
 		destination.forEach((candidateClass, instances) -> {
+			if (candidateClass.isAssignableFrom(value.getClass())) {
+				instances.add(value);
+			}
+		});
+	}
+
+	void registerReference(Object value) {
+		referencesDestination.forEach((candidateClass, instances) -> {
 			if (candidateClass.isAssignableFrom(value.getClass())) {
 				instances.add(value);
 			}

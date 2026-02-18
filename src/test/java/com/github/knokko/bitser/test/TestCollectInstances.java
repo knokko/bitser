@@ -77,12 +77,15 @@ public class TestCollectInstances {
 		root.parent.favoriteChild = root.parent.children[1];
 
 		var collected = new HashMap<Class<?>, Collection<Object>>();
+		var collectedReferences = new HashMap<Class<?>, Collection<Object>>();
 		collected.put(MiniStruct.class, new HashSet<>());
+		collectedReferences.put(MiniStruct.class, new ArrayList<>());
 		collected.put(DummyInterface.class, new ArrayList<>());
 		collected.put(RootStruct.class, new ArrayList<>());
 		collected.put(Float.class, new ArrayList<>());
-		bitser.collectInstances(root, collected, new WithParameter("factor", 7f));
+		bitser.collectInstances(root, collected, collectedReferences, new WithParameter("factor", 7f));
 		assertEquals(4, collected.size());
+		assertEquals(1, collectedReferences.size());
 
 		var expectedMini = new HashSet<>();
 		expectedMini.add(root.lazy.get());
@@ -106,5 +109,10 @@ public class TestCollectInstances {
 		var actualFloats = collected.get(Float.class);
 		assertEquals(expectedFloats.size(), actualFloats.size());
 		assertEquals(expectedFloats, new HashSet<>(actualFloats));
+
+		var expectedReferences = new ArrayList<>();
+		expectedReferences.add(root.parent.children[1]);
+		var actualReferences = collectedReferences.get(MiniStruct.class);
+		assertEquals(expectedReferences, actualReferences);
 	}
 }
