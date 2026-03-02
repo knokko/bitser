@@ -21,6 +21,26 @@ class ReferenceTracker extends AbstractReferenceTracker {
 		entries.register(target);
 	}
 
+	@Override
+	LazyReferenceTargets getLazyTargets(String label) {
+		var targets = labels.get(label);
+		if (targets == null) return null;
+		return new LazyReferenceTargets(label, targets.idsToUnstable, targets.stable);
+	}
+
+	void setLazyTargets(List<LazyReferenceTargets> targetsList) {
+		for (var targets : targetsList) {
+			if (targets == null) continue;
+			var labelTargets = labels.computeIfAbsent(targets.label(), key -> new LabelTargets(key, cache));
+			targets.stable().values().forEach(stableTarget -> {
+				if (!labelTargets.potentialStableSet.add(stableTarget)) {
+					throw new ReferenceBitserException("Multiple stable targets have identity " + stableTarget);
+				}
+			});
+			targets.idsToUnstable().forEach(labelTargets::registerUnstable);
+		}
+	}
+
 	void setWithObjects(List<Object> withObjects) {
 		for (Object withObject : withObjects) {
 			BitStructWrapper<?> structInfo = cache.getWrapper(withObject.getClass());
@@ -151,7 +171,7 @@ class ReferenceTracker extends AbstractReferenceTracker {
 
 		private Object getUnstable(BitInputStream input) throws Throwable {
 			input.prepareProperty("unstable-id");
-			int index = (int) IntegerBitser.decodeUniformInteger(0, unstableToIDs.size() - 1, input);
+			int index = (int) IntegerBitser.decodeUniformInteger(0, idsToUnstable.size() - 1, input);
 			input.finishProperty();
 			return idsToUnstable.get(index);
 		}

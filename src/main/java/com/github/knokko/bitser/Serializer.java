@@ -13,6 +13,7 @@ class Serializer {
 
 	final Bitser bitser;
 	final BitserCache cache;
+	final Object[] withAndOptions;
 	final Map<String, Object> withParameters;
 	final BitOutputStream output;
 	final boolean backwardCompatible;
@@ -21,6 +22,7 @@ class Serializer {
 	final ArrayList<WriteArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<WriteStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<WriteArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
+	final ArrayList<WriteLazyJob> lazyJobs = new ArrayList<>();
 
 	final ReferenceTracker references;
 
@@ -29,12 +31,15 @@ class Serializer {
 	final FloatDistributionTracker floatDistribution;
 
 	Serializer(
-			Bitser bitser, Map<String, Object> withParameters, BitOutputStream output, boolean backwardCompatible,
+			Bitser bitser, Object[] withAndOptions,
+			Map<String, Object> withParameters,
+			BitOutputStream output, boolean backwardCompatible,
 			Object rootStruct, boolean forbidLazySaving,
 			IntegerDistributionTracker intDistribution, FloatDistributionTracker floatDistribution
 	) {
 		this.bitser = bitser;
 		this.cache = bitser.cache;
+		this.withAndOptions = withAndOptions;
 		this.withParameters = withParameters;
 		this.output = output;
 		this.backwardCompatible = backwardCompatible;
@@ -81,7 +86,7 @@ class Serializer {
 		references.mapStableIDs();
 
 		// Stage 4
-		output.setMarker("stage 4: reference jobs");
+		output.setMarker("stage 4: reference jobs & lazy reference jobs");
 		for (WriteStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
 				output.pushContext(referenceJob.node(), null);
@@ -103,6 +108,17 @@ class Serializer {
 			}
 		}
 		arrayReferenceJobs.clear();
+
+		for (var job : lazyJobs) {
+			try {
+				output.pushContext(job.node(), null);
+				job.save(this);
+				output.popContext(job.node(), null);
+			} catch (Throwable failed) {
+				throw new RecursionException(job.node().generateTrace(null), failed);
+			}
+		}
+		lazyJobs.clear();
 
 		// Stages 5 and later are only needed during DEserialization
 	}

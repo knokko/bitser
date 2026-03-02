@@ -204,19 +204,20 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object rawLegacyValue, RecursionNode parentNode, String fieldName) {
-		if (!(rawLegacyValue instanceof LegacyArrayValue)) {
+		if (!(rawLegacyValue instanceof LegacyArrayValue legacyArrayWrapper)) {
 			throw new LegacyBitserException(
 					"Can't convert from legacy " + rawLegacyValue + " to " + field.type + " for field " + field
 			);
 		}
 
-		Object legacyArray = ((LegacyArrayValue) rawLegacyValue).array();
+		Object legacyArray = legacyArrayWrapper.array;
 		if (field.type == legacyArray.getClass()) {
 			return legacyArray;
 		}
 
 		int size = Array.getLength(legacyArray);
 		Object newArray = Array.newInstance(field.type.getComponentType(), size);
+		legacyArrayWrapper.modernObject = newArray;
 		for (int index = 0; index < size; index++) {
 			Object legacyValue = Array.get(legacyArray, index);
 			setFromLegacyValue(newArray, index, legacyValue);

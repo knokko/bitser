@@ -46,7 +46,7 @@ class SingleClassWrapper {
 		Class<?>[] otherFields = {
 				ClassField.class, EnumField.class, FloatField.class, IntegerField.class, NestedFieldSetting.class,
 				NestedFieldSettings.class, ReferenceField.class, ReferenceFieldTarget.class,
-				StableReferenceFieldId.class, StringField.class
+				StableReferenceFieldId.class, LazyReferences.class, StringField.class
 		};
 
 		Map<Integer, FunctionWrapper> functionMapping = new HashMap<>();
@@ -103,7 +103,9 @@ class SingleClassWrapper {
 						break;
 					}
 				}
-				if (classField.getType() == SimpleLazyBits.class) bitField = DEFAULT_BIT_FIELD;
+				if (classField.getType() == SimpleLazyBits.class || classField.getType() == ReferenceLazyBits.class) {
+					bitField = DEFAULT_BIT_FIELD;
+				}
 				if (bitField == null) continue;
 			}
 

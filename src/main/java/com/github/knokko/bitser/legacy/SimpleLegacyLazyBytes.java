@@ -4,8 +4,6 @@ import com.github.knokko.bitser.BitPostInit;
 import com.github.knokko.bitser.Bitser;
 import com.github.knokko.bitser.SimpleLazyBits;
 
-import java.util.Objects;
-
 /**
  * Instances of this class are created during the backward-compatible deserialization of a
  * {@link SimpleLazyBits} field. This class is usually not interesting for users, but it may
@@ -14,12 +12,4 @@ import java.util.Objects;
  * @param bytes The bytes containing the data of the wrapped struct that was serialized.
  *              You should be able to deserialize it using {@link Bitser#fromBytes}.
  */
-public record LegacyLazyBytes(byte[] bytes) {
-
-	/**
-	 * This constructor is meant for internal use only.
-	 */
-	public LegacyLazyBytes(byte[] bytes) {
-		this.bytes = Objects.requireNonNull(bytes);
-	}
-}
+public record SimpleLegacyLazyBytes(byte[] bytes) { }

@@ -25,6 +25,21 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		labels.computeIfAbsent(label, LabelTargets::new).registerWith(target);
 	}
 
+	@Override
+	LazyReferenceTargets getLazyTargets(String label) {
+		var targets = labels.get(label);
+		if (targets == null) return null;
+		return new LazyReferenceTargets(label, targets.idsToLegacyOrWith, new HashMap<>());
+	}
+
+	void setLazyTargets(List<LazyReferenceTargets> targetsList) {
+		for (var targets : targetsList) {
+			if (targets == null) continue;
+			var labelTargets = labels.computeIfAbsent(targets.label(), LabelTargets::new);
+			targets.idsToUnstable().forEach(labelTargets::registerWith);
+		}
+	}
+
 	void setWithObjects(List<Object> withObjects) {
 		for (Object withObject : withObjects) {
 			BitStructWrapper<?> structInfo = cache.getWrapper(withObject.getClass());
@@ -76,12 +91,19 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		}
 	}
 
-	Object getModern(Object legacyReference) {
-		Object modernReference = legacyToModern.get(legacyReference);
-		if (modernReference == null) throw new LegacyBitserException(
-				"Reference target for " + legacyReference + " no longer exists"
-		);
-		return modernReference;
+	Object getModernFromRaw(Object rawLegacyReference) {
+		if (rawLegacyReference instanceof LegacyReference legacyReference) {
+			Object inner = legacyReference.reference();
+			Object modernReference = legacyToModern.get(inner);
+			if (modernReference == null) throw new LegacyBitserException(
+					"Reference target for " + inner + " no longer exists"
+			);
+			return modernReference;
+		} else if (rawLegacyReference instanceof WithReference withReference) {
+			return withReference.reference();
+		} else {
+			throw new LegacyBitserException("Can't convert from legacy " + rawLegacyReference + " to reference");
+		}
 	}
 
 	Object getWithOrLegacy(ReferenceFieldWrapper referenceWrapper, BitInputStream input) throws Throwable {

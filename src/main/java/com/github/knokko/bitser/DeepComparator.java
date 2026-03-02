@@ -13,6 +13,7 @@ class DeepComparator {
 	final ArrayList<DeepCompareArraysJob> arrayJobs = new ArrayList<>();
 	final IdentityHashMap<Object, Object> referenceTargetMapping = new IdentityHashMap<>();
 	final ArrayList<DeepCompareReferenceJob> referenceJobs = new ArrayList<>();
+	final ArrayList<DeepCompareLazyJob> lazyJobs = new ArrayList<>();
 
 	DeepComparator(Object rootA, Object rootB, BitStructWrapper<?> rootWrapper, Bitser bitser) {
 		this.bitser = bitser;
@@ -41,6 +42,12 @@ class DeepComparator {
 
 		for (var job : referenceJobs) {
 			if (job.notEqual(this)) {
+				return false;
+			}
+		}
+
+		for (var job : lazyJobs) {
+			if (!job.areEqual(this)) {
 				return false;
 			}
 		}

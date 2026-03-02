@@ -2,6 +2,7 @@ package com.github.knokko.bitser.test;
 
 import com.github.knokko.bitser.BitStruct;
 import com.github.knokko.bitser.Bitser;
+import com.github.knokko.bitser.ReferenceLazyBits;
 import com.github.knokko.bitser.SimpleLazyBits;
 import com.github.knokko.bitser.field.*;
 import com.github.knokko.bitser.options.WithParameter;
@@ -55,10 +56,13 @@ public class TestCollectInstances {
 	static class RootStruct {
 
 		@BitField
-		SimpleLazyBits<MiniStruct> lazy;
+		SimpleLazyBits<ParentStruct> simpleLazy;
 
 		@BitField
 		final HashMap<String, MiniStruct2> mapping = new HashMap<>();
+
+		@LazyReferences(labels = { "mini" })
+		ReferenceLazyBits<ParentStruct> referenceLazy;
 
 		@BitField
 		ParentStruct parent;
@@ -69,12 +73,20 @@ public class TestCollectInstances {
 		var bitser = new Bitser();
 		var root = new RootStruct();
 
-		root.lazy = new SimpleLazyBits<>(new MiniStruct());
+		root.simpleLazy = new SimpleLazyBits<>(new ParentStruct());
+		root.simpleLazy.get().mini = new MiniStruct();
+		root.simpleLazy.get().children = new MiniStruct[] { new MiniStruct() };
+		root.simpleLazy.get().favoriteChild = root.simpleLazy.get().children[0];
+
 		root.mapping.put("test", new MiniStruct2());
 		root.parent = new ParentStruct();
 		root.parent.mini = new MiniStruct();
 		root.parent.children = new MiniStruct[] { new MiniStruct(), new MiniStruct() };
 		root.parent.favoriteChild = root.parent.children[1];
+
+		root.referenceLazy = new ReferenceLazyBits<>(new ParentStruct());
+		root.referenceLazy.get().mini = new MiniStruct();
+		root.referenceLazy.get().favoriteChild = root.parent.children[1];
 
 		var collected = new HashMap<Class<?>, Collection<Object>>();
 		var collectedReferences = new HashMap<Class<?>, Collection<Object>>();
@@ -88,8 +100,10 @@ public class TestCollectInstances {
 		assertEquals(1, collectedReferences.size());
 
 		var expectedMini = new HashSet<>();
-		expectedMini.add(root.lazy.get());
+		expectedMini.add(root.simpleLazy.get().mini);
+		expectedMini.add(root.simpleLazy.get().children[0]);
 		expectedMini.add(root.mapping.get("test"));
+		expectedMini.add(root.referenceLazy.get().mini);
 		expectedMini.add(root.parent.mini);
 		Collections.addAll(expectedMini, root.parent.children);
 		assertEquals(expectedMini, collected.get(MiniStruct.class));
@@ -111,8 +125,20 @@ public class TestCollectInstances {
 		assertEquals(expectedFloats, new HashSet<>(actualFloats));
 
 		var expectedReferences = new ArrayList<>();
+		expectedReferences.add(root.simpleLazy.get().children[0]);
+		expectedReferences.add(root.parent.children[1]);
 		expectedReferences.add(root.parent.children[1]);
 		var actualReferences = collectedReferences.get(MiniStruct.class);
 		assertEquals(expectedReferences, actualReferences);
+
+		var parentDestination = new HashMap<Class<?>, Collection<Object>>();
+		parentDestination.put(ParentStruct.class, new ArrayList<>());
+		bitser.collectInstances(root, parentDestination, new HashMap<>(), new WithParameter("factor", 5f));
+
+		var expectedParents = new ArrayList<>();
+		expectedParents.add(root.parent);
+		expectedParents.add(root.referenceLazy.get());
+		expectedParents.add(root.simpleLazy.get());
+		assertEquals(expectedParents, parentDestination.get(ParentStruct.class));
 	}
 }

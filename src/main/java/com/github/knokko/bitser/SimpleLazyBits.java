@@ -25,6 +25,31 @@ import java.util.Objects;
  * This class is potentially useful for wrapping big struct classes that are probably not going to be needed right
  * away. Note that instances of <i>SimpleLazyBits</i> are immutable, so you can only 'modify' them by replacing them
  * with another instance of <i>SimpleLazyBits</i>.
+ *
+ * <h3>Limitations</h3>
+ * <p>
+ *     The lazy objects wrapped by {@code SimpleLazyBits} are <b>not</b> allowed to have references to anything
+ *     outside the wrapped object. Likewise, objects outside the wrapped object are not allowed to have references
+ *     to anything inside the wrapped object. In other words: it must be possible to (de)serialize the wrapped object
+ *     independently of its outer/parent object.
+ * </p>
+ * <p>
+ *     If you want to get rid of the former limitation, you can use {@link ReferenceLazyBits} instead. It is slightly
+ *     more complicated to set up, but it is allowed to have references to 'outer' objects (and the 'with' objects).
+ *     However, 'outer' objects are still <b>not</b> allowed to have references to the inner/wrapped/lazy object.
+ *     This is a fundamental limitation.
+ * </p>
+ *
+ * <h3>Backward compatibility</h3>
+ * <p>
+ *     If a field of the original serialized struct is a {@code SimpleLazyBits}, the corresponding field of the new
+ *     deserialized struct must either be a {@code SimpleLazyBits}, a {@link ReferenceLazyBits}, or a simple non-lazy
+ *     struct. The reverse is also allowed, but you need to get rid of any 'outer' references.
+ * </p>
+ * <p>
+ *     Basically, it is allowed to turn any lazy struct into an eager struct (or another lazy struct), and vice versa.
+ *     This should be convenient for profiling.
+ * </p>
  * @param <T> The type of the values to be wrapped. The class must be annotated with {@link BitStruct}.
  */
 public final class SimpleLazyBits<T> {
@@ -59,6 +84,10 @@ public final class SimpleLazyBits<T> {
 	 * when it is called for the first time on a deserialized instance of this class.
 	 */
 	public T get() {
+		if (value instanceof ReferenceLazyBits<?> referenceLazy) {
+			//noinspection unchecked
+			value = (T) referenceLazy.get();
+		}
 		if (value == null) {
 			Object[] options = backwardCompatible ? BACKWARD_COMPATIBLE : NOT_BACKWARD_COMPATIBLE;
 			value = bitser.fromBytes(valueClass, bytes, options);

@@ -4,60 +4,19 @@ import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
 import com.github.knokko.bitser.io.BitInputStream;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
-import com.github.knokko.bitser.legacy.LegacyLazyBytes;
+import com.github.knokko.bitser.legacy.ReferenceLegacyLazyBytes;
+import com.github.knokko.bitser.legacy.SimpleLegacyLazyBytes;
 import com.github.knokko.bitser.options.CollectionSizeLimit;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.github.knokko.bitser.IntegerBitser.decodeUnknownLength;
 import static com.github.knokko.bitser.IntegerBitser.encodeUnknownLength;
 
 @BitStruct(backwardCompatible = false)
-class LazyFieldWrapper extends BitFieldWrapper {
+class SimpleLazyFieldWrapper extends BitFieldWrapper {
 
-	private final Class<?> valueClass;
-
-	@SuppressWarnings("unused")
-	private LazyFieldWrapper() {
-		super();
-		this.valueClass = null;
-	}
-
-	LazyFieldWrapper(VirtualField field, Class<?> valueClass) {
-		super(field);
-		this.valueClass = valueClass;
-	}
-
-	@Override
-	public void write(
-			Serializer serializer, Object value,
-			RecursionNode parentNode, String fieldName
-	) throws Throwable {
-		if (value instanceof SimpleLazyBits<?> lazy) {
-			List<Object> options = new ArrayList<>();
-			if (serializer.backwardCompatible) options.add(Bitser.BACKWARD_COMPATIBLE);
-			if (serializer.forbidLazySaving) options.add(Bitser.FORBID_LAZY_SAVING);
-			if (serializer.floatDistribution != null) options.add(serializer.floatDistribution);
-			if (serializer.intDistribution != null) options.add(serializer.intDistribution);
-
-			byte[] bytes = lazy.bytes;
-			if (bytes == null || serializer.forbidLazySaving) {
-				bytes = serializer.bitser.toBytes(lazy.get(), options.toArray());
-			}
-			serializer.output.prepareProperty("lazy-bytes-length");
-			encodeUnknownLength(bytes.length, serializer.output);
-			serializer.output.finishProperty();
-			serializer.output.prepareProperty("lazy-bytes");
-			serializer.output.write(bytes);
-			serializer.output.finishProperty();
-		} else {
-			throw new InvalidBitValueException("Expected instance of SimpleLazyBits, but got " + value);
-		}
-	}
-
-	private byte[] readLazyBytes(BitInputStream input, CollectionSizeLimit sizeLimit) throws IOException {
+	static byte[] readLazyBytes(BitInputStream input, CollectionSizeLimit sizeLimit) throws IOException {
 		input.prepareProperty("lazy-bytes-length");
 		int size = decodeUnknownLength(sizeLimit, "lazy byte[] size", input);
 		input.finishProperty();
@@ -70,6 +29,42 @@ class LazyFieldWrapper extends BitFieldWrapper {
 		return bytes;
 	}
 
+	private final Class<?> valueClass;
+
+	@SuppressWarnings("unused")
+	private SimpleLazyFieldWrapper() {
+		super();
+		this.valueClass = null;
+	}
+
+	SimpleLazyFieldWrapper(VirtualField field, Class<?> valueClass) {
+		super(field);
+		this.valueClass = valueClass;
+	}
+
+	@Override
+	public void write(
+			Serializer serializer, Object value,
+			RecursionNode parentNode, String fieldName
+	) throws Throwable {
+		if (value instanceof SimpleLazyBits<?> lazy) {
+			var optionList = Bitser.getOptionsWithoutWithObjects(serializer.withAndOptions);
+
+			byte[] bytes = lazy.bytes;
+			if (bytes == null || serializer.forbidLazySaving) {
+				bytes = serializer.bitser.toBytes(lazy.get(), optionList.toArray());
+			}
+			serializer.output.prepareProperty("lazy-bytes-length");
+			encodeUnknownLength(bytes.length, serializer.output);
+			serializer.output.finishProperty();
+			serializer.output.prepareProperty("lazy-bytes");
+			serializer.output.write(bytes);
+			serializer.output.finishProperty();
+		} else {
+			throw new InvalidBitValueException("Expected instance of SimpleLazyBits, but got " + value);
+		}
+	}
+
 	@Override
 	public Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		byte[] bytes = readLazyBytes(deserializer.input, deserializer.sizeLimit);
@@ -79,23 +74,27 @@ class LazyFieldWrapper extends BitFieldWrapper {
 	@Override
 	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
 		byte[] bytes = readLazyBytes(deserializer.input, deserializer.sizeLimit);
-		return new LegacyLazyBytes(bytes);
+		return new SimpleLegacyLazyBytes(bytes);
 	}
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object rawLegacyInstance, RecursionNode parentNode, String fieldName) {
-		if (rawLegacyInstance instanceof LegacyLazyBytes) {
+		if (rawLegacyInstance instanceof SimpleLegacyLazyBytes simpleLegacy) {
 			return new SimpleLazyBits<>(
-					((LegacyLazyBytes) rawLegacyInstance).bytes(),
+					simpleLegacy.bytes(),
 					deserializer.bitser,
 					true,
 					valueClass
 			);
+		} else if (rawLegacyInstance instanceof ReferenceLegacyLazyBytes referenceLegacy) {
+			referenceLegacy.lazy().valueClass = valueClass;
+			return new SimpleLazyBits<>(referenceLegacy.lazy());
 		} else if (rawLegacyInstance instanceof LegacyStructInstance legacyObject) {
 			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(valueClass);
 			Object modernObject = modernInfo.createEmptyInstance();
+			legacyObject.modernObject = modernObject;
 			deserializer.convertStructJobs.add(new BackConvertStructJob(
-					modernObject, modernInfo, legacyObject,
+					modernInfo, legacyObject,
 					new RecursionNode(parentNode, fieldName)
 			));
 			return new SimpleLazyBits<>(modernObject);

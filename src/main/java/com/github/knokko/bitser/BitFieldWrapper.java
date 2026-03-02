@@ -12,7 +12,8 @@ abstract class BitFieldWrapper {
 			BooleanFieldWrapper.class, IntegerFieldWrapper.class, FloatFieldWrapper.class,
 			StringFieldWrapper.class, UUIDFieldWrapper.class, EnumFieldWrapper.class,
 			BitCollectionFieldWrapper.class, ByteCollectionFieldWrapper.class, MapFieldWrapper.class,
-			StructFieldWrapper.class, LazyFieldWrapper.class, ReferenceFieldWrapper.class,
+			StructFieldWrapper.class, SimpleLazyFieldWrapper.class, ReferenceLazyFieldWrapper.class,
+			ReferenceFieldWrapper.class,
 	};
 
 	@BitField

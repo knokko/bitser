@@ -263,7 +263,7 @@ public class TestBitPostInit {
 					assertArrayEquals(new Object[] {null, -12, null}, currentValues);
 				} else {
 					LegacyArrayValue legacyNames = (LegacyArrayValue) legacyValues[3];
-					Object[] rawNames = (Object[]) legacyNames.array();
+					Object[] rawNames = (Object[]) legacyNames.array;
 					names = new ArrayList<>(rawNames.length);
 					for (Object rawName : rawNames) names.add(((LegacyStringValue) rawName).value());
 

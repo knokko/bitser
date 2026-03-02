@@ -22,7 +22,8 @@ class Deserializer {
 	final ArrayList<ReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadStructMethodReferenceJob> structMethodReferenceJobs = new ArrayList<>();
 	final ArrayList<ReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
-	final ArrayList<ReadStructMethodReferenceToFieldJob> methodReferenceToFieldJobs = new ArrayList<>();
+	final ArrayList<ReadLazyJob> lazyJobs = new ArrayList<>();
+	final ArrayList<PopulateFieldJob> populateFieldJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 
 	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
@@ -49,7 +50,6 @@ class Deserializer {
 	}
 
 	void run() {
-		// Stage 1
 		input.setMarker("stage 1: struct jobs & array jobs");
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
@@ -70,16 +70,13 @@ class Deserializer {
 			}
 		}
 
-		// Stage 2
 		input.setMarker("stage 2: with jobs");
 		references.handleWithJobs(new FunctionContext(bitser, false, withParameters));
 
-		// Stage 3
 		input.setMarker("stage 3: map stable IDs");
 		references.mapStableIDs();
 
-		// Stage 4
-		input.setMarker("stage 4: reference jobs");
+		input.setMarker("stage 4: reference jobs & lazy reference jobs");
 		for (var referenceJob : structReferenceJobs) {
 			try {
 				input.pushContext(referenceJob.node(), null);
@@ -113,23 +110,34 @@ class Deserializer {
 		}
 		arrayReferenceJobs.clear();
 
-		// Stages 5 and 6 are only used in backward-compatible deserialization
-
-		// Stage 7
-		input.setMarker("stage 7: method reference to field jobs");
-		for (var referenceJob : methodReferenceToFieldJobs) {
+		for (var job : lazyJobs) {
 			try {
-				input.pushContext(referenceJob.node(), null);
-				referenceJob.resolve();
-				input.popContext(referenceJob.node(), null);
+				input.pushContext(job.node(), null);
+				job.read(input, sizeLimit, references);
+				input.popContext(job.node(), null);
 			} catch (Throwable failed) {
-				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
+				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
 		}
-		methodReferenceToFieldJobs.clear();
+		lazyJobs.clear();
 
-		// Stages 8, 9, and 10
-		input.setMarker("stage 8 to 10: collection population & post init");
+		// Stages 5 and 6 are only used in backward-compatible deserialization
+
+		input.setMarker("stage 7: populate struct jobs");
+		for (var populateJob : populateFieldJobs) {
+			try {
+				input.pushContext(populateJob.node(), null);
+				populateJob.populate();
+				input.popContext(populateJob.node(), null);
+			} catch (Throwable failed) {
+				throw new RecursionException(populateJob.node().generateTrace(null), failed);
+			}
+		}
+		populateFieldJobs.clear();
+
+		// Stage 8 is only used in backward-compatible deserialization
+
+		input.setMarker("stage 9 to 11: collection population & post init");
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}
 }

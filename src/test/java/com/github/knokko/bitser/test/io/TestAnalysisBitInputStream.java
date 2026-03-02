@@ -77,7 +77,7 @@ public class TestAnalysisBitInputStream {
 		assertEquals(36, backNode.children().get(1).spentBits());
 		assertEquals("LegacyClasses -> structs", backNode.children().get(1).context().generateTrace(null));
 
-		assertEquals(16, analysis.stages.size());
+		assertEquals(17, analysis.stages.size());
 		assertEquals(406, analysis.stages.get(1).spentBits());
 		assertEquals(18, analysis.stages.get(4).spentBits());
 		assertEquals(1_587_388, analysis.stages.get(8).spentBits());

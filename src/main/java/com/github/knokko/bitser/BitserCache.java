@@ -20,7 +20,9 @@ class BitserCache {
 
 	<T> BitStructWrapper<T> getWrapper(Class<T> objectClass) {
 		BitStructWrapper<T> result = getWrapperOrNull(objectClass);
-		if (result == null) throw new InvalidBitFieldException(objectClass + " is not a BitStruct");
+		if (result == null) {
+			throw new InvalidBitFieldException(objectClass + " is not a BitStruct");
+		}
 		return result;
 	}
 

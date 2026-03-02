@@ -16,6 +16,7 @@ class DeepCopyMachine {
 	final ArrayList<DeepCopyArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<DeepCopyStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<DeepCopyArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
+	final ArrayList<DeepCopyLazyJob> lazyJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
 
@@ -43,6 +44,15 @@ class DeepCopyMachine {
 				}
 			}
 		}
+
+		for (var lazyJob : lazyJobs) {
+			try {
+				lazyJob.copy(this);
+			} catch (Throwable failed) {
+				throw new RecursionException(lazyJob.node().generateTrace(null), failed);
+			}
+		}
+		lazyJobs.clear();
 
 		for (var referenceJob : structReferenceJobs) {
 			try {

@@ -636,7 +636,7 @@ public class TestReferenceBackwardCompatibility {
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
-		assertContains(errorMessage, "SimpleUnstable.reference");
+		assertContains(errorMessage, "SimpleUnstable -> reference");
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -704,7 +704,7 @@ public class TestReferenceBackwardCompatibility {
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
-		assertContains(errorMessage, "ReferenceFunction.reference");
+		assertContains(errorMessage, "ReferenceFunction -> reference");
 	}
 
 	@BitStruct(backwardCompatible = true)
@@ -736,7 +736,7 @@ public class TestReferenceBackwardCompatibility {
 						Bitser.BACKWARD_COMPATIBLE
 				)
 		).getMessage();
-		assertContains(errorMessage, "OptionalUnstable.reference");
+		assertContains(errorMessage, "OptionalUnstable -> reference");
 	}
 
 	@BitStruct(backwardCompatible = true)

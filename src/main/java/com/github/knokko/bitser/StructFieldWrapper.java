@@ -2,7 +2,8 @@ package com.github.knokko.bitser;
 
 import com.github.knokko.bitser.exceptions.UnexpectedBitserException;
 import com.github.knokko.bitser.legacy.LegacyStructInstance;
-import com.github.knokko.bitser.legacy.LegacyLazyBytes;
+import com.github.knokko.bitser.legacy.ReferenceLegacyLazyBytes;
+import com.github.knokko.bitser.legacy.SimpleLegacyLazyBytes;
 import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.exceptions.InvalidBitValueException;
 import com.github.knokko.bitser.exceptions.LegacyBitserException;
@@ -136,13 +137,20 @@ class StructFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (legacyValue instanceof LegacyLazyBytes) {
+		if (legacyValue instanceof SimpleLegacyLazyBytes legacyLazy) {
 			if (allowed.length != 1) throw new UnexpectedBitserException(
-					"LegacyLazyBytes should have been denied at fixLegacyTypes"
+					"SimpleLegacyLazyBytes should have been denied at fixLegacyTypes"
 			);
 			return deserializer.bitser.fromBytes(
-					allowed[0], ((LegacyLazyBytes) legacyValue).bytes(), Bitser.BACKWARD_COMPATIBLE
+					allowed[0], legacyLazy.bytes(), Bitser.BACKWARD_COMPATIBLE
 			);
+		}
+		if (legacyValue instanceof ReferenceLegacyLazyBytes legacyLazy) {
+			if (allowed.length != 1) throw new UnexpectedBitserException(
+					"ReferenceLegacyLazyBytes should have been denied at fixLegacyTypes"
+			);
+			legacyLazy.lazy().valueClass = allowed[0];
+			return legacyLazy.lazy();
 		}
 		if (legacyValue instanceof LegacyStructInstance legacyObject) {
 			if (legacyObject.allowedClassIndex >= allowed.length) throw new LegacyBitserException(
@@ -150,8 +158,9 @@ class StructFieldWrapper extends BitFieldWrapper {
 			);
 			BitStructWrapper<?> modernInfo = deserializer.bitser.cache.getWrapper(allowed[legacyObject.allowedClassIndex]);
 			Object modernObject = modernInfo.createEmptyInstance();
+			legacyObject.modernObject = modernObject;
 			deserializer.convertStructJobs.add(new BackConvertStructJob(
-					modernObject, modernInfo, legacyObject,
+					modernInfo, legacyObject,
 					new RecursionNode(parentNode, fieldName)
 			));
 			return modernObject;

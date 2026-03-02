@@ -71,7 +71,7 @@ record ReadStructJob(Object structObject, BitStructWrapper<?> structInfo, Recurs
 				try {
 					if (!field.readsMethodResult()) continue;
 					if (wereReferenceFunctions[field.id()]) {
-						deserializer.methodReferenceToFieldJobs.add(new ReadStructMethodReferenceToFieldJob(
+						deserializer.populateFieldJobs.add(new PopulateFieldJob(
 								functionValues, field.id(),
 								structObject, field.classField(),
 								new RecursionNode(node, fieldName)

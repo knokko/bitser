@@ -16,7 +16,7 @@ import java.util.List;
 import static com.github.knokko.bitser.test.wrapper.TestHelper.assertContains;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestLazyFieldWrapper {
+public class TestSimpleLazyFieldWrapper {
 
 	@BitStruct(backwardCompatible = true)
 	private static class SimpleInnerStruct {
@@ -246,7 +246,7 @@ public class TestLazyFieldWrapper {
 		).getMessage();
 		assertContains(errorMessage, "LegacyLazyBytes");
 		assertContains(errorMessage, "java.lang.String");
-		assertContains(errorMessage, "TestLazyFieldWrapper$StringStruct1.test");
+		assertContains(errorMessage, "TestSimpleLazyFieldWrapper$StringStruct1.test");
 	}
 
 	@Test
@@ -411,7 +411,7 @@ public class TestLazyFieldWrapper {
 				() -> new Bitser().toBytes(new UnknownGenericType())
 		).getMessage();
 		assertContains(errorMessage, "SimpleLazyBits<?>");
-		assertContains(errorMessage, "TestLazyFieldWrapper$UnknownGenericType.lazyMystery");
+		assertContains(errorMessage, "TestSimpleLazyFieldWrapper$UnknownGenericType.lazyMystery");
 	}
 
 	@Test
@@ -421,7 +421,7 @@ public class TestLazyFieldWrapper {
 				() -> new Bitser().toBytes(new IntGenericType())
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
-		assertContains(errorMessage, "TestLazyFieldWrapper$IntGenericType.lazyInt");
+		assertContains(errorMessage, "TestSimpleLazyFieldWrapper$IntGenericType.lazyInt");
 	}
 
 	@Test
@@ -431,7 +431,7 @@ public class TestLazyFieldWrapper {
 				() -> new Bitser().toBytes(new ListGenericType())
 		).getMessage();
 		assertContains(errorMessage, "must be a BitStruct");
-		assertContains(errorMessage, "TestLazyFieldWrapper$ListGenericType.lazyList");
+		assertContains(errorMessage, "TestSimpleLazyFieldWrapper$ListGenericType.lazyList");
 	}
 
 	@BitStruct(backwardCompatible = false)
@@ -450,19 +450,29 @@ public class TestLazyFieldWrapper {
 		SimpleLazyBits<SimpleInnerStruct> lazy;
 	}
 
+	@BitStruct(backwardCompatible = false)
+	static class UnexpectedAnnotation3 {
+
+		@SuppressWarnings("unused")
+		@ReferenceFieldTarget(label = "lazy")
+		SimpleLazyBits<SimpleInnerStruct> lazy;
+	}
+
 	private void assertUnexpectedAnnotation(Object subject) {
 		String errorMessage = assertThrows(
 				InvalidBitFieldException.class,
 				() -> new Bitser().hashCode(subject)
 		).getMessage();
 		assertContains(errorMessage, ".lazy");
-		assertContains(errorMessage, "TestLazyFieldWrapper$UnexpectedAnnotation");
-		assertContains(errorMessage, "SimpleLazyBits fields shouldn't have any bitser annotations except @BitField");
+		assertContains(errorMessage, "TestSimpleLazyFieldWrapper$UnexpectedAnnotation");
+		assertContains(errorMessage, "SimpleLazyBits and ReferenceLazyBits fields shouldn't " +
+				"have any bitser annotations except @BitField");
 	}
 
 	@Test
 	public void testUnexpectedAnnotations() {
 		assertUnexpectedAnnotation(new UnexpectedAnnotation1());
 		assertUnexpectedAnnotation(new UnexpectedAnnotation2());
+		assertUnexpectedAnnotation(new UnexpectedAnnotation3());
 	}
 }

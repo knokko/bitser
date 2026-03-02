@@ -14,4 +14,6 @@ abstract class AbstractReferenceTracker {
 	final ArrayList<WithArrayJob> arrayJobs = new ArrayList<>();
 
 	abstract void registerTarget(String label, Object target);
+
+	abstract LazyReferenceTargets getLazyTargets(String label);
 }

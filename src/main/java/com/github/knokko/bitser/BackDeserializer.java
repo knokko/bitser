@@ -23,12 +23,13 @@ class BackDeserializer {
 	final ArrayList<BackReadArrayJob> arrayJobs = new ArrayList<>();
 	final ArrayList<BackReadStructReferenceJob> structReferenceJobs = new ArrayList<>();
 	final ArrayList<BackReadArrayReferenceJob> arrayReferenceJobs = new ArrayList<>();
+	final ArrayList<ReadLazyJob> lazyJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructJob> convertStructJobs = new ArrayList<>();
 	final ArrayList<BackConvertArrayJob> convertArrayJobs = new ArrayList<>();
+	final ArrayList<BackConvertLazyToArrayJob> convertLazyToArrayJobs = new ArrayList<>();
 	final ArrayList<BackConvertStructReferenceJob> convertStructReferenceJobs = new ArrayList<>();
-	final ArrayList<BackConvertStructFunctionReferenceJob> convertStructFunctionReferenceJobs = new ArrayList<>();
 	final ArrayList<BackConvertArrayReferenceJob> convertArrayReferenceJobs = new ArrayList<>();
-	final ArrayList<ReadStructMethodReferenceToFieldJob> methodReferenceToFieldJobs = new ArrayList<>();
+	final ArrayList<BackPopulateStructJob> populateStructJobs = new ArrayList<>();
 	final ArrayList<PopulateJob> populateJobs = new ArrayList<>();
 	final ArrayList<PostInitJob> postInitJobs = new ArrayList<>();
 
@@ -53,8 +54,9 @@ class BackDeserializer {
 				legacyRootStruct, legacy.getRoot(),
 				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
 		));
+		legacyRootStruct.modernObject = rootStruct;
 		this.convertStructJobs.add(new BackConvertStructJob(
-				rootStruct, rootStructInfo, legacyRootStruct,
+				rootStructInfo, legacyRootStruct,
 				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
 		));
 
@@ -62,7 +64,6 @@ class BackDeserializer {
 	}
 
 	void run() {
-		// Stage 1
 		input.setMarker("stage 1: struct jobs & array jobs");
 		while (!structJobs.isEmpty() || !arrayJobs.isEmpty()) {
 			if (!structJobs.isEmpty()) {
@@ -83,16 +84,13 @@ class BackDeserializer {
 			}
 		}
 
-		// Stage 2
 		input.setMarker("stage 2: with jobs");
 		references.handleWithJobs(new FunctionContext(bitser, true, withParameters));
 
-		// Stage 3
 		input.setMarker("stage 3: map stable IDs");
 		references.mapStableIDs();
 
-		// Stage 4
-		input.setMarker("stage 4: reference jobs");
+		input.setMarker("stage 4: reference jobs & lazy reference jobs");
 		for (BackReadStructReferenceJob referenceJob : structReferenceJobs) {
 			try {
 				input.pushContext(referenceJob.node(), null);
@@ -116,7 +114,16 @@ class BackDeserializer {
 		}
 		arrayReferenceJobs.clear();
 
-		// Stage 5
+		for (var job : lazyJobs) {
+			try {
+				input.pushContext(job.node(), null);
+				job.read(input, sizeLimit, references);
+				input.popContext(job.node(), null);
+			} catch (Throwable failed) {
+				throw new RecursionException(job.node().generateTrace(null), failed);
+			}
+		}
+
 		input.setMarker("stage 5: convert struct & array jobs");
 		while (!convertStructJobs.isEmpty() || !convertArrayJobs.isEmpty()) {
 			if (!convertStructJobs.isEmpty()) {
@@ -133,8 +140,7 @@ class BackDeserializer {
 			}
 		}
 
-		// Stage 6
-		input.setMarker("stage 6: convert reference jobs");
+		input.setMarker("stage 6: convert reference jobs & convert lazy jobs");
 		for (BackConvertStructReferenceJob job : convertStructReferenceJobs) {
 			try {
 				job.convert(this);
@@ -143,15 +149,6 @@ class BackDeserializer {
 			}
 		}
 		convertStructReferenceJobs.clear();
-
-		for (BackConvertStructFunctionReferenceJob job : convertStructFunctionReferenceJobs) {
-			try {
-				job.convert(this);
-			} catch (Throwable failed) {
-				throw new RecursionException(job.node().generateTrace(null), failed);
-			}
-		}
-		convertStructFunctionReferenceJobs.clear();
 
 		for (BackConvertArrayReferenceJob job : convertArrayReferenceJobs) {
 			try {
@@ -162,19 +159,30 @@ class BackDeserializer {
 		}
 		convertArrayReferenceJobs.clear();
 
-		// Stage 7
-		input.setMarker("stage 7: method reference to field jobs");
-		for (var referenceJob : methodReferenceToFieldJobs) {
+		for (var job : lazyJobs) {
 			try {
-				referenceJob.resolve();
+				job.convert(this);
 			} catch (Throwable failed) {
-				throw new RecursionException(referenceJob.node().generateTrace(null), failed);
+				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
 		}
-		methodReferenceToFieldJobs.clear();
+		lazyJobs.clear();
 
-		// Stages 8, 9, and 10
-		input.setMarker("stage 8 to 10: collection population & post init");
+		input.setMarker("stage 7: populate struct jobs");
+		for (var populateJob : populateStructJobs) populateJob.populate();
+		populateStructJobs.clear();
+
+		input.setMarker("stage 8: evaluate lazy jobs");
+		for (var job : convertLazyToArrayJobs) {
+			try {
+				job.evaluate(this);
+			} catch (Throwable failed) {
+				throw new RecursionException(job.node().generateTrace(null), failed);
+			}
+		}
+		convertLazyToArrayJobs.clear();
+
+		input.setMarker("stage 9 to 11: collection population & post init");
 		Populator.collectionsAndPostInit(populateJobs, postInitJobs);
 	}
 }

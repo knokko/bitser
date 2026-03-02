@@ -84,9 +84,10 @@ all stable targets during the next stage.
 Note that the insertion of the stable targets into the maps can *not* happen during stage 1, since we need to wait
 until all IDs are deserialized.
 
-## Stage 4: resolving the references
-During this stage, all the **references** that were encountered during stage 1, will be *resolved*. Let's look at the
-following example class:
+## Stage 4: resolving the (lazy) references
+During this stage, all the **references** that were encountered during stage 1, will be *resolved*.
+Furthermore, during this stage, the bytes of `ReferenceLazyBits` are read, and their references resolved.
+Let's look at the following example class:
 
 ```java
 import com.github.knokko.bitser.BitStruct;
@@ -146,7 +147,7 @@ During deserialization, the stable UUID of each reference will be deserialized, 
 found by using the `Map<stableID, target>` generated in stage 3.
 
 ## Stage 5: converting `LegacyStructInstance`s and `LegacyArray`s
-**Stage 5 is only used in backward-compatible (de)serialization.**
+**Stage 5 is only used in backward-compatible deserialization.**
 
 During backward-compatible deserialization, bitser doesn't know exactly which class it is deserializing (or whether
 this class still exists), so it cannot create instances of the right class during stage 1. Instead, it creates
@@ -154,34 +155,52 @@ this class still exists), so it cannot create instances of the right class durin
 
 During this stage, bitser *does* know to which class each `LegacyStructInstance` should be converted, and tries to do
 so, as best as it can. Bitser will create an instance of this class using its default constructor. Then,
-for each field with ID `x` of the class, bitser will try to set its value to
-`legacyStructInstances.hierarcy.get(...).values[x]`. While doing this, bitser will also convert all *legacy* values to
-their 'modern' values (e.g. convert `LegacyIntValue`s to `Long`s).
+bitser will try to convert all the *legacy* values to their `modern` counterparts
+(e.g. convert `LegacyIntValue`s to `Long`s).
+In some cases, bitser will immediately populate the field of the modern object with the converted value. But, in
+other cases, this is postponed to stage 7.
 
 Similarly, all the legacy values in all the `LegacyArray`s will be converted to their modern counterparts.
 
-During this stage, all the legacy values, **except** `LegacyReference`s are converted to their modern counterparts.
-These legacy **references** will be converted in the next stage instead, because all legacy **targets** need to be
-converted before the legacy **references** are converted. During this stage, an `IdentityHashMap` will be created and
-filled to map all legacy reference targets to their modern reference target.
+During this stage, all the legacy values, **except** `LegacyReference`s and `ReferenceLegacyLazyBytes` are converted to
+their modern counterparts. These legacy **references** will be converted in the next stage instead,
+because all legacy **targets** need to be converted before the legacy **references** are converted.
+During this stage, an `IdentityHashMap` will be created and filled to map all legacy reference targets to their
+modern reference target.
 
 ## Stage 6: converting `LegacyReference`s
-**Stage 6 is only used in backward-compatible (de)serialization.**
+**Stage 6 is only used in backward-compatible deserialization.**
 
 During this stage, all the `LegacyReference`s will be replaced by their modern counterpart. This is skipped in the
-previous stage, to ensure that all reference **targets** are modernized first.
+previous stage, to ensure that all reference **targets** are modernized first. Furthermore, all the references used by
+the `ReferenceLegacyLazyBytes`s are replaced by their modern counterpart.
 
 Modernizing all these references is easy: we simply need to use the `IdentityHashMap` created during the previous stage.
 
-## Stage 7: propagating references from bit methods to bit fields
-This is a small stage that is only needed for fields with `readsMethodResult = true` whose corresponding bit method is
-annotated with `@ReferenceField`. This stage simply copies the references that were deserialized for these
-'reference methods', and puts them in the corresponding field.
+## Stage 7: populating the fields of all `BitStruct`s
+### Non-backward-compatible deserialization
+For non-backward-compatible deserialization, this is a small stage that is only needed for fields with
+`readsMethodResult = true` whose corresponding bit method is annotated with `@ReferenceField`.
+This stage simply copies the references that were deserialized for these 'reference methods',
+and puts them in the corresponding field.
 
-All other fields with `readsMethodResult = true` are already handled in stage 5, but references are postponed to
-this stage because stage 6 needs to happen first.
+All other fields with `readsMethodResult = true` are already handled in stage 1, but references are postponed to
+this stage because stage 4 needs to happen first.
 
-## Stage 8: populating the collections and maps
+### Backward-compatible deserialization
+For backward-compatible deserialization, this stage is much more important. It will store the results of stages 5 and 6
+in the right field of each deserialized object. Before this stage, all values are stored in `Object[]`.
+
+## Stage 8: evaluate the converted `ReferenceLazyBits`
+**Stage 8 is only used in backward-compatible deserialization.**
+
+This stage is only needed to handle the case where the old field had type `ReferenceLazyBits<T>`, but the new field
+has type `T`. (So a lazy field becomes a non-lazy field.)
+In such cases, the lazy field is deserialized during this stage, and stored in the right field of the right object.
+It is important that this happens after stage 7, since all the potential references must have been deserialized
+completely. In particular, the **stable ID**s of all stable reference targets must have been deserialized.
+
+## Stage 9: populating the collections and maps
 During all the previous stages, all deserialized collections are stored in *array*s rather than actual `Collection`s.
 During this stage, these arrays will be converted to `Collection`s or `Map`s, if needed. For some collections/maps
 (e.g. `HashSet`s and `HashMap`s), it is important that this stage happens *after* the primary deserialization, since
@@ -196,17 +215,17 @@ iteration, this stage checks whether each key of each `Map` can still be found, 
 can still be found. If not, this stage will perform another iteration. The maximum number of iterations should be bound
 by the depth of the deepest collection or map.
 
-## Stage 9: invoking the `BitPostInit`s
+## Stage 10: invoking the `BitPostInit`s
 During this step, bitser will iterate over all bit structs that implement `BitPostInit`, and invoke their `postInit()`
 method. The `postInit()` methods of the 'deepest' structs will be invoked first.
 
 This stage happens *after* stage 8 to ensure that all collections and maps are intact during the `postInit()`
 invocations. (At least, they are intact when the invocations *start*.)
 
-## Stage 10: re-populating the collections and maps
+## Stage 11: re-populating the collections and maps
 It is possible that one or more `Map`s or `Set`s are 'damaged' during the previous stage, e.g. if a struct that
 implements `BitPostInit` is used as key in a `HashMap`, and its `hashCode()` is changed during its `postInit()`
 invocation.
 
-To handle this problem, this stage does the same as stage 8: it checks whether each key or element can still be found
+To handle this problem, this stage does the same as stage 9: it checks whether each key or element can still be found
 in each `Map` or `Set`, and re-populates them if not. This may also take multiple iterations, if needed.

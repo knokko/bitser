@@ -170,16 +170,17 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 
 	@Override
 	Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName) {
-		if (!(legacyValue instanceof LegacyArrayValue)) {
+		if (!(legacyValue instanceof LegacyArrayValue legacyArrayWrapper)) {
 			throw new LegacyBitserException("Can't convert from legacy " + legacyValue +
 					" to collection/array for field " + field);
 		}
-		Object legacyArray = ((LegacyArrayValue) legacyValue).array();
+		Object legacyArray = legacyArrayWrapper.array;
 		int length = Array.getLength(legacyArray);
 
 		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
 		if (field.type.isArray()) {
 			Object modernArray = Array.newInstance(field.type.getComponentType(), length);
+			legacyArrayWrapper.modernObject = modernArray;
 			if (valuesWrapper instanceof ReferenceFieldWrapper) {
 				deserializer.convertArrayReferenceJobs.add(new BackConvertArrayReferenceJob(
 						legacyArray, modernArray, (ReferenceFieldWrapper) valuesWrapper, childNode
@@ -207,6 +208,7 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 			deserializer.populateJobs.add(new PopulateCollectionJob(
 					(Collection<?>) modernCollection, (Object[]) modernArray, childNode)
 			);
+			legacyArrayWrapper.modernObject = modernCollection;
 			return modernCollection;
 		}
 	}

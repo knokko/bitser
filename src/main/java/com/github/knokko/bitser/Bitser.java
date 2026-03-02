@@ -154,17 +154,23 @@ public class Bitser {
 		}
 
 		ArrayList<Object> withObjects = new ArrayList<>();
+		ArrayList<LazyReferenceTargets> lazyTargets = new ArrayList<>();
 		for (Object maybeWithObject : withAndOptions) {
 			if (maybeWithObject == BACKWARD_COMPATIBLE || maybeWithObject == FORBID_LAZY_SAVING) continue;
 			if (maybeWithObject instanceof WithParameter || maybeWithObject instanceof DistributionTracker) continue;
 			if (maybeWithObject instanceof DebugBits || maybeWithObject instanceof AnalyzePerformance) continue;
+			if (maybeWithObject instanceof LazyReferenceTargets[] targetsArray) {
+				Collections.addAll(lazyTargets, targetsArray);
+				continue;
+			}
 			withObjects.add(maybeWithObject);
 		}
 
 		Serializer serializer = new Serializer(
-				this, withParameters, output, backwardCompatible, object,
+				this, withAndOptions, withParameters, output, backwardCompatible, object,
 				forbidLazySaving, integerDistribution, floatDistribution
 		);
+		serializer.references.setLazyTargets(lazyTargets);
 		serializer.references.setWithObjects(withObjects);
 		serializer.run();
 	}
@@ -242,6 +248,7 @@ public class Bitser {
 		boolean backwardCompatible = false;
 		Map<String, Object> withParameters = new HashMap<>();
 		ArrayList<Object> withObjects = new ArrayList<>();
+		var lazyTargets = new ArrayList<LazyReferenceTargets>();
 
 		for (Object maybeWithObject : withAndOptions) {
 			if (maybeWithObject == BACKWARD_COMPATIBLE) {
@@ -263,6 +270,10 @@ public class Bitser {
 			if (maybeWithObject == null || maybeWithObject instanceof DebugBits ||
 					maybeWithObject instanceof AnalyzePerformance
 			) {
+				continue;
+			}
+			if (maybeWithObject instanceof LazyReferenceTargets[] targetsArray) {
+				Collections.addAll(lazyTargets, targetsArray);
 				continue;
 			}
 			if (maybeWithObject == FORBID_LAZY_SAVING) {
@@ -290,12 +301,14 @@ public class Bitser {
 			BackDeserializer deserializer = new BackDeserializer(
 					this, input, legacy, sizeLimit, withParameters, wrapper
 			);
+			deserializer.references.setLazyTargets(lazyTargets);
 			deserializer.references.setWithObjects(withObjects);
 			deserializer.run();
 			//noinspection unchecked
 			return (T) deserializer.rootStruct;
 		} else {
 			Deserializer deserializer = new Deserializer(this, input, sizeLimit, withParameters, wrapper);
+			deserializer.references.setLazyTargets(lazyTargets);
 			deserializer.references.setWithObjects(withObjects);
 			deserializer.run();
 			//noinspection unchecked
@@ -548,5 +561,16 @@ public class Bitser {
 		}
 
 		new InstanceCollector(rootStruct, destination, referencesDestination, this, withMapping).run();
+	}
+
+	static List<Object> getOptionsWithoutWithObjects(Object[] withAndOptions) {
+		var optionList = new ArrayList<>();
+		for (var candidateOption : withAndOptions) {
+			if (candidateOption == null) continue;
+			if (candidateOption.getClass().isAnnotationPresent(BitStruct.class)) continue;
+			if (candidateOption.getClass() == LazyReferenceTargets[].class) continue;
+			optionList.add(candidateOption);
+		}
+		return optionList;
 	}
 }

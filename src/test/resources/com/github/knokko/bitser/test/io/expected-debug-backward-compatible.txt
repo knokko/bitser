@@ -622,7 +622,7 @@ end LegacyClasses -> structs -> elements
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 3: map stable IDs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs & lazy reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 begin LegacyClasses -> structs -> elements -> classHierarchy
 unstable-id: 101
@@ -783,7 +783,7 @@ end RootStruct -> map -> elements
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 3: map stable IDs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs & lazy reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ---------------------------------------------------------------------------------------------
 
@@ -1410,7 +1410,7 @@ end LegacyClasses -> structs -> elements
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 3: map stable IDs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs & lazy reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 begin LegacyClasses -> structs -> elements -> classHierarchy
 unstable-id: 101
@@ -1453,10 +1453,10 @@ unstable-id: 000
 unstable-id: 100
 end LegacyClasses -> structs -> elements -> classHierarchy
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 7: method reference to field jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 7: populate struct jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 8 to 10: collection population & post init >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 9 to 11: collection population & post init >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Prepare main content >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1577,18 +1577,21 @@ end RootStruct -> field 3 -> elements
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 3: map stable IDs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 4: reference jobs & lazy reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 5: convert struct & array jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 6: convert reference jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 6: convert reference jobs & convert lazy jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 7: method reference to field jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 7: populate struct jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 8 to 10: collection population & post init >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 8: evaluate lazy jobs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< stage 9 to 11: collection population & post init >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ---------------------------------------------------------------------------------------------

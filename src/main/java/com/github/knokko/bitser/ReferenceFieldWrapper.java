@@ -63,7 +63,7 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 
 	@Override
 	void hashCode(HashComputer computer, Object value, RecursionNode parentNode, String fieldName) {
-		computer.digest.update(stable ? (byte) 40 : (byte) 45);
+		computer.digest.update(value == null ? (byte) 41 : (stable ? (byte) 40 : (byte) 45));
 	}
 
 	@Override

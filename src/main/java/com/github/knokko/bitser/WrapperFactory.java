@@ -255,11 +255,11 @@ class WrapperFactory {
 			}
 		}
 
-		if (field.type == SimpleLazyBits.class) {
-			if (createSimpleWrapper(field, true) != null) {
+		if (field.type == SimpleLazyBits.class || field.type == ReferenceLazyBits.class) {
+			if (createSimpleWrapper(field, true) != null || field.annotations.has(ReferenceFieldTarget.class)) {
 				throw new InvalidBitFieldException(
-						"SimpleLazyBits fields shouldn't have any bitser annotations except @BitField, " +
-								"but found " + field
+						"SimpleLazyBits and ReferenceLazyBits fields shouldn't have any bitser annotations " +
+								"except @BitField, but found " + field
 				);
 			}
 
@@ -272,7 +272,13 @@ class WrapperFactory {
 					if (!valueClass.isAnnotationPresent(BitStruct.class)) {
 						throw new InvalidBitFieldException("Generic type of " + field + " must be a BitStruct");
 					}
-					return new LazyFieldWrapper(field, valueClass);
+					if (field.type == ReferenceLazyBits.class) {
+						var info = field.annotations.get(LazyReferences.class);
+						if (info == null) {
+							throw new InvalidBitFieldException(field + " must be annotated with @LazyReferences");
+						}
+						return new ReferenceLazyFieldWrapper(field, valueClass, info.labels());
+					} else return new SimpleLazyFieldWrapper(field, valueClass);
 				} else {
 					throw new InvalidBitFieldException(
 							"Unexpected generic type " + genericType + " for " + field + ": type must be a BitStruct"
@@ -352,6 +358,10 @@ class WrapperFactory {
 		if (expectNothing && result.isEmpty()) return null;
 
 		if (field.type == UUID.class) result.add(new UUIDFieldWrapper(field));
+		if (field.annotations.has(LazyReferences.class)) {
+			throw new InvalidBitFieldException("The @LazyReferences annotation is only " +
+					"allowed on ReferenceLazyBits, but found " + field);
+		}
 
 		if (field.type == boolean.class || field.type == Boolean.class) result.add(new BooleanFieldWrapper(field));
 		if (field.type == String.class && stringField == null) result.add(new StringFieldWrapper(field, null));

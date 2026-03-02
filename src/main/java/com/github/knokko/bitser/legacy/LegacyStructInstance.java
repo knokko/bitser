@@ -29,6 +29,11 @@ public class LegacyStructInstance {
 	public UUID stableID;
 
 	/**
+	 * This field should only be used by bitser internally.
+	 */
+	public Object modernObject;
+
+	/**
 	 * This constructor should only be used by bitser internally.
 	 */
 	public LegacyStructInstance(int allowedClassIndex, LegacyClassValues[] hierarchy) {
