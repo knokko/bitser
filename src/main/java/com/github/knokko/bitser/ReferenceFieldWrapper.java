@@ -39,7 +39,7 @@ class ReferenceFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) {
+	Object read(BackReadParameters parameters) {
 		throw new UnexpectedBitserException("Reference fields should get special treatment");
 	}
 

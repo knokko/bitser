@@ -44,7 +44,7 @@ abstract class BitFieldWrapper {
 
 	abstract Object read(Deserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable;
 
-	abstract Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable;
+	abstract Object read(BackReadParameters parameters) throws Throwable;
 
 	abstract Object convert(BackDeserializer deserializer, Object legacyValue, RecursionNode parentNode, String fieldName);
 

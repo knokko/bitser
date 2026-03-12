@@ -47,9 +47,11 @@ class ReferenceLazyFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		var lazy = new ReferenceLazyBits<>(deserializer.bitser, true, null);
-		deserializer.lazyJobs.add(new ReadLazyJob(lazy, labels, new RecursionNode(parentNode, fieldName)));
+	Object read(BackReadParameters parameters) throws Throwable {
+		var lazy = new ReferenceLazyBits<>(parameters.deserializer().bitser, true, null);
+		parameters.deserializer().lazyJobs.add(new ReadLazyJob(
+				lazy, labels, new RecursionNode(parameters.parentNode(), parameters.fieldName())
+		));
 		lazy.labels = labels;
 		return new ReferenceLegacyLazyBytes(lazy);
 	}

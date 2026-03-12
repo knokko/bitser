@@ -7,15 +7,45 @@ import com.github.knokko.bitser.exceptions.RecursionException;
 
 import java.util.ArrayList;
 
-record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyInfo, RecursionNode node) {
+record BackReadStructJob(
+		LegacyStructInstance legacyObject, LegacyStruct legacyInfo,
+		Class<?> modernStruct, RecursionNode node
+) {
 
 	private void readFieldsOrFunctions(
-			BackDeserializer deserializer, ArrayList<LegacyField> fieldsOrFunctions, String namePrefix,
-			boolean[] hasValues, Object[] values
+			BackDeserializer deserializer, ArrayList<LegacyField> fieldsOrFunctions, boolean isField,
+			boolean[] hasValues, Object[] values, SingleClassWrapper modernClass
 	) {
 		for (LegacyField fieldOrFunction : fieldsOrFunctions) {
 			if (fieldOrFunction.readsMethodResult) continue;
-			String fieldOrFunctionName = namePrefix + fieldOrFunction.id;
+
+			String fieldOrFunctionName = null;
+			BitFieldWrapper modernFieldWrapper = null;
+			if (modernClass != null) {
+				if (isField) {
+					for (var modernField : modernClass.fieldsSortedById) {
+						if (modernField.id() == fieldOrFunction.id) {
+							fieldOrFunctionName = modernField.classField().getName();
+							modernFieldWrapper = modernField.bitField();
+							break;
+						}
+					}
+				} else {
+					for (var modernFunction : modernClass.functions) {
+						if (modernFunction.id() == fieldOrFunction.id) {
+							fieldOrFunctionName = modernFunction.classMethod().getName();
+							modernFieldWrapper = modernFunction.bitField();
+							break;
+						}
+					}
+				}
+			}
+
+			if (fieldOrFunctionName == null) {
+				if (isField) fieldOrFunctionName = "field " + fieldOrFunction.id;
+				else fieldOrFunctionName = "function " + fieldOrFunction.id;
+			}
+
 			try {
 				hasValues[fieldOrFunction.id] = true;
 				if (ReadHelper.readOptional(deserializer.input, fieldOrFunction.bitField.field.optional)) {
@@ -29,7 +59,9 @@ record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyI
 					));
 				} else {
 					deserializer.input.pushContext(node, fieldOrFunctionName);
-					Object value = fieldOrFunction.bitField.read(deserializer, node, fieldOrFunctionName);
+					Object value = fieldOrFunction.bitField.read(new BackReadParameters(
+							deserializer, modernFieldWrapper, node, fieldOrFunctionName
+					));
 					deserializer.input.popContext(node, fieldOrFunctionName);
 
 					values[fieldOrFunction.id] = value;
@@ -52,17 +84,27 @@ record BackReadStructJob(LegacyStructInstance legacyObject, LegacyStruct legacyI
 	}
 
 	void read(BackDeserializer deserializer) {
+		BitStructWrapper<?> modernWrapper = null;
+		if (modernStruct != null) {
+			modernWrapper = deserializer.bitser.cache.getWrapperOrNull(modernStruct);
+		}
+
 		for (int hierarchyIndex = 0; hierarchyIndex < legacyInfo.classHierarchy.size(); hierarchyIndex++) {
 			LegacyClass legacyClass = legacyInfo.classHierarchy.get(hierarchyIndex);
 			LegacyClassValues legacyClassInstance = legacyObject.hierarchy[hierarchyIndex];
 
+			SingleClassWrapper modernClassWrapper = null;
+			if (modernWrapper != null && hierarchyIndex < modernWrapper.classHierarchy.size()) {
+				modernClassWrapper = modernWrapper.classHierarchy.get(hierarchyIndex);
+			}
+
 			readFieldsOrFunctions(
-					deserializer, legacyClass.fields, "field ",
-					legacyClassInstance.hasValues, legacyClassInstance.values
+					deserializer, legacyClass.fields, true,
+					legacyClassInstance.hasValues, legacyClassInstance.values, modernClassWrapper
 			);
 			readFieldsOrFunctions(
-					deserializer, legacyClass.functions, "function ",
-					legacyClassInstance.hasValues, legacyClassInstance.values
+					deserializer, legacyClass.functions, false,
+					legacyClassInstance.hasValues, legacyClassInstance.values, modernClassWrapper
 			);
 		}
 	}

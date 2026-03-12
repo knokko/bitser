@@ -72,8 +72,8 @@ class SimpleLazyFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		byte[] bytes = readLazyBytes(deserializer.input, deserializer.sizeLimit);
+	Object read(BackReadParameters parameters) throws Throwable {
+		byte[] bytes = readLazyBytes(parameters.deserializer().input, parameters.deserializer().sizeLimit);
 		return new SimpleLegacyLazyBytes(bytes);
 	}
 

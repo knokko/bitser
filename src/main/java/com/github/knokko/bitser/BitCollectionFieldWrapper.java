@@ -146,22 +146,30 @@ class BitCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	public Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		deserializer.input.prepareProperty("legacy-array-length");
-		int length = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "legacy-array-length", deserializer.input);
-		deserializer.input.finishProperty();
+	public Object read(BackReadParameters parameters) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parameters.parentNode(), parameters.fieldName());
+		parameters.deserializer().input.prepareProperty("legacy-array-length");
+		int length = IntegerBitser.decodeLength(
+				sizeField, parameters.deserializer().sizeLimit,
+				"legacy-array-length", parameters.deserializer().input
+		);
+		parameters.deserializer().input.finishProperty();
 
 		Object array = constructCollectionWithSize(length);
 		if (length == 0) return new LegacyArrayValue(array);
 
+		BitFieldWrapper modernElementsWrapper = null;
+		if (parameters.modernField() instanceof BitCollectionFieldWrapper modernCollectionField) {
+			modernElementsWrapper = modernCollectionField.valuesWrapper;
+		}
+
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
-			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
+			parameters.deserializer().arrayReferenceJobs.add(new BackReadArrayReferenceJob(
 					array, (ReferenceFieldWrapper) valuesWrapper, childNode
 			));
 		} else {
-			deserializer.arrayJobs.add(new BackReadArrayJob(
-					array, valuesWrapper, childNode
+			parameters.deserializer().arrayJobs.add(new BackReadArrayJob(
+					array, valuesWrapper, modernElementsWrapper, childNode
 			));
 		}
 

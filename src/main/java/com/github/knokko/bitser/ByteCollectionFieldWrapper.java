@@ -193,12 +193,15 @@ class ByteCollectionFieldWrapper extends AbstractCollectionFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("byte-collection-length");
-		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "size", deserializer.input);
-		deserializer.input.finishProperty();
+	Object read(BackReadParameters parameters) throws Throwable {
+		parameters.deserializer().input.prepareProperty("byte-collection-length");
+		int size = IntegerBitser.decodeLength(
+				sizeField, parameters.deserializer().sizeLimit,
+				"size", parameters.deserializer().input
+		);
+		parameters.deserializer().input.finishProperty();
 		Object value = constructCollectionWithSize(size);
-		readData(deserializer.input, value);
+		readData(parameters.deserializer().input, value);
 		return new LegacyArrayValue(value);
 	}
 

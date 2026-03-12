@@ -51,7 +51,7 @@ class BackDeserializer {
 
 		LegacyStructInstance legacyRootStruct = legacy.getRoot().constructEmptyInstance(0);
 		this.structJobs.add(new BackReadStructJob(
-				legacyRootStruct, legacy.getRoot(),
+				legacyRootStruct, legacy.getRoot(), rootStructInfo.constructor.getDeclaringClass(),
 				new RecursionNode(rootStructInfo.constructor.getDeclaringClass().getSimpleName())
 		));
 		legacyRootStruct.modernObject = rootStruct;
@@ -128,12 +128,16 @@ class BackDeserializer {
 		while (!convertStructJobs.isEmpty() || !convertArrayJobs.isEmpty()) {
 			if (!convertStructJobs.isEmpty()) {
 				BackConvertStructJob job = convertStructJobs.remove(convertStructJobs.size() - 1);
+				input.pushContext(job.node(), null);
 				job.convert(this);
+				input.popContext(job.node(), null);
 			}
 			if (!convertArrayJobs.isEmpty()) {
 				BackConvertArrayJob job = convertArrayJobs.remove(convertArrayJobs.size() - 1);
 				try {
+					input.pushContext(job.node(), null);
 					job.convert(this);
+					input.popContext(job.node(), null);
 				} catch (Throwable failed) {
 					throw new RecursionException(job.node().generateTrace("elements"), failed);
 				}
@@ -143,7 +147,9 @@ class BackDeserializer {
 		input.setMarker("stage 6: convert reference jobs & convert lazy jobs");
 		for (BackConvertStructReferenceJob job : convertStructReferenceJobs) {
 			try {
+				input.pushContext(job.node(), null);
 				job.convert(this);
+				input.popContext(job.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
@@ -152,7 +158,9 @@ class BackDeserializer {
 
 		for (BackConvertArrayReferenceJob job : convertArrayReferenceJobs) {
 			try {
+				input.pushContext(job.node(), null);
 				job.convert(this);
+				input.popContext(job.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
@@ -161,7 +169,9 @@ class BackDeserializer {
 
 		for (var job : lazyJobs) {
 			try {
+				input.pushContext(job.node(), null);
 				job.convert(this);
+				input.popContext(job.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(job.node().generateTrace(null), failed);
 			}
@@ -175,7 +185,9 @@ class BackDeserializer {
 		input.setMarker("stage 8: evaluate lazy jobs");
 		for (var job : convertLazyToArrayJobs) {
 			try {
+				input.pushContext(job.node(), null);
 				job.evaluate(this);
+				input.popContext(job.node(), null);
 			} catch (Throwable failed) {
 				throw new RecursionException(job.node().generateTrace(null), failed);
 			}

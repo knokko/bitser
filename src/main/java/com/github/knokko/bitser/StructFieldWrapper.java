@@ -118,19 +118,28 @@ class StructFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+	Object read(BackReadParameters parameters) throws Throwable {
 		int allowedClassIndex;
 		if (legacyStructs.length > 1) {
-			deserializer.input.prepareProperty("allowed-class-index");
-			allowedClassIndex = (int) decodeUniformInteger(0, legacyStructs.length - 1, deserializer.input);
-			deserializer.input.finishProperty();
+			parameters.deserializer().input.prepareProperty("allowed-class-index");
+			allowedClassIndex = (int) decodeUniformInteger(
+					0, legacyStructs.length - 1, parameters.deserializer().input
+			);
+			parameters.deserializer().input.finishProperty();
 		} else allowedClassIndex = 0;
 
 		LegacyStruct legacyInfo = legacyStructs[allowedClassIndex];
 		LegacyStructInstance legacyObject = legacyInfo.constructEmptyInstance(allowedClassIndex);
-		deserializer.structJobs.add(new BackReadStructJob(
-				legacyObject, legacyInfo,
-				new RecursionNode(parentNode, fieldName)
+
+		Class<?> modernClass = null;
+		if (parameters.modernField() instanceof StructFieldWrapper modernStructWrapper
+				&& allowedClassIndex < modernStructWrapper.allowed.length
+		) {
+			modernClass = modernStructWrapper.allowed[allowedClassIndex];
+		}
+		parameters.deserializer().structJobs.add(new BackReadStructJob(
+				legacyObject, legacyInfo, modernClass,
+				new RecursionNode(parameters.parentNode(), parameters.fieldName())
 		));
 		return legacyObject;
 	}

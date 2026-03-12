@@ -143,33 +143,42 @@ class MapFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	public Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		RecursionNode childNode = new RecursionNode(parentNode, fieldName);
-		deserializer.input.prepareProperty("map-size");
-		int size = IntegerBitser.decodeLength(sizeField, deserializer.sizeLimit, "map-size", deserializer.input);
-		deserializer.input.finishProperty();
+	public Object read(BackReadParameters parameters) throws Throwable {
+		RecursionNode childNode = new RecursionNode(parameters.parentNode(), parameters.fieldName());
+		parameters.deserializer().input.prepareProperty("map-size");
+		int size = IntegerBitser.decodeLength(
+				sizeField, parameters.deserializer().sizeLimit,
+				"map-size", parameters.deserializer().input
+		);
+		parameters.deserializer().input.finishProperty();
 
 		Object[] keys = new Object[size];
 		Object[] values = new Object[size];
 		if (size == 0) return new LegacyMapValue(keys, values);
 
+		BitFieldWrapper modernKeysWrapper = null;
+		BitFieldWrapper modernValuesWrapper = null;
+		if (parameters.modernField() instanceof MapFieldWrapper modernMap) {
+			modernKeysWrapper = modernMap.keysWrapper;
+			modernValuesWrapper = modernMap.valuesWrapper;
+		}
 		if (keysWrapper instanceof ReferenceFieldWrapper) {
-			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
+			parameters.deserializer().arrayReferenceJobs.add(new BackReadArrayReferenceJob(
 					keys, (ReferenceFieldWrapper) keysWrapper, childNode
 			));
 		} else {
-			deserializer.arrayJobs.add(new BackReadArrayJob(
-					keys, keysWrapper, childNode
+			parameters.deserializer().arrayJobs.add(new BackReadArrayJob(
+					keys, keysWrapper, modernKeysWrapper, childNode
 			));
 		}
 
 		if (valuesWrapper instanceof ReferenceFieldWrapper) {
-			deserializer.arrayReferenceJobs.add(new BackReadArrayReferenceJob(
+			parameters.deserializer().arrayReferenceJobs.add(new BackReadArrayReferenceJob(
 					values, (ReferenceFieldWrapper) valuesWrapper, childNode
 			));
 		} else {
-			deserializer.arrayJobs.add(new BackReadArrayJob(
-					values, valuesWrapper, childNode
+			parameters.deserializer().arrayJobs.add(new BackReadArrayJob(
+					values, valuesWrapper, modernValuesWrapper, childNode
 			));
 		}
 

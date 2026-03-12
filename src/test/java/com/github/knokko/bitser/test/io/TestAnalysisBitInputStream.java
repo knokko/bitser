@@ -64,9 +64,9 @@ public class TestAnalysisBitInputStream {
 		assertEquals(2, rootNode.children().size());
 		assertEquals("RootStruct", rootNode.context().generateTrace(null));
 		assertEquals(1_237_332, rootNode.children().get(0).spentBits());
-		assertEquals("RootStruct -> field 1", rootNode.children().get(0).context().generateTrace(null));
+		assertEquals("RootStruct -> bigBoys", rootNode.children().get(0).context().generateTrace(null));
 		assertEquals(412_264, rootNode.children().get(1).spentBits());
-		assertEquals("RootStruct -> field 0", rootNode.children().get(1).context().generateTrace(null));
+		assertEquals("RootStruct -> largeMap", rootNode.children().get(1).context().generateTrace(null));
 
 		var backNode = analysis.rootNodes.get(1);
 		assertEquals(424, backNode.spentBits());

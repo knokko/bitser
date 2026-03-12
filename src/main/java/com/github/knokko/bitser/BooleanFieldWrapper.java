@@ -34,10 +34,10 @@ class BooleanFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("boolean-value");
-		boolean result = deserializer.input.read();
-		deserializer.input.finishProperty();
+	Object read(BackReadParameters parameters) throws Throwable {
+		parameters.deserializer().input.prepareProperty("boolean-value");
+		boolean result = parameters.deserializer().input.read();
+		parameters.deserializer().input.finishProperty();
 		return result ? LegacyBooleanValue.TRUE : LegacyBooleanValue.FALSE;
 	}
 

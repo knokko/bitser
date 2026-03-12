@@ -59,8 +59,10 @@ class StringFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		return new LegacyStringValue(StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input));
+	Object read(BackReadParameters parameters) throws Throwable {
+		return new LegacyStringValue(StringBitser.decode(
+				lengthField, parameters.deserializer().sizeLimit, parameters.deserializer().input
+		));
 	}
 
 	@Override

@@ -108,19 +108,23 @@ class EnumFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
+	Object read(BackReadParameters parameters) throws Throwable {
 		if (mode == BitEnum.Mode.Name) {
 			IntegerField.Properties lengthField = new IntegerField.Properties(
 					minNameLength, maxNameLength, true, 0, new long[0]
 			);
-			String name = StringBitser.decode(lengthField, deserializer.sizeLimit, deserializer.input);
+			String name = StringBitser.decode(
+					lengthField, parameters.deserializer().sizeLimit, parameters.deserializer().input
+			);
 			return new LegacyEnumName(name);
 		}
 
 		if (mode == BitEnum.Mode.Ordinal) {
-			deserializer.input.prepareProperty("enum-ordinal");
-			int ordinal = (int) decodeUniformInteger(0, numEnumConstants - 1, deserializer.input);
-			deserializer.input.finishProperty();
+			parameters.deserializer().input.prepareProperty("enum-ordinal");
+			int ordinal = (int) decodeUniformInteger(
+					0, numEnumConstants - 1, parameters.deserializer().input
+			);
+			parameters.deserializer().input.finishProperty();
 			return new LegacyEnumOrdinal(ordinal);
 		} else throw new UnexpectedBitserException("Unknown BitEnum mode: " + mode);
 	}

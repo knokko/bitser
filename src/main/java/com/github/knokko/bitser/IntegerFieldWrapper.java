@@ -86,10 +86,10 @@ class IntegerFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("int-value");
-		long longValue = decodeInteger(intField, deserializer.input);
-		deserializer.input.finishProperty();
+	Object read(BackReadParameters parameters) throws Throwable {
+		parameters.deserializer().input.prepareProperty("int-value");
+		long longValue = decodeInteger(intField, parameters.deserializer().input);
+		parameters.deserializer().input.finishProperty();
 		return new LegacyIntValue(longValue);
 	}
 

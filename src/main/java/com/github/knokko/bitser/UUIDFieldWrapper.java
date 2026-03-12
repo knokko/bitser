@@ -48,10 +48,13 @@ class UUIDFieldWrapper extends BitFieldWrapper {
 	}
 
 	@Override
-	Object read(BackDeserializer deserializer, RecursionNode parentNode, String fieldName) throws Throwable {
-		deserializer.input.prepareProperty("uuid");
-		UUID result = new UUID(decodeFullLong(deserializer.input), decodeFullLong(deserializer.input));
-		deserializer.input.finishProperty();
+	Object read(BackReadParameters parameters) throws Throwable {
+		parameters.deserializer().input.prepareProperty("uuid");
+		UUID result = new UUID(
+				decodeFullLong(parameters.deserializer().input),
+				decodeFullLong(parameters.deserializer().input)
+		);
+		parameters.deserializer().input.finishProperty();
 		return new LegacyUUIDValue(result);
 	}
 
