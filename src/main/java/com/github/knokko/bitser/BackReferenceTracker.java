@@ -29,14 +29,17 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 	LazyReferenceTargets getLazyTargets(String label) {
 		var targets = labels.get(label);
 		if (targets == null) return null;
-		return new LazyReferenceTargets(label, targets.idsToLegacyOrWith, new HashMap<>());
+		if (targets.lazy == null) {
+			targets.lazy = new LazyReferenceTargets(label, targets.idsToLegacyOrWith, new HashMap<>());
+		}
+		return targets.lazy;
 	}
 
 	void setLazyTargets(List<LazyReferenceTargets> targetsList) {
 		for (var targets : targetsList) {
 			if (targets == null) continue;
-			var labelTargets = labels.computeIfAbsent(targets.label(), LabelTargets::new);
-			targets.idsToUnstable().forEach(labelTargets::registerWith);
+			var labelTargets = labels.computeIfAbsent(targets.label, LabelTargets::new);
+			targets.idsToUnstable.forEach(labelTargets::registerWith);
 		}
 	}
 
@@ -123,6 +126,8 @@ class BackReferenceTracker extends AbstractReferenceTracker {
 		private final HashMap<UUID, Object> stable = new HashMap<>();
 		final IdentityHashMap<Object, Integer> legacyOrWithToIDs = new IdentityHashMap<>();
 		final ArrayList<Object> idsToLegacyOrWith = new ArrayList<>();
+
+		LazyReferenceTargets lazy;
 
 		LabelTargets(String label) {
 			this.myLabel = label;

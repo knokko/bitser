@@ -17,13 +17,14 @@ record ReadLazyJob(ReferenceLazyBits<?> lazy, String[] labels, RecursionNode nod
 
 	void convert(BackDeserializer deserializer) {
 		for (var targets : lazy.potentialTargets) {
-			if (targets == null) continue;
-			var newUnstable = new ArrayList<>(targets.idsToUnstable().size());
-			for (var target : targets.idsToUnstable()) {
+			if (targets == null || targets.performedLegacyConversion) continue;
+			var newUnstable = new ArrayList<>(targets.idsToUnstable.size());
+			for (var target : targets.idsToUnstable) {
 				newUnstable.add(deserializer.references.getModernFromRaw(target));
 			}
-			targets.idsToUnstable().clear();
-			targets.idsToUnstable().addAll(newUnstable);
+			targets.idsToUnstable.clear();
+			targets.idsToUnstable.addAll(newUnstable);
+			targets.performedLegacyConversion = true;
 		}
 	}
 }

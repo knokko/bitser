@@ -651,6 +651,79 @@ public class TestReferenceLazyFieldWrapper {
 		});
 	}
 
+	@BitStruct(backwardCompatible = true)
+	private static class LazyCollections {
+
+		@SuppressWarnings("unused")
+		@LazyReferences(labels = { "stable", "unstable" })
+		private static final boolean MAP_VALUE_PROPERTIES = false;
+
+		@BitField(id = 0)
+		@ReferenceFieldTarget(label = "stable")
+		SimpleInnerStruct stableTarget;
+
+		@BitField(id = 1)
+		@LazyReferences(labels = { "stable", "unstable" })
+		ReferenceLazyBits<ReferencingInnerStruct>[] array;
+
+		@BitField(id = 2)
+		@LazyReferences(labels = { "stable", "unstable" })
+		final ArrayList<ReferenceLazyBits<ReferencingInnerStruct>> list = new ArrayList<>();
+
+		@BitField(id = 3)
+		@NestedFieldSetting(path = "v", fieldName = "MAP_VALUE_PROPERTIES")
+		final HashMap<String, ReferenceLazyBits<ReferencingInnerStruct>> map = new HashMap<>();
+
+		@BitField(id = 4)
+		@ReferenceFieldTarget(label = "unstable")
+		SimpleInnerStruct[] unstableTargets;
+	}
+
+	@Test
+	public void testLazyCollections() {
+		var original = new LazyCollections();
+		original.stableTarget = new SimpleInnerStruct();
+		original.unstableTargets = new SimpleInnerStruct[] { new SimpleInnerStruct(), new SimpleInnerStruct() };
+
+		//noinspection unchecked
+		original.array = new ReferenceLazyBits[] {
+				new ReferenceLazyBits<>(new ReferencingInnerStruct())
+		};
+		original.array[0].get().optionalStable = original.stableTarget;
+		original.array[0].get().optionalUnstable = original.unstableTargets[0];
+
+		original.list.add(new ReferenceLazyBits<>(new ReferencingInnerStruct()));
+		original.list.get(0).get().optionalStable = original.stableTarget;
+		original.list.get(0).get().optionalUnstable = original.unstableTargets[1];
+
+		var mapValue = new ReferenceLazyBits<>(new ReferencingInnerStruct());
+		mapValue.get().stable.add(original.stableTarget);
+		mapValue.get().unstable.add(original.unstableTargets[1]);
+		original.map.put("singleton", mapValue);
+
+		var bitser = new Bitser();
+		checkLazyCollections(bitser.stupidDeepCopy(original));
+		checkLazyCollections(bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE));
+	}
+
+	private void checkLazyCollections(LazyCollections result) {
+		assertEquals(2, result.unstableTargets.length);
+		assertNotSame(result.unstableTargets[0], result.unstableTargets[1]);
+
+		assertEquals(1, result.array.length);
+		assertSame(result.stableTarget, result.array[0].get().optionalStable);
+		assertSame(result.unstableTargets[0], result.array[0].get().optionalUnstable);
+
+		assertEquals(1, result.list.size());
+		assertSame(result.stableTarget, result.list.get(0).get().optionalStable);
+		assertSame(result.unstableTargets[1], result.list.get(0).get().optionalUnstable);
+
+		assertEquals(1, result.map.size());
+		var mapValue = result.map.get("singleton");
+		assertSame(result.stableTarget, mapValue.get().stable.get(0));
+		assertSame(result.unstableTargets[1], mapValue.get().unstable.get(0));
+	}
+
 	@BitStruct(backwardCompatible = false)
 	private static class MissingAnnotation {
 

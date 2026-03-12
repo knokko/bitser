@@ -31,13 +31,13 @@ class ReferenceTracker extends AbstractReferenceTracker {
 	void setLazyTargets(List<LazyReferenceTargets> targetsList) {
 		for (var targets : targetsList) {
 			if (targets == null) continue;
-			var labelTargets = labels.computeIfAbsent(targets.label(), key -> new LabelTargets(key, cache));
-			targets.stable().values().forEach(stableTarget -> {
+			var labelTargets = labels.computeIfAbsent(targets.label, key -> new LabelTargets(key, cache));
+			targets.stable.values().forEach(stableTarget -> {
 				if (!labelTargets.potentialStableSet.add(stableTarget)) {
 					throw new ReferenceBitserException("Multiple stable targets have identity " + stableTarget);
 				}
 			});
-			targets.idsToUnstable().forEach(labelTargets::registerUnstable);
+			targets.idsToUnstable.forEach(labelTargets::registerUnstable);
 		}
 	}
 
