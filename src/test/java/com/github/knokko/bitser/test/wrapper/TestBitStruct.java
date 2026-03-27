@@ -5,6 +5,7 @@ import com.github.knokko.bitser.exceptions.InvalidBitFieldException;
 import com.github.knokko.bitser.field.BitField;
 import com.github.knokko.bitser.field.IntegerField;
 import com.github.knokko.bitser.field.ReferenceField;
+import com.github.knokko.bitser.field.ReferenceFieldTarget;
 import com.github.knokko.bitser.io.BitCountStream;
 import com.github.knokko.bitser.Bitser;
 import org.junit.jupiter.api.Test;
@@ -238,5 +239,51 @@ public class TestBitStruct {
 		a.id = b.id;
 		assertTrue(bitser.deepEquals(a, b));
 		assertEquals(bitser.hashCode(a), bitser.hashCode(b));
+	}
+
+	@BitStruct(backwardCompatible = true)
+	private static class OptionalWithNonNullDefault {
+
+		@BitField(id = 0, optional = true)
+		@ReferenceFieldTarget(label = "ref")
+		String simple = "optional";
+
+		@BitField(id = 1, optional = true)
+		@ReferenceField(stable = false, label = "ref")
+		String reference = simple;
+	}
+
+	@Test
+	public void testOptionalWithNonNullDefault() {
+		var bitser = new Bitser();
+		var original = new OptionalWithNonNullDefault();
+
+		var copy1a = bitser.stupidDeepCopy(original);
+		assertEquals("optional", copy1a.simple);
+		assertSame(copy1a.simple, copy1a.reference);
+
+		var copy1b = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals("optional", copy1b.simple);
+		assertSame(copy1b.simple, copy1b.reference);
+
+		original.reference = null;
+
+		var copy2a = bitser.stupidDeepCopy(original);
+		assertEquals("optional", copy2a.simple);
+		assertNull(copy2a.reference);
+
+		var copy2b = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertEquals("optional", copy2b.simple);
+		assertNull(copy2b.reference);
+
+		original.simple = null;
+
+		var copy3a = bitser.stupidDeepCopy(original);
+		assertNull(copy3a.simple);
+		assertNull(copy3a.reference);
+
+		var copy3b = bitser.stupidDeepCopy(original, Bitser.BACKWARD_COMPATIBLE);
+		assertNull(copy3b.simple);
+		assertNull(copy3b.reference);
 	}
 }

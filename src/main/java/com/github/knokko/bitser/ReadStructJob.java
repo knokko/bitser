@@ -19,7 +19,11 @@ record ReadStructJob(Object structObject, BitStructWrapper<?> structInfo, Recurs
 				String fieldName = field.classField().getName();
 				try {
 					if (field.readsMethodResult()) continue;
-					if (ReadHelper.readOptional(deserializer.input, field.bitField().field.optional)) continue;
+					if (ReadHelper.readOptional(deserializer.input, field.bitField().field.optional)) {
+						field.classField().set(structObject, null);
+						continue;
+					}
+
 					if (field.bitField() instanceof ReferenceFieldWrapper) {
 						deserializer.structReferenceJobs.add(new ReadStructReferenceJob(
 								structObject, field.classField(), (ReferenceFieldWrapper) field.bitField(),
