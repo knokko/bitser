@@ -6,7 +6,7 @@
 
   <groupId>com.github.knokko</groupId>
   <artifactId>bitser</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.4.1-pre1</version>
 
   <name>bitser</name>
   <url>https://github.com/knokko/bitser</url>
@@ -16,6 +16,13 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
   </properties>
+
+  <distributionManagement>
+    <repository>
+      <id>knokko-reposilite</id>
+      <url>https://49.12.188.159:8080/releases</url>
+    </repository>
+  </distributionManagement>
 
   <dependencyManagement>
     <dependencies>
